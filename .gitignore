@@ -31,5 +31,8 @@ pnpm-debug.log*
 # docker volumes (local data)
 infra/data/
 
+# local uploaded files (dev storage)
+.uploads/
+
 # drizzle
 packages/db/drizzle/meta/_journal.json.bak

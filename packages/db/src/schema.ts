@@ -123,12 +123,14 @@ export const individualProfiles = pgTable("individual_profiles", {
   userId: uuid("user_id")
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
+  surname: text("surname"), // Овог
+  givenName: text("given_name"), // Нэр
+  registryNumber: text("registry_number"), // регистрийн дугаар
+  address: text("address"), // free-text address (design captures a single field)
+  // richer docx fields, populated later by admin if needed
   citizenship: text("citizenship"),
   clanName: text("clan_name"), // ургийн овог
   fatherName: text("father_name"), // эцэг/эх-ийн нэр
-  givenName: text("given_name"),
-  registryNumber: text("registry_number"), // регистрийн дугаар
-  // address hierarchy
   aimag: text("aimag"),
   sum: text("sum"),
   bag: text("bag"),
@@ -143,10 +145,12 @@ export const legalEntityProfiles = pgTable("legal_entity_profiles", {
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
   registeredName: text("registered_name"), // оноосон нэр
-  registryNumber: text("registry_number"), // регистрийн дугаар
-  stateCertNumber: text("state_cert_number"), // улсын бүртгэлийн гэрчилгээ
+  registryNumber: text("registry_number"), // регистрийн дугаар (ТТД)
+  stateCertNumber: text("state_cert_number"), // улсын бүртгэлийн дугаар
+  directorName: text("director_name"), // захирлын овог нэр
   contactPhone: text("contact_phone"),
-  // address hierarchy
+  address: text("address"), // free-text address (design captures a single field)
+  // address hierarchy (populated later by admin if needed)
   aimag: text("aimag"),
   sum: text("sum"),
   bag: text("bag"),

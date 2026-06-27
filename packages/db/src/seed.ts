@@ -5,8 +5,11 @@
  *
  * Run: pnpm --filter @auction/db seed
  */
+import { hash } from "@node-rs/argon2";
+import { eq } from "drizzle-orm";
+
 import { db } from "./client";
-import { categories, termsVersions } from "./schema";
+import { categories, termsVersions, users } from "./schema";
 
 const SPECIES = [
   { code: "tekh", name: "Тэх", defaultReserve: 5_300_000, sortOrder: 1 },
@@ -33,6 +36,29 @@ async function main() {
       body: "Үйлчилгээний нөхцөл (анхны хувилбар). Засварлахаар орхив.",
     })
     .onConflictDoNothing();
+
+  console.log("Seeding admin user…");
+  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@auction.mn";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin12345";
+  const [existingAdmin] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, adminEmail))
+    .limit(1);
+  if (!existingAdmin) {
+    await db.insert(users).values({
+      email: adminEmail,
+      name: "Админ",
+      passwordHash: await hash(adminPassword),
+      role: "admin",
+      accountType: "individual",
+      kyc: "approved",
+      source: "admin",
+    });
+    console.log(`  admin created: ${adminEmail} / ${adminPassword}`);
+  } else {
+    console.log("  admin already exists, skipping");
+  }
 
   console.log("Seed complete.");
   process.exit(0);

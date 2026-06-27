@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { formatTugrug } from "@auction/shared";
 
+import { logout } from "@/lib/session-actions";
+
 const LINKS = [
   { href: "/catalog", label: "Каталог" },
   { href: "/my-bids", label: "Миний санал" },
@@ -14,10 +16,12 @@ export function AppNav({
   active,
   balance = 0,
   unread = 0,
+  userName,
 }: {
   active?: string;
   balance?: number;
   unread?: number;
+  userName?: string;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-card/90 backdrop-blur">
@@ -44,15 +48,32 @@ export function AppNav({
             <span className="text-ink-soft">Үлдэгдэл: </span>
             <span className="tnum font-medium">{formatTugrug(balance)}</span>
           </span>
-          <span className="relative grid size-9 place-items-center rounded-full bg-sand">
+          <Link
+            href="/notifications"
+            className="relative grid size-9 place-items-center rounded-full bg-sand"
+          >
             <span aria-hidden>🔔</span>
             {unread > 0 && (
               <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-crimson text-[10px] font-semibold text-white">
                 {unread}
               </span>
             )}
-          </span>
-          <span className="size-9 rounded-full bg-navy" aria-hidden />
+          </Link>
+          <Link
+            href="/profile"
+            className="grid size-9 place-items-center rounded-full bg-navy text-xs font-semibold text-white"
+            title={userName ?? "Профайл"}
+          >
+            {(userName ?? "?").slice(0, 1).toUpperCase()}
+          </Link>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="rounded-lg px-2.5 py-2 text-sm text-ink-soft transition-colors hover:bg-sand"
+            >
+              Гарах
+            </button>
+          </form>
         </div>
       </nav>
     </header>

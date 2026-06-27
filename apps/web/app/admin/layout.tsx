@@ -1,6 +1,8 @@
 import { AdminNav } from "@/components/AdminNav";
+import { requireAdmin } from "@/lib/session";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  await requireAdmin();
   return (
     <div className="flex min-h-screen bg-admin-bg">
       <AdminNav active="/admin" />
