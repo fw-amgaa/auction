@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#EEF1F5; }
+    @keyframes toastIn{ from{ opacity:0; transform:translateY(-10px);} to{ opacity:1; transform:none; } }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; display:flex; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436; background:#EEF1F5;">
+
+  <dc-import name="AdminNav" active="results" hint-size="228px,100vh"></dc-import>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div style="height:60px; background:#FFF; border-bottom:1px solid #E1E5EC; display:flex; align-items:center; justify-content:space-between; padding:0 24px;">
+      <h1 style="margin:0; font-size:18px; font-weight:700; color:#14294A;">Үр дүн ба экспорт</h1>
+      <div style="display:flex; gap:9px;">
+        <button onClick="{{ exportCsv }}" style="display:flex; align-items:center; gap:7px; background:#FFF; border:1px solid #CDD4DE; color:#14294A; border-radius:9px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer;" style-hover="border-color:#14294A;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          CSV татах
+        </button>
+        <button onClick="{{ exportXls }}" style="display:flex; align-items:center; gap:7px; background:#14294A; border:none; color:#fff; border-radius:9px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          Тайлан экспорт
+        </button>
+      </div>
+    </div>
+
+    <div style="flex:1; overflow-y:auto; padding:20px 24px 32px;">
+      <!-- KPIs -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:18px;">
+        <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:#FFF; border:1px solid #E1E5EC; border-radius:12px; padding:15px 17px;">
+            <div style="font-size:11.5px; color:#8A93A3; font-weight:600;">{{ k.label }}</div>
+            <div style="font-size:22px; font-weight:700; color:{{ k.color }}; font-variant-numeric:tabular-nums; margin-top:6px;">{{ k.value }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background:#FFF; border:1px solid #E1E5EC; border-radius:14px; overflow:hidden;">
+        <div style="padding:14px 18px; border-bottom:1px solid #EBEEF3; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0; font-size:14.5px; font-weight:700; color:#14294A;">Дууссан дуудлагын үр дүн</h2>
+          <div style="display:flex; gap:6px;">
+            <sc-for list="{{ payTabs }}" as="t" hint-placeholder-count="3">
+              <button onClick="{{ t.onClick }}" style="padding:6px 12px; border-radius:7px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-size:12px; font-weight:{{ t.weight }}; cursor:pointer;">{{ t.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:96px 1.4fr 1.3fr 1fr 120px 150px; gap:12px; padding:11px 18px; background:#F7F8FA; border-bottom:1px solid #EBEEF3; font-size:11px; font-weight:700; color:#8A93A3; text-transform:uppercase; letter-spacing:.03em;">
+          <span>Код</span><span>Зүйл</span><span>Хожсон оролцогч</span><span style="text-align:right;">Хожсон үнэ</span><span style="text-align:center;">Төлбөр</span><span style="text-align:right;">Зөвшөөрөл</span>
+        </div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+          <div style="display:grid; grid-template-columns:96px 1.4fr 1.3fr 1fr 120px 150px; gap:12px; padding:13px 18px; border-bottom:1px solid #F1F3F6; align-items:center;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; color:#14294A;">{{ r.code }}</span>
+            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+              <span style="width:30px; height:30px; border-radius:8px; flex:0 0 auto; background-image:repeating-linear-gradient(135deg,{{ r.sa }} 0 7px,{{ r.sb }} 7px 14px);"></span>
+              <div style="min-width:0;"><div style="font-size:13px; font-weight:600; color:#14294A;">{{ r.species }}</div><div style="font-size:11px; color:#A2AAB6;">{{ r.aimag }}</div></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:9px; min-width:0;">
+              <span style="width:28px; height:28px; border-radius:50%; flex:0 0 auto; background:#EEF1F5; color:#14294A; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">{{ r.winnerInit }}</span>
+              <span style="font-size:12.5px; color:#3A4658; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.winner }}</span>
+            </div>
+            <span style="text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; color:#14294A; font-variant-numeric:tabular-nums;">{{ r.price }}</span>
+            <span style="display:flex; justify-content:center;"><span style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; background:{{ r.payBg }}; color:{{ r.payFg }};">{{ r.payIcon }} {{ r.payLabel }}</span></span>
+            <span style="display:flex; justify-content:flex-end;">
+              <sc-if value="{{ r.canGenerate }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ r.onGenerate }}" style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#fff; background:#1F8A5B; border:none; border-radius:7px; padding:7px 12px; cursor:pointer;" style-hover="background:#1A7A4F;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                  Эрх үүсгэх
+                </button>
+              </sc-if>
+              <sc-if value="{{ r.generated }}" hint-placeholder-val="{{ false }}">
+                <span style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#197a50;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  Олгосон
+                </span>
+              </sc-if>
+              <sc-if value="{{ r.waiting }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:12px; color:#A2AAB6;">Төлбөр хүлээж буй</span>
+              </sc-if>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; top:18px; right:18px; z-index:80; display:flex; align-items:center; gap:11px; padding:13px 16px; border-radius:11px; background:{{ toastBg }}; border:1px solid {{ toastBorder }}; box-shadow:0 14px 36px rgba(0,0,0,.18); animation:toastIn .22s ease;">
+      <span style="font-size:16px;">{{ toastIcon }}</span>
+      <span style="font-size:13.5px; color:{{ toastColor }}; font-weight:600;">{{ toastText }}</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:760}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      payFilter:'all', toast:null,
+      results: [
+        { id:1, code:'Гахай:B5', species:'Зэрлэг гахай', aimag:'Хэнтий', winner:'Оролцогч #4', price:1120000, pay:'paid', permit:true },
+        { id:2, code:'Булга:Sa1', species:'Булга', aimag:'Хөвсгөл', winner:'Оролцогч #9', price:520000, pay:'paid', permit:false },
+        { id:3, code:'Тэх:I2', species:'Тэх', aimag:'Увс', winner:'Алтай Хайрхан ХХК', price:4180000, pay:'paid', permit:false },
+        { id:4, code:'Шувуу:S5', species:'Шонхор', aimag:'Дорнод', winner:'Оролцогч #12', price:1830000, pay:'pending', permit:false },
+        { id:5, code:'Янгир:Y1', species:'Янгир', aimag:'Баянхонгор', winner:'Говь Анчид ХХК', price:2760000, pay:'pending', permit:false },
+      ],
+    };
+    this.stripes = { 'Угалз':['#2C4A6B','#26405F'],'Тэх':['#274463','#1F3A56'],'Янгир':['#2B4A52','#23404A'],'Шонхор':['#3F3552','#352C4A'],'Зэрлэг гахай':['#4A3A33','#3E302A'],'Булга':['#4A3E2E','#3E3326'] };
+  }
+  fmt(n){ return Math.round(n).toLocaleString('en-US')+'₮'; }
+  showToast(t){ this.setState({toast:t}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:null}),3000); }
+  componentWillUnmount(){ clearTimeout(this._tt); }
+  init(n){ return '#'+n.replace(/\D/g,'') || n.slice(0,2); }
+
+  renderVals(){
+    const s = this.state;
+    const paidTotal = s.results.filter(r=>r.pay==='paid').reduce((a,r)=>a+r.price,0);
+    const pendingCount = s.results.filter(r=>r.pay==='pending').length;
+    const permitsLeft = s.results.filter(r=>r.pay==='paid'&&!r.permit).length;
+    const kpis = [
+      { label:'Дууссан лот', value:String(s.results.length), color:'#14294A' },
+      { label:'Цуглуулсан төлбөр', value:this.fmt(paidTotal).replace('₮','')+'₮', color:'#1F8A5B' },
+      { label:'Төлбөр хүлээж буй', value:String(pendingCount), color:'#C77A0A' },
+      { label:'Эрх олгох шаардлагатай', value:String(permitsLeft), color:'#C8312C' },
+    ];
+
+    const payTabDefs = [['all','Бүгд'],['paid','Төлсөн'],['pending','Хүлээгдэж буй']];
+    const payTabs = payTabDefs.map(([k,label])=>{ const on=k===s.payFilter; return { label, bg:on?'#14294A':'#FFF', fg:on?'#FFF':'#5B6677', border:on?'#14294A':'#E1E5EC', weight:on?700:500, onClick:()=>this.setState({payFilter:k}) }; });
+
+    const payMeta = { paid:['✓','Төлсөн','#E5F4EC','#197a50'], pending:['◷','Хүлээгдэж буй','#FBF1DF','#C77A0A'] };
+
+    const rows = s.results.filter(r=>s.payFilter==='all'||r.pay===s.payFilter).map(r => {
+      const sp = this.stripes[r.species]||['#26405F','#1F3753'];
+      const pm = payMeta[r.pay];
+      const isCompany = /ХХК|компани/i.test(r.winner);
+      return { code:r.code, species:r.species, aimag:r.aimag, sa:sp[0], sb:sp[1],
+        winner:r.winner, winnerInit: isCompany ? r.winner.slice(0,2).toUpperCase() : this.init(r.winner),
+        price:this.fmt(r.price), payIcon:pm[0], payLabel:pm[1], payBg:pm[2], payFg:pm[3],
+        canGenerate: r.pay==='paid' && !r.permit,
+        generated: r.permit, waiting: r.pay==='pending',
+        onGenerate:()=>{ this.setState(st=>({results:st.results.map(x=>x.id===r.id?{...x,permit:true}:x)})); this.showToast({icon:'📜',text:r.code+' — агнуурын эрх олгогдлоо',bg:'#E5F4EC',border:'#C7E5D5',color:'#197a50'}); } };
+    });
+
+    return {
+      kpis, payTabs, rows,
+      exportCsv:()=>this.showToast({icon:'📥',text:'CSV файл татаж байна…',bg:'#E5F0FB',border:'#C5DCF3',color:'#1B5FA8'}),
+      exportXls:()=>this.showToast({icon:'📊',text:'Тайлан үүсгэж байна…',bg:'#E5F0FB',border:'#C5DCF3',color:'#1B5FA8'}),
+      toast: !!s.toast, toastIcon:s.toast?s.toast.icon:'', toastText:s.toast?s.toast.text:'',
+      toastBg:s.toast?s.toast.bg:'#FFF', toastBorder:s.toast?s.toast.border:'#E1E5EC', toastColor:s.toast?s.toast.color:'#14294A',
+    };
+  }
+}
+</script>
+</body>
+</html>

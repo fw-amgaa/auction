@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#F5F2EC; }
+    input,select{ font-family:inherit; }
+    @keyframes stepIn{ from{ transform:translateY(6px);} to{ transform:none; } }
+    @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#F5F2EC; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436;">
+
+  <!-- top bar -->
+  <div style="background:#FFF; border-bottom:1px solid #E6E1D6;">
+    <div style="max-width:1080px; margin:0 auto; height:64px; padding:0 26px; display:flex; align-items:center; justify-content:space-between;">
+      <a href="Catalog.dc.html" style="display:flex; align-items:center; text-decoration:none;">
+        <img src="assets/logo.png" alt="АН агнуурийн үнийн санал дуудах систем" style="height:40px; width:auto; display:block;" />
+      </a>
+      <div style="font-size:13px; color:#5B6677;">Бүртгэлтэй юу? <a href="Login.dc.html" style="color:#C8312C; font-weight:600; text-decoration:none;">Нэвтрэх</a></div>
+    </div>
+  </div>
+
+  <div style="max-width:1080px; margin:0 auto; padding:34px 26px 60px; display:flex; gap:34px; align-items:flex-start;">
+
+    <!-- progress sidebar -->
+    <div style="flex:0 0 240px; position:sticky; top:34px;">
+      <h1 style="margin:0 0 4px; font-size:22px; font-weight:700; color:#14294A;">Бүртгүүлэх</h1>
+      <p style="margin:0 0 22px; font-size:13px; color:#5B6677; line-height:1.5;">Дуудлага худалдаанд оролцохын тулд бүртгэл үүсгэж баталгаажуулна.</p>
+      <div style="display:flex; flex-direction:column;">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex; gap:13px; align-items:flex-start; position:relative;">
+            <div style="display:flex; flex-direction:column; align-items:center; flex:0 0 auto;">
+              <span style="width:30px; height:30px; border-radius:50%; background:{{ s.dotBg }}; color:{{ s.dotFg }}; border:1.5px solid {{ s.dotBorder }}; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;">{{ s.mark }}</span>
+              <sc-if value="{{ s.hasLine }}" hint-placeholder-val="{{ true }}"><span style="width:2px; height:34px; background:{{ s.lineColor }};"></span></sc-if>
+            </div>
+            <div style="padding-top:4px; padding-bottom:18px;">
+              <div style="font-size:13.5px; font-weight:{{ s.weight }}; color:{{ s.titleColor }};">{{ s.title }}</div>
+              <div style="font-size:11.5px; color:#A2AAB6; margin-top:2px;">{{ s.hint }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:8px; padding:13px 15px; background:#FBF7EE; border:1px solid #EAE0C9; border-radius:11px; display:flex; gap:10px; align-items:flex-start;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#C77A0A" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:1px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span style="font-size:11.5px; color:#7A6A4A; line-height:1.5;">Таны мэдээлэл төрийн нууцлалын журмын дагуу хамгаалагдана.</span>
+      </div>
+    </div>
+
+    <!-- form card -->
+    <div style="flex:1; min-width:0; background:#FFF; border:1px solid #E6E1D6; border-radius:16px; padding:30px 32px; box-shadow:0 2px 8px rgba(20,41,74,.05);">
+
+      <!-- STEP 1: account type -->
+      <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:stepIn .3s ease;">
+          <h2 style="margin:0 0 5px; font-size:20px; font-weight:700; color:#14294A;">Бүртгэлийн төрөл</h2>
+          <p style="margin:0 0 22px; font-size:13.5px; color:#5B6677;">Та хувь хүн үү, эсвэл байгууллагын нэрийн өмнөөс оролцох уу?</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <button onClick="{{ pickIndividual }}" style="text-align:left; background:{{ indBg }}; border:1.5px solid {{ indBorder }}; border-radius:14px; padding:20px; cursor:pointer;">
+              <span style="width:46px; height:46px; border-radius:12px; background:{{ indIconBg }}; color:{{ indIconFg }}; display:flex; align-items:center; justify-content:center;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5.5 21a7.5 7.5 0 0 1 13 0"/></svg>
+              </span>
+              <div style="font-size:16px; font-weight:700; color:#14294A; margin-top:13px;">Иргэн</div>
+              <div style="font-size:12.5px; color:#5B6677; line-height:1.5; margin-top:4px;">Хувь хүний нэр дээр бүртгүүлж, өөрийн нэрийн өмнөөс оролцоно.</div>
+              <div style="display:flex; align-items:center; gap:7px; margin-top:13px; font-size:12px; color:{{ indCheckColor }}; font-weight:600;">
+                <span style="width:18px; height:18px; border-radius:50%; border:1.5px solid {{ indRadioBorder }}; background:{{ indRadioBg }}; display:inline-flex; align-items:center; justify-content:center;">{{ indRadioMark }}</span>
+                {{ indCheckText }}
+              </div>
+            </button>
+            <button onClick="{{ pickLegal }}" style="text-align:left; background:{{ legBg }}; border:1.5px solid {{ legBorder }}; border-radius:14px; padding:20px; cursor:pointer;">
+              <span style="width:46px; height:46px; border-radius:12px; background:{{ legIconBg }}; color:{{ legIconFg }}; display:flex; align-items:center; justify-content:center;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg>
+              </span>
+              <div style="font-size:16px; font-weight:700; color:#14294A; margin-top:13px;">Хуулийн этгээд</div>
+              <div style="font-size:12.5px; color:#5B6677; line-height:1.5; margin-top:4px;">Компани, байгууллагын нэрийн өмнөөс эрх бүхий төлөөлөгч оролцоно.</div>
+              <div style="display:flex; align-items:center; gap:7px; margin-top:13px; font-size:12px; color:{{ legCheckColor }}; font-weight:600;">
+                <span style="width:18px; height:18px; border-radius:50%; border:1.5px solid {{ legRadioBorder }}; background:{{ legRadioBg }}; display:inline-flex; align-items:center; justify-content:center;">{{ legRadioMark }}</span>
+                {{ legCheckText }}
+              </div>
+            </button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 2: details -->
+      <sc-if value="{{ isStep2 }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:stepIn .3s ease;">
+          <h2 style="margin:0 0 5px; font-size:20px; font-weight:700; color:#14294A;">{{ detailsTitle }}</h2>
+          <p style="margin:0 0 22px; font-size:13.5px; color:#5B6677;">Бүх талбарыг үнэн зөв бөглөнө үү. Эдгээр нь баталгаажуулалтад ашиглагдана.</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <sc-for list="{{ fields }}" as="f" hint-placeholder-count="6">
+              <div style="grid-column:{{ f.span }};">
+                <label style="display:block; font-size:12.5px; font-weight:600; color:#3A4658; margin-bottom:6px;">{{ f.label }} <span style="color:#C8312C;">{{ f.req }}</span></label>
+                <input value="{{ f.value }}" onInput="{{ f.onInput }}" placeholder="{{ f.ph }}" style="width:100%; height:44px; padding:0 13px; border-radius:9px; border:1px solid {{ f.border }}; background:#FAF8F4; font-size:14px; color:#1A2436; outline:none;" />
+                <sc-if value="{{ f.error }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:11.5px; color:#C8312C; margin-top:5px;">{{ f.errorText }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 3: documents -->
+      <sc-if value="{{ isStep3 }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:stepIn .3s ease;">
+          <h2 style="margin:0 0 5px; font-size:20px; font-weight:700; color:#14294A;">Бичиг баримт</h2>
+          <p style="margin:0 0 22px; font-size:13.5px; color:#5B6677;">Доорх баримтуудыг зураг эсвэл PDF хэлбэрээр оруулна уу. Тодорхой, бүрэн уншигдахуйц байх ёстой.</p>
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <sc-for list="{{ docs }}" as="d" hint-placeholder-count="2">
+              <div>
+                <div style="font-size:13px; font-weight:600; color:#3A4658; margin-bottom:8px;">{{ d.label }} <span style="color:#C8312C;">*</span></div>
+                <sc-if value="{{ d.empty }}" hint-placeholder-val="{{ true }}">
+                  <label onDragOver="{{ d.onDragOver }}" onDragLeave="{{ d.onDragLeave }}" onDrop="{{ d.onDrop }}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; padding:28px; border-radius:12px; border:1.5px dashed {{ d.dropBorder }}; background:{{ d.dropBg }}; cursor:pointer; text-align:center;">
+                    <span style="width:44px; height:44px; border-radius:50%; background:#EEF1F5; color:#14294A; display:flex; align-items:center; justify-content:center;">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+                    </span>
+                    <span style="font-size:13.5px; color:#14294A; font-weight:600;">Файлаа чирч оруулах эсвэл <span style="color:#C8312C;">сонгох</span></span>
+                    <span style="font-size:11.5px; color:#8A93A3;">JPG, PNG эсвэл PDF · дээд тал нь 10MB</span>
+                    <input type="file" accept="image/*,.pdf" onChange="{{ d.onPick }}" style="display:none;" />
+                  </label>
+                </sc-if>
+                <sc-if value="{{ d.filled }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex; align-items:center; gap:13px; padding:14px 16px; border-radius:12px; border:1px solid #C7E5D5; background:#F2FAF6;">
+                    <span style="width:46px; height:46px; border-radius:9px; flex:0 0 auto; background:{{ d.thumbBg }}; display:flex; align-items:center; justify-content:center; color:#14294A; overflow:hidden;">{{ d.thumb }}</span>
+                    <div style="flex:1; min-width:0;">
+                      <div style="font-size:13.5px; font-weight:600; color:#14294A; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ d.fileName }}</div>
+                      <div style="font-size:11.5px; color:#1F8A5B; margin-top:2px;">✓ Орууллаа · {{ d.fileSize }}</div>
+                    </div>
+                    <button onClick="{{ d.onRemove }}" title="Устгах" style="width:34px; height:34px; border-radius:8px; border:1px solid #E6E1D6; background:#FFF; color:#8A93A3; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 4: review + T&C -->
+      <sc-if value="{{ isStep4 }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:stepIn .3s ease;">
+          <h2 style="margin:0 0 5px; font-size:20px; font-weight:700; color:#14294A;">Шалгаж баталгаажуулах</h2>
+          <p style="margin:0 0 20px; font-size:13.5px; color:#5B6677;">Мэдээллээ нягтлаад илгээнэ үү. Илгээсний дараа захиргаа KYC шалгалт хийнэ.</p>
+
+          <div style="border:1px solid #EFEBE1; border-radius:12px; overflow:hidden;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px; background:#FAF8F4; border-bottom:1px solid #EFEBE1;">
+              <span style="font-size:13px; font-weight:700; color:#14294A;">{{ reviewTypeLabel }}</span>
+              <button onClick="{{ goStep1 }}" style="font-size:12px; color:#C8312C; font-weight:600; background:none; border:none; cursor:pointer;">Засах</button>
+            </div>
+            <sc-for list="{{ reviewFields }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex; justify-content:space-between; gap:14px; padding:11px 16px; border-bottom:1px solid #F3EFE5;">
+                <span style="font-size:12.5px; color:#8A93A3;">{{ r.k }}</span>
+                <span style="font-size:13px; color:#14294A; font-weight:500; text-align:right;">{{ r.v }}</span>
+              </div>
+            </sc-for>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 16px;">
+              <span style="font-size:12.5px; color:#8A93A3;">Бичиг баримт</span>
+              <span style="font-size:13px; color:#1F8A5B; font-weight:600;">✓ {{ docCount }} файл орсон</span>
+            </div>
+          </div>
+
+          <label style="display:flex; gap:12px; align-items:flex-start; margin-top:20px; padding:15px 16px; border:1.5px solid {{ tcBorder }}; border-radius:12px; background:{{ tcBg }}; cursor:pointer;">
+            <span style="width:22px; height:22px; border-radius:6px; flex:0 0 auto; border:1.5px solid {{ tcBoxBorder }}; background:{{ tcBoxBg }}; display:flex; align-items:center; justify-content:center; margin-top:1px;">
+              <sc-if value="{{ agreed }}" hint-placeholder-val="{{ false }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </sc-if>
+            </span>
+            <input type="checkbox" checked="{{ agreed }}" onChange="{{ toggleAgree }}" style="display:none;" />
+            <span style="font-size:13px; color:#3A4658; line-height:1.55;">Би <a href="Terms.dc.html" style="color:#C8312C; font-weight:600; text-decoration:none;">Үйлчилгээний нөхцөл ({{ tcVersion }})</a> болон дуудлага худалдааны журамтай танилцаж, хүлээн зөвшөөрч байна. Барьцаа болон төлбөрийн дүрмийг ойлгосон.</span>
+          </label>
+        </div>
+      </sc-if>
+
+      <!-- STEP 5: submitted -->
+      <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:stepIn .3s ease; text-align:center; padding:20px 10px;">
+          <span style="width:74px; height:74px; border-radius:50%; background:#E5F4EC; color:#1F8A5B; display:inline-flex; align-items:center; justify-content:center; margin-bottom:18px;">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <h2 style="margin:0; font-size:23px; font-weight:700; color:#14294A;">Хүсэлт амжилттай илгээгдлээ</h2>
+          <p style="margin:10px auto 0; max-width:420px; font-size:14px; color:#5B6677; line-height:1.6;">Захиргаа таны бүртгэлийг ажлын 1 өдрийн дотор шалгана. Баталгаажмагц мэдэгдэл ирэх бөгөөд та дуудлага худалдаанд оролцох боломжтой болно.</p>
+          <div style="display:flex; gap:12px; justify-content:center; margin-top:26px;">
+            <a href="Catalog.dc.html" style="background:#14294A; color:#fff; text-decoration:none; border-radius:10px; padding:13px 22px; font-size:14px; font-weight:600;">Каталог үзэх</a>
+            <a href="Profile.dc.html" style="background:#FFF; color:#14294A; border:1px solid #CDD4DE; text-decoration:none; border-radius:10px; padding:13px 22px; font-size:14px; font-weight:600;">Бүртгэлийн төлөв</a>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- nav buttons -->
+      <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:28px; padding-top:22px; border-top:1px solid #F0ECE2;">
+          <button onClick="{{ onBack }}" disabled="{{ backDisabled }}" style="display:flex; align-items:center; gap:7px; background:none; border:1px solid {{ backBorder }}; color:{{ backColor }}; border-radius:10px; padding:12px 18px; font-size:14px; font-weight:600; cursor:{{ backCursor }};">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Буцах
+          </button>
+          <span style="font-size:12.5px; color:#A2AAB6;">{{ stepCounter }}</span>
+          <button onClick="{{ onNext }}" disabled="{{ nextDisabled }}" style="display:flex; align-items:center; gap:7px; background:{{ nextBg }}; border:none; color:#fff; border-radius:10px; padding:12px 22px; font-size:14px; font-weight:700; cursor:{{ nextCursor }};">
+            {{ nextText }}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1080,&quot;height&quot;:760}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      step: 1, type: null,
+      ind: { lastName:'', firstName:'', regNo:'', phone:'', email:'', address:'' },
+      leg: { company:'', stateReg:'', tin:'', director:'', phone:'', email:'', address:'' },
+      docs: {},   // key -> {name, size, isImg}
+      dragKey: null,
+      agreed: false,
+      touched: false,
+    };
+    this.tcVersion = 'v2.3 · 2026-01';
+  }
+
+  setField(group, key, val){ this.setState(s => ({ [group]: { ...s[group], [key]: val } })); }
+
+  docDefs(){
+    if (this.state.type === 'legal') return [
+      { key:'cert', label:'Улсын бүртгэлийн гэрчилгээ' },
+      { key:'directorId', label:'Захирлын иргэний үнэмлэх' },
+    ];
+    return [
+      { key:'idFront', label:'Иргэний үнэмлэхний урд тал' },
+      { key:'idBack', label:'Иргэний үнэмлэхний ар тал' },
+    ];
+  }
+
+  fieldDefs(){
+    if (this.state.type === 'legal') return [
+      { key:'company', label:'Байгууллагын нэр', ph:'ХХК-ийн нэр', span:'1 / -1', req:true },
+      { key:'stateReg', label:'Улсын бүртгэлийн дугаар', ph:'9 оронтой', span:'auto', req:true },
+      { key:'tin', label:'Регистрийн дугаар (ТТД)', ph:'7 оронтой', span:'auto', req:true },
+      { key:'director', label:'Захирлын овог нэр', ph:'Бүтэн нэр', span:'1 / -1', req:true },
+      { key:'phone', label:'Холбоо барих утас', ph:'99xxxxxx', span:'auto', req:true },
+      { key:'email', label:'И-мэйл хаяг', ph:'company@mail.mn', span:'auto', req:true },
+      { key:'address', label:'Хаяг', ph:'Аймаг/хот, дүүрэг, хороо', span:'1 / -1', req:true },
+    ];
+    return [
+      { key:'lastName', label:'Овог', ph:'Овог', span:'auto', req:true },
+      { key:'firstName', label:'Нэр', ph:'Нэр', span:'auto', req:true },
+      { key:'regNo', label:'Регистрийн дугаар', ph:'АА00000000', span:'1 / -1', req:true },
+      { key:'phone', label:'Утасны дугаар', ph:'99xxxxxx', span:'auto', req:true },
+      { key:'email', label:'И-мэйл хаяг', ph:'name@mail.mn', span:'auto', req:true },
+      { key:'address', label:'Гэрийн хаяг', ph:'Аймаг/хот, дүүрэг, хороо', span:'1 / -1', req:true },
+    ];
+  }
+
+  curGroup(){ return this.state.type === 'legal' ? 'leg' : 'ind'; }
+
+  validField(key, val){
+    if (!val || !val.trim()) return false;
+    if (key === 'email') return /.+@.+\..+/.test(val);
+    if (key === 'phone') return val.replace(/\D/g,'').length >= 8;
+    return true;
+  }
+
+  detailsValid(){
+    const g = this.state[this.curGroup()];
+    return this.fieldDefs().every(f => this.validField(f.key, g[f.key]));
+  }
+  docsValid(){ return this.docDefs().every(d => this.state.docs[d.key]); }
+
+  handleFile(key, file){
+    if (!file) return;
+    const size = file.size < 1024*1024 ? Math.round(file.size/1024)+' KB' : (file.size/1048576).toFixed(1)+' MB';
+    this.setState(s => ({ docs: { ...s.docs, [key]: { name:file.name, size, isImg:/^image\//.test(file.type) } }, dragKey:null }));
+  }
+
+  next(){
+    const s = this.state;
+    if (s.step === 2 && !this.detailsValid()){ this.setState({ touched:true }); return; }
+    if (s.step === 3 && !this.docsValid()) return;
+    if (s.step === 4){ if (!s.agreed) return; this.setState({ step:5 }); return; }
+    this.setState({ step: Math.min(5, s.step+1), touched:false });
+  }
+  back(){ this.setState(s => ({ step: Math.max(1, s.step-1) })); }
+
+  renderVals(){
+    const s = this.state;
+    const stepDefs = [
+      { n:1, title:'Бүртгэлийн төрөл', hint:'Иргэн / Хуулийн этгээд' },
+      { n:2, title:'Хувийн мэдээлэл', hint:'Үндсэн талбарууд' },
+      { n:3, title:'Бичиг баримт', hint:'Баталгаажуулах файл' },
+      { n:4, title:'Баталгаажуулалт', hint:'Нягтлаад илгээх' },
+    ];
+    const steps = stepDefs.map((d, i) => {
+      const done = s.step > d.n, active = s.step === d.n;
+      return {
+        title:d.title, hint:d.hint,
+        mark: done ? '✓' : String(d.n),
+        dotBg: done ? '#1F8A5B' : (active ? '#14294A' : '#FFF'),
+        dotFg: (done||active) ? '#FFF' : '#A2AAB6',
+        dotBorder: done ? '#1F8A5B' : (active ? '#14294A' : '#D8D2C4'),
+        titleColor: (done||active) ? '#14294A' : '#A2AAB6',
+        weight: active ? 700 : 600,
+        hasLine: i < stepDefs.length-1,
+        lineColor: done ? '#1F8A5B' : '#E6E1D6',
+      };
+    });
+
+    // step 1 selection states
+    const indSel = s.type === 'individual', legSel = s.type === 'legal';
+    const sel = (on) => ({
+      bg: on ? '#FBEFEE' : '#FFF', border: on ? '#C8312C' : '#E6E1D6',
+      iconBg: on ? '#C8312C' : '#EEF1F5', iconFg: on ? '#FFF' : '#14294A',
+      radioBorder: on ? '#C8312C' : '#CDD4DE', radioBg: on ? '#C8312C' : '#FFF',
+      radioMark: on ? '✓' : '', checkColor: on ? '#C8312C' : '#8A93A3',
+      checkText: on ? 'Сонгогдсон' : 'Сонгох',
+    });
+    const si = sel(indSel), sl = sel(legSel);
+
+    // step 2 fields
+    const g = s[this.curGroup()];
+    const fields = (s.step===2 ? this.fieldDefs() : []).map(f => {
+      const val = g[f.key] || '';
+      const bad = s.touched && !this.validField(f.key, val);
+      return {
+        label:f.label, ph:f.ph, value:val, span:f.span, req: f.req ? '*' : '',
+        border: bad ? '#E0908C' : '#E6E1D6',
+        error: bad, errorText: !val.trim() ? 'Заавал бөглөнө' : (f.key==='email'?'И-мэйл буруу байна':(f.key==='phone'?'Утас буруу байна':'Шалгана уу')),
+        onInput: (e) => this.setField(this.curGroup(), f.key, e.target.value),
+      };
+    });
+
+    // step 3 docs
+    const docs = (s.step===3 ? this.docDefs() : []).map(d => {
+      const file = s.docs[d.key];
+      const dragging = s.dragKey === d.key;
+      return {
+        label:d.label,
+        empty: !file, filled: !!file,
+        fileName: file ? file.name : '', fileSize: file ? file.size : '',
+        thumb: file ? (file.isImg ? '🖼' : 'PDF') : '',
+        thumbBg: file && file.isImg ? '#E5F0FB' : '#FBEAE9',
+        dropBorder: dragging ? '#C8312C' : '#D2CCBE',
+        dropBg: dragging ? '#FBEFEE' : '#FAF8F4',
+        onPick: (e) => this.handleFile(d.key, e.target.files && e.target.files[0]),
+        onDragOver: (e) => { e.preventDefault(); if (s.dragKey!==d.key) this.setState({ dragKey:d.key }); },
+        onDragLeave: (e) => { e.preventDefault(); this.setState({ dragKey:null }); },
+        onDrop: (e) => { e.preventDefault(); this.handleFile(d.key, e.dataTransfer.files && e.dataTransfer.files[0]); },
+        onRemove: (e) => { e.preventDefault(); this.setState(st => { const nd={...st.docs}; delete nd[d.key]; return { docs:nd }; }); },
+      };
+    });
+
+    // step 4 review
+    const reviewFields = s.step===4 ? this.fieldDefs().map(f => ({ k:f.label, v: (g[f.key]||'—') })) : [];
+
+    // nav
+    let nextText = 'Үргэлжлүүлэх', nextEnabled = true;
+    if (s.step===1){ nextEnabled = !!s.type; }
+    else if (s.step===2){ nextEnabled = true; }
+    else if (s.step===3){ nextEnabled = this.docsValid(); }
+    else if (s.step===4){ nextText = 'Хүсэлт илгээх'; nextEnabled = s.agreed; }
+
+    return {
+      steps,
+      isStep1: s.step===1, isStep2: s.step===2, isStep3: s.step===3, isStep4: s.step===4, isDone: s.step===5,
+      showNav: s.step <= 4,
+      // step1
+      pickIndividual: () => this.setState({ type:'individual' }),
+      pickLegal: () => this.setState({ type:'legal' }),
+      indBg:si.bg, indBorder:si.border, indIconBg:si.iconBg, indIconFg:si.iconFg, indRadioBorder:si.radioBorder, indRadioBg:si.radioBg, indRadioMark:si.radioMark, indCheckColor:si.checkColor, indCheckText:si.checkText,
+      legBg:sl.bg, legBorder:sl.border, legIconBg:sl.iconBg, legIconFg:sl.iconFg, legRadioBorder:sl.radioBorder, legRadioBg:sl.radioBg, legRadioMark:sl.radioMark, legCheckColor:sl.checkColor, legCheckText:sl.checkText,
+      // step2
+      detailsTitle: s.type==='legal' ? 'Байгууллагын мэдээлэл' : 'Хувийн мэдээлэл',
+      fields,
+      // step3
+      docs,
+      // step4
+      reviewTypeLabel: s.type==='legal' ? 'Хуулийн этгээд' : 'Иргэн',
+      reviewFields, docCount: Object.keys(s.docs).length,
+      goStep1: () => this.setState({ step:1 }),
+      agreed: s.agreed, toggleAgree: () => this.setState(st => ({ agreed: !st.agreed })),
+      tcVersion: this.tcVersion,
+      tcBorder: s.agreed ? '#C7E5D5' : '#E6E1D6', tcBg: s.agreed ? '#F2FAF6' : '#FAF8F4',
+      tcBoxBorder: s.agreed ? '#1F8A5B' : '#CDD4DE', tcBoxBg: s.agreed ? '#1F8A5B' : '#FFF',
+      // nav
+      onBack: () => this.back(), onNext: () => this.next(),
+      backDisabled: s.step===1, backBorder: s.step===1?'#F0ECE2':'#CDD4DE', backColor: s.step===1?'#C7CFD9':'#14294A', backCursor: s.step===1?'default':'pointer',
+      nextText, nextDisabled: !nextEnabled, nextBg: nextEnabled?'#C8312C':'#E0A9A6', nextCursor: nextEnabled?'pointer':'not-allowed',
+      stepCounter: 'Алхам ' + s.step + ' / 4',
+    };
+  }
+}
+</script>
+</body>
+</html>

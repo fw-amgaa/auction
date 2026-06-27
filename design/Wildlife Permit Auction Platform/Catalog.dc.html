@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#F5F2EC; }
+    select{ font-family:inherit; }
+    @keyframes livedot{ 0%{ opacity:1; transform:scale(1);} 50%{ opacity:.35; transform:scale(.7);} 100%{ opacity:1; transform:scale(1);} }
+    @keyframes cardLiveRing{ 0%,100%{ box-shadow:0 1px 3px rgba(20,41,74,.08), 0 0 0 1px rgba(200,49,44,.35);} 50%{ box-shadow:0 1px 3px rgba(20,41,74,.08), 0 0 0 3px rgba(200,49,44,.18);} }
+    @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#F5F2EC; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436;">
+
+  <dc-import name="AppNav" active="catalog" balance="{{ balance }}" notif="3" hint-size="100%,66px"></dc-import>
+
+  <div style="max-width:1280px; margin:0 auto; padding:30px 26px 56px;">
+
+    <!-- header -->
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div>
+        <h1 style="margin:0; font-size:28px; font-weight:700; color:#14294A; letter-spacing:-.01em;">Дуудлага худалдааны каталог</h1>
+        <p style="margin:6px 0 0; font-size:14px; color:#5B6677;">Зэрлэг ан амьтан агнах эрхийн албан ёсны дуудлага худалдаа. Амьтны төрлөөр сонгож, шууд явагдаж буй танхимд оролцоно уу.</p>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; background:#FFF; border:1px solid #E6E1D6; border-radius:9px; padding:8px 13px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:#C8312C; display:inline-block; animation:livedot 1.5s infinite;"></span>
+        <span style="font-size:13px; color:#3A4658;"><strong style="color:#C8312C; font-weight:700;">{{ liveCount }}</strong> лот шууд явагдаж байна</span>
+      </div>
+    </div>
+
+    <!-- species rail -->
+    <div data-tour="species" style="margin-top:22px; display:flex; gap:9px; overflow-x:auto; padding-bottom:4px;">
+      <button onClick="{{ onAll }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid {{ c.all.bd }}; background:{{ c.all.bg }}; color:{{ c.all.fg }}; cursor:pointer; font-size:13.5px; font-weight:600;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Бүгд
+      </button>
+      <button onClick="{{ onUgalz }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid {{ c.ugalz.bd }}; background:{{ c.ugalz.bg }}; color:{{ c.ugalz.fg }}; cursor:pointer; font-size:13.5px; font-weight:600;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="3.2"/><path d="M9.5 13C6 12 3.5 8 5 4c2 1.5 3.5 4 4.5 7"/><path d="M14.5 13C18 12 20.5 8 19 4c-2 1.5-3.5 4-4.5 7"/></svg>
+        Угалз
+      </button>
+      <button onClick="{{ onTex }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid {{ c.tex.bd }}; background:{{ c.tex.bg }}; color:{{ c.tex.fg }}; cursor:pointer; font-size:13.5px; font-weight:600;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="3"/><path d="M10 14C8 9 9 4 11 2"/><path d="M14 14C16 9 15 4 13 2"/></svg>
+        Тэх
+      </button>
+      <button onClick="{{ onYangir }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid {{ c.yangir.bd }}; background:{{ c.yangir.bg }}; color:{{ c.yangir.fg }}; cursor:pointer; font-size:13.5px; font-weight:600;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-4"/><circle cx="12" cy="13" r="3.4"/><path d="M9.5 11C8 8 8 5 9.5 4"/><path d="M14.5 11C16 8 16 5 14.5 4"/></svg>
+        Янгир
+      </button>
+      <button onClick="{{ onCho }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid {{ c.cho.bd }}; background:{{ c.cho.bg }}; color:{{ c.cho.fg }}; cursor:pointer; font-size:13.5px; font-weight:600;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l2.5 4M18 4l-2.5 4"/><path d="M8 8c-1 2-1 5 0 7l4 4 4-4c1-2 1-5 0-7"/><path d="M10.5 12h.01M13.5 12h.01"/></svg>
+        Чоно
+      </button>
+      <button onClick="{{ onZagas }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid {{ c.zagas.bd }}; background:{{ c.zagas.bg }}; color:{{ c.zagas.fg }}; cursor:pointer; font-size:13.5px; font-weight:600;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c3-4 9-4 13 0-4 4-10 4-13 0z"/><path d="M16 12l5-3v6z"/><path d="M7 11.5h.01"/></svg>
+        Загас
+      </button>
+      <button onClick="{{ onGahai }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid {{ c.gahai.bd }}; background:{{ c.gahai.bg }}; color:{{ c.gahai.fg }}; cursor:pointer; font-size:13.5px; font-weight:600;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10c0-3 3-5 8-5s8 2 8 5-3 6-8 6-8-3-8-6z"/><ellipse cx="12" cy="13" rx="3" ry="2"/><path d="M11 13h.01M13 13h.01"/><path d="M6 7 4 4M18 7l2-3"/></svg>
+        Гахай
+      </button>
+      <button onClick="{{ onShuvuu }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid {{ c.shuvuu.bd }}; background:{{ c.shuvuu.bg }}; color:{{ c.shuvuu.fg }}; cursor:pointer; font-size:13.5px; font-weight:600;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13c4-1 6-3 8-7 2 4 4 6 8 7-3 2-5 5-8 5"/><path d="M11 18l-3 3"/></svg>
+        Шувуу
+      </button>
+      <button onClick="{{ onBulga }}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid {{ c.bulga.bd }}; background:{{ c.bulga.bg }}; color:{{ c.bulga.fg }}; cursor:pointer; font-size:13.5px; font-weight:600;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a2.5 2.5 0 1 1 5 0c3 0 9 1 9 6 0 3-3 4-7 4H8c-3 0-5-2-5-5 0-3 2-3 2-5z"/><path d="M7 6.5h.01"/></svg>
+        Булга
+      </button>
+    </div>
+
+    <!-- filter / sort bar -->
+    <div style="margin-top:18px; background:#FFF; border:1px solid #E6E1D6; border-radius:12px; padding:13px 15px; display:flex; align-items:center; gap:11px; flex-wrap:wrap;">
+      <div style="position:relative; flex:1 1 230px; min-width:180px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A3" stroke-width="1.9" stroke-linecap="round" style="position:absolute; left:12px; top:50%; transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input value="{{ q }}" onInput="{{ onSearch }}" placeholder="Код эсвэл нэрээр хайх (ж: U9, Угалз)" style="width:100%; height:42px; padding:0 12px 0 38px; border-radius:9px; border:1px solid #E6E1D6; background:#FAF8F4; font-size:13.5px; color:#1A2436; outline:none;" />
+      </div>
+      <select onChange="{{ onAimag }}" style="height:42px; padding:0 12px; border-radius:9px; border:1px solid #E6E1D6; background:#FAF8F4; font-size:13.5px; color:#3A4658; cursor:pointer;">
+        <option value="all">Бүх аймаг</option>
+        <sc-for list="{{ aimags }}" as="a" hint-placeholder-count="6">
+          <option value="{{ a }}">{{ a }}</option>
+        </sc-for>
+      </select>
+      <div style="display:flex; gap:6px; background:#F3F0E9; border:1px solid #E6E1D6; border-radius:9px; padding:4px;">
+        <sc-for list="{{ statusTabs }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onClick }}" style="padding:7px 13px; border-radius:6px; border:none; background:{{ t.bg }}; color:{{ t.fg }}; font-size:13px; font-weight:{{ t.weight }}; cursor:pointer;">{{ t.label }}</button>
+        </sc-for>
+      </div>
+      <select onChange="{{ onSort }}" style="height:42px; padding:0 12px; border-radius:9px; border:1px solid #E6E1D6; background:#FAF8F4; font-size:13.5px; color:#3A4658; cursor:pointer; margin-left:auto;">
+        <option value="ending">Эрэмбэ: Дуусах дөхсөн</option>
+        <option value="priceAsc">Үнэ: Багаас их</option>
+        <option value="priceDesc">Үнэ: Ихээс бага</option>
+      </select>
+    </div>
+
+    <!-- result count -->
+    <div style="margin-top:18px; display:flex; align-items:center; justify-content:space-between;">
+      <span style="font-size:13.5px; color:#5B6677;"><strong style="color:#14294A;">{{ resultCount }}</strong> лот олдлоо</span>
+    </div>
+
+    <!-- lot grid -->
+    <div data-tour="lots" style="margin-top:14px; display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:18px;">
+      <sc-for list="{{ cards }}" as="lot" hint-placeholder-count="6">
+        <div style="background:#FFF; border:1px solid #E6E1D6; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; animation:{{ lot.ringAnim }}; box-shadow:0 1px 3px rgba(20,41,74,.08);">
+          <!-- image -->
+          <div style="position:relative; height:168px; background-image:repeating-linear-gradient(135deg, {{ lot.stripeA }} 0 12px, {{ lot.stripeB }} 12px 24px); display:flex; align-items:flex-end; padding:13px;">
+            <div style="position:absolute; top:12px; left:12px; display:flex; gap:7px;">
+              <span style="background:rgba(255,255,255,.92); color:#14294A; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; padding:4px 9px; border-radius:7px;">{{ lot.code }}</span>
+            </div>
+            <div style="position:absolute; top:12px; right:12px; display:flex; align-items:center; gap:7px;">
+              <span style="display:flex; align-items:center; gap:5px; background:{{ lot.statusBg }}; color:{{ lot.statusFg }}; font-size:11px; font-weight:700; letter-spacing:.04em; padding:4px 9px; border-radius:7px;">
+                <sc-if value="{{ lot.isLive }}" hint-placeholder-val="{{ false }}"><span style="width:6px; height:6px; border-radius:50%; background:{{ lot.statusFg }}; display:inline-block; animation:livedot 1.4s infinite;"></span></sc-if>
+                {{ lot.statusLabel }}
+              </span>
+              <button onClick="{{ lot.onWatch }}" title="Ажиглах" style="width:30px; height:30px; border-radius:8px; border:none; background:rgba(255,255,255,.92); cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="{{ lot.starFill }}" stroke="{{ lot.starStroke }}" stroke-width="1.6" stroke-linejoin="round"><path d="m12 3 2.6 5.8 6.4.6-4.8 4.3 1.4 6.3L12 17l-5.6 3.3 1.4-6.3L3 9.4l6.4-.6z"/></svg>
+              </button>
+            </div>
+            <div style="position:relative; color:#fff;">
+              <div style="font-size:17px; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.35);">{{ lot.speciesLabel }}</div>
+              <div style="font-size:11.5px; font-style:italic; opacity:.92; text-shadow:0 1px 4px rgba(0,0,0,.35);">{{ lot.latin }}</div>
+            </div>
+          </div>
+          <!-- body -->
+          <div style="padding:15px; display:flex; flex-direction:column; gap:11px; flex:1;">
+            <div style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:#5B6677;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A93A3" stroke-width="1.8"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              {{ lot.aimag }}
+            </div>
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
+              <div>
+                <div style="font-size:11px; color:#8A93A3; font-weight:500;">{{ lot.priceLabel }}</div>
+                <div style="font-size:20px; font-weight:700; color:#14294A; font-variant-numeric:tabular-nums; margin-top:1px;">{{ lot.priceText }}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:11px; color:#8A93A3; font-weight:500;">{{ lot.countdownLabel }}</div>
+                <div style="font-size:14px; font-weight:600; color:{{ lot.countdownColor }}; font-variant-numeric:tabular-nums; margin-top:2px;">{{ lot.countdownText }}</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:9px; margin-top:auto; padding-top:3px;">
+              <a href="{{ lot.ctaHref }}" style="flex:1; text-align:center; padding:11px; border-radius:9px; background:{{ lot.ctaBg }}; color:{{ lot.ctaFg }}; border:1px solid {{ lot.ctaBorder }}; text-decoration:none; font-size:13.5px; font-weight:600;">{{ lot.ctaText }}</a>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- empty state -->
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:14px; background:#FFF; border:1px dashed #D8D2C4; border-radius:14px; padding:54px 20px; text-align:center;">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#C7BFAE" stroke-width="1.5" style="margin:0 auto;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <div style="font-size:16px; font-weight:600; color:#3A4658; margin-top:14px;">Тохирох лот олдсонгүй</div>
+        <div style="font-size:13.5px; color:#8A93A3; margin-top:5px;">Шүүлтүүрээ өөрчилж эсвэл бусад амьтны төрлийг үзнэ үү.</div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+
+  <!-- APP GUIDED TOUR -->
+  <sc-if value="{{ tourActive }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; z-index:80; pointer-events:none; font-family:'IBM Plex Sans',system-ui,sans-serif;">
+      <sc-if value="{{ spotReady }}" hint-placeholder-val="{{ false }}">
+        <div style="position:fixed; left:{{ spotX }}; top:{{ spotY }}; width:{{ spotW }}; height:{{ spotH }}; border-radius:14px; box-shadow:0 0 0 9999px rgba(14,30,56,.62); border:2px solid #C8312C; transition:all .26s cubic-bezier(.4,0,.2,1); pointer-events:none;"></div>
+      </sc-if>
+      <div style="position:fixed; left:{{ tipX }}; top:{{ tipY }}; width:312px; max-width:calc(100vw - 24px); background:#FFF; border:1px solid #E6E1D6; border-radius:15px; padding:18px; box-shadow:0 24px 60px rgba(14,30,56,.3); pointer-events:auto; transition:all .26s cubic-bezier(.4,0,.2,1);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <span style="font-size:11px; font-weight:700; letter-spacing:.06em; color:#C8312C; text-transform:uppercase;">{{ tourCounter }}</span>
+          <button onClick="{{ skipTour }}" style="background:none; border:none; color:#A2AAB6; cursor:pointer; font-size:12px;">Алгасах ✕</button>
+        </div>
+        <div style="font-size:17px; font-weight:700; color:#14294A;">{{ tourTitle }}</div>
+        <div style="font-size:13.5px; color:#5B6677; line-height:1.5; margin-top:7px;">{{ tourBody }}</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
+          <div style="display:flex; gap:6px;">
+            <sc-for list="{{ tourDots }}" as="d" hint-placeholder-count="5">
+              <span style="width:7px; height:7px; border-radius:50%; background:{{ d.color }};"></span>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <sc-if value="{{ tourHasBack }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ tourBack }}" style="background:none; border:1px solid #CDD4DE; color:#3A4658; border-radius:9px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">Буцах</button>
+            </sc-if>
+            <button onClick="{{ tourNext }}" style="background:#C8312C; border:none; color:#fff; border-radius:9px; padding:8px 18px; font-size:13px; font-weight:700; cursor:pointer;">{{ tourNextText }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const now = Date.now();
+    this.state = {
+      now,
+      species: 'all', status: 'all', sort: 'ending', q: '', aimag: 'all',
+      balance: 9000000,
+      watch: {},
+      lots: [
+        { id:'u9',  code:'Угалз:U9',  sp:'ugalz', label:'Угалз', latin:'Ovis ammon (argali)', aimag:'Баян-Өлгий', reserve:5300000, cur:5830000, bidders:7, st:'live', t:now+205000 },
+        { id:'i4',  code:'Тэх:I4',    sp:'tex',   label:'Тэх', latin:'Capra sibirica', aimag:'Ховд', reserve:3800000, cur:4120000, bidders:4, st:'live', t:now+742000 },
+        { id:'u12', code:'Угалз:U12', sp:'ugalz', label:'Угалз', latin:'Ovis ammon (argali)', aimag:'Завхан', reserve:5800000, st:'upcoming', t:now+2700000 },
+        { id:'s8',  code:'Шувуу:S8',  sp:'shuvuu',label:'Шонхор шувуу', latin:'Falco cherrug', aimag:'Дорнод', reserve:1500000, st:'upcoming', t:now+3600000 },
+        { id:'y2',  code:'Янгир:Y2',  sp:'yangir',label:'Янгир', latin:'Capra sibirica', aimag:'Говь-Алтай', reserve:2400000, st:'upcoming', t:now+7200000 },
+        { id:'f3',  code:'Загас:F3',  sp:'zagas', label:'Тул загас', latin:'Hucho taimen', aimag:'Сэлэнгэ', reserve:600000, st:'upcoming', t:now+18000000 },
+        { id:'w7',  code:'Чоно:W7',   sp:'cho',   label:'Чоно', latin:'Canis lupus', aimag:'Хөвсгөл', reserve:900000, st:'upcoming', t:now+93600000 },
+        { id:'b5',  code:'Гахай:B5',  sp:'gahai', label:'Зэрлэг гахай', latin:'Sus scrofa', aimag:'Хэнтий', reserve:750000, final:1120000, won:true, st:'ended', t:now-86400000 },
+        { id:'sa1', code:'Булга:Sa1', sp:'bulga', label:'Булга', latin:'Martes zibellina', aimag:'Хөвсгөл', reserve:450000, final:520000, won:false, st:'ended', t:now-172800000 },
+      ],
+    };
+    // pre-watch a couple
+    this.state.watch = { u9:true, y2:true };
+    this.state.tour = null;
+    this.state.spot = null;
+    this.state.vw = 1280;
+    this.state.vh = 800;
+    this.tourSteps = [
+      { sel:'[data-tour="species"]', title:'Амьтны төрлөөр сонгох', body:'Эндээс хүссэн амьтны төрлөө шүүж үзнэ — Угалз, Тэх, Чоно гэх мэт.' },
+      { sel:'[data-tour="lots"] > *:first-child', title:'Лотын карт', body:'Төлөв, үнэ, үлдсэн хугацааг нэг харцаар. ШУУД лотууд улаанаар цохилно.' },
+      { sel:'[data-tour="balance"]', title:'Таны үлдэгдэл', body:'Санал өгөх лимит энд харагдана. Санал өгөхөд барьцаалагдаж, давуулбал буцна.' },
+      { sel:'[data-tour="notifications"]', title:'Мэдэгдэл', body:'Таныг давуулсан тэр даруйд бид мэдэгдэнэ. Уншаагүй мэдэгдэл улаанаар тоологдоно.' },
+      { sel:'a[href="Help.dc.html"]', title:'Тусламж', body:'Энэ танилцуулгыг хүссэн үедээ Тусламж хэсгээс дахин үзэх боломжтой.' },
+    ];
+  }
+  componentDidMount(){
+    this._t = setInterval(() => this.setState({ now: Date.now() }), 1000);
+    this.setState({ vw: window.innerWidth, vh: window.innerHeight });
+    this._onResize = () => { this.setState({ vw: window.innerWidth, vh: window.innerHeight }); if (this.state.tour != null) this.computeSpot(); };
+    window.addEventListener('resize', this._onResize);
+    let forced = false;
+    try { forced = new URLSearchParams(location.search).get('tour') === '1'; } catch(e){}
+    let seen = false;
+    try { seen = !!localStorage.getItem('wpa_app_tour'); } catch(e){}
+    if (forced || !seen) this._tourT = setTimeout(() => this.startTour(), 900);
+  }
+  componentWillUnmount(){ clearInterval(this._t); clearTimeout(this._tourT); if (this._onResize) window.removeEventListener('resize', this._onResize); }
+
+  startTour(){ this.setState({ tour: 0 }, () => setTimeout(() => this.computeSpot(), 60)); }
+  computeSpot(){
+    const i = this.state.tour; if (i == null) return;
+    const el = document.querySelector(this.tourSteps[i].sel);
+    if (!el){ this.setState({ spot: null }); return; }
+    const r = el.getBoundingClientRect(); const pad = 7;
+    this.setState({ spot: { x:r.left-pad, y:r.top-pad, w:r.width+pad*2, h:r.height+pad*2 } });
+  }
+  tourNext(){ const i=this.state.tour; if (i>=this.tourSteps.length-1){ this.endTour(); return; } this.setState({ tour:i+1, spot:null }, ()=>setTimeout(()=>this.computeSpot(),30)); }
+  tourBack(){ const i=this.state.tour; if (i<=0) return; this.setState({ tour:i-1, spot:null }, ()=>setTimeout(()=>this.computeSpot(),30)); }
+  endTour(){ try { localStorage.setItem('wpa_app_tour','1'); } catch(e){} this.setState({ tour:null, spot:null }); }
+
+  fmt(n){ return Math.round(n).toLocaleString('en-US') + '₮'; }
+  setSp(k){ this.setState({ species: k }); }
+  setStatus(k){ this.setState({ status: k }); }
+
+  dur(ms){
+    if (ms <= 0) return '—';
+    const s = Math.floor(ms/1000);
+    if (s < 3600) return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+    if (s < 86400){ const h=Math.floor(s/3600), m=Math.floor((s%3600)/60); return h+'ц '+m+'м'; }
+    const d=Math.floor(s/86400), h=Math.floor((s%86400)/3600); return d+' өдөр '+h+'ц';
+  }
+
+  stripe(sp){
+    const map = {
+      ugalz:['#2C4A6B','#26405F'], tex:['#274463','#1F3A56'], yangir:['#2B4A52','#23404A'],
+      cho:['#3A3F52','#30354A'], zagas:['#1F4A56','#193E4A'], gahai:['#4A3A33','#3E302A'],
+      shuvuu:['#3F3552','#352C4A'], bulga:['#4A3E2E','#3E3326'],
+    };
+    return map[sp] || ['#26405F','#1F3753'];
+  }
+
+  renderVals(){
+    const s = this.state;
+    const selStyle = (k) => k === s.species
+      ? { fg:'#C8312C', bg:'#FBEFEE', bd:'#E8B7B4' }
+      : { fg:'#3A4658', bg:'#FFFFFF', bd:'#E6E1D6' };
+    const c = { all:selStyle('all'), ugalz:selStyle('ugalz'), tex:selStyle('tex'), yangir:selStyle('yangir'),
+      cho:selStyle('cho'), zagas:selStyle('zagas'), gahai:selStyle('gahai'), shuvuu:selStyle('shuvuu'), bulga:selStyle('bulga') };
+
+    const statusDefs = [
+      { key:'all', label:'Бүгд' }, { key:'live', label:'Шууд' },
+      { key:'upcoming', label:'Удахгүй' }, { key:'ended', label:'Дууссан' },
+    ];
+    const statusTabs = statusDefs.map(d => {
+      const on = d.key === s.status;
+      return { label:d.label, bg: on ? '#FFFFFF':'transparent', fg: on ? '#14294A':'#5B6677', weight: on ? 700:500, onClick: () => this.setStatus(d.key) };
+    });
+
+    const q = s.q.trim().toLowerCase();
+    let list = s.lots.filter(l =>
+      (s.species === 'all' || l.sp === s.species) &&
+      (s.status === 'all' || l.st === s.status) &&
+      (s.aimag === 'all' || l.aimag === s.aimag) &&
+      (!q || l.code.toLowerCase().includes(q) || l.label.toLowerCase().includes(q) || l.latin.toLowerCase().includes(q))
+    );
+    const rank = { live:0, upcoming:1, ended:2 };
+    if (s.sort === 'ending') list = list.slice().sort((a,b)=> (rank[a.st]-rank[b.st]) || (a.t-b.t));
+    else if (s.sort === 'priceAsc') list = list.slice().sort((a,b)=> (a.cur||a.reserve)-(b.cur||b.reserve));
+    else if (s.sort === 'priceDesc') list = list.slice().sort((a,b)=> (b.cur||b.reserve)-(a.cur||a.reserve));
+
+    const cards = list.map(l => {
+      const [stripeA, stripeB] = this.stripe(l.sp);
+      const live = l.st === 'live', up = l.st === 'upcoming', ended = l.st === 'ended';
+      const remain = l.t - s.now;
+      const watched = !!s.watch[l.id];
+      let statusLabel, statusBg, statusFg;
+      if (live){ statusLabel='ШУУД'; statusBg='#C8312C'; statusFg='#FFFFFF'; }
+      else if (up){ statusLabel='УДАХГҮЙ'; statusBg='rgba(20,41,74,.85)'; statusFg='#FFFFFF'; }
+      else { statusLabel='ДУУССАН'; statusBg='rgba(90,102,119,.9)'; statusFg='#FFFFFF'; }
+
+      let priceLabel, priceText, cdLabel, cdText, cdColor;
+      if (live){ priceLabel='Одоогийн үнэ'; priceText=this.fmt(l.cur); cdLabel='Дуусахад'; cdText=this.dur(remain); cdColor= remain < 300000 ? '#C8312C' : '#14294A'; }
+      else if (up){ priceLabel='Босго үнэ'; priceText=this.fmt(l.reserve); cdLabel='Эхлэхэд'; cdText=this.dur(remain); cdColor='#5B6677'; }
+      else { priceLabel = l.won ? 'Эцсийн үнэ' : 'Эцсийн үнэ'; priceText=this.fmt(l.final); cdLabel='Төлөв'; cdText = l.won ? 'Та хожсон' : 'Дууссан'; cdColor = l.won ? '#1F8A5B' : '#8A93A3'; }
+
+      let ctaText, ctaHref, ctaBg, ctaFg, ctaBorder;
+      if (live){ ctaText='Танхимд орох'; ctaHref='Live%20Bidding%20Room.dc.html'; ctaBg='#C8312C'; ctaFg='#FFFFFF'; ctaBorder='#C8312C'; }
+      else if (up){ ctaText='Дэлгэрэнгүй'; ctaHref='Lot%20Detail.dc.html'; ctaBg='#FFFFFF'; ctaFg='#14294A'; ctaBorder='#CDD4DE'; }
+      else { ctaText='Үр дүн харах'; ctaHref='Lot%20Detail.dc.html'; ctaBg='#F3F0E9'; ctaFg='#5B6677'; ctaBorder='#E6E1D6'; }
+
+      return {
+        id:l.id, code:l.code, speciesLabel:l.label, latin:l.latin, aimag:l.aimag,
+        stripeA, stripeB, isLive:live,
+        statusLabel, statusBg, statusFg,
+        ringAnim: live ? 'cardLiveRing 2s ease-in-out infinite' : 'none',
+        priceLabel, priceText, countdownLabel:cdLabel, countdownText:cdText, countdownColor:cdColor,
+        ctaText, ctaHref, ctaBg, ctaFg, ctaBorder,
+        starFill: watched ? '#E0A11E' : 'none',
+        starStroke: watched ? '#E0A11E' : '#8A93A3',
+        onWatch: () => this.setState(st => ({ watch: { ...st.watch, [l.id]: !st.watch[l.id] } })),
+      };
+    });
+
+    const aimags = [...new Set(s.lots.map(l => l.aimag))].sort();
+
+    return {
+      balance: s.balance,
+      liveCount: s.lots.filter(l => l.st === 'live').length,
+      c, statusTabs, aimags, q: s.q,
+      cards, resultCount: cards.length, isEmpty: cards.length === 0,
+      onAll: () => this.setSp('all'), onUgalz: () => this.setSp('ugalz'), onTex: () => this.setSp('tex'),
+      onYangir: () => this.setSp('yangir'), onCho: () => this.setSp('cho'), onZagas: () => this.setSp('zagas'),
+      onGahai: () => this.setSp('gahai'), onShuvuu: () => this.setSp('shuvuu'), onBulga: () => this.setSp('bulga'),
+      onSearch: (e) => this.setState({ q: e.target.value }),
+      onAimag: (e) => this.setState({ aimag: e.target.value }),
+      onSort: (e) => this.setState({ sort: e.target.value }),
+      // app tour
+      ...this.tourVals(),
+    };
+  }
+
+  tourVals(){
+    const s = this.state;
+    const active = s.tour != null;
+    const step = active ? this.tourSteps[s.tour] : null;
+    const sp = s.spot;
+    let tipX = 24, tipY = 100;
+    if (sp){
+      const below = sp.y + sp.h + 14;
+      const placeBelow = below < s.vh - 190;
+      tipY = placeBelow ? below : Math.max(14, sp.y - 188);
+      tipX = Math.min(Math.max(14, sp.x), s.vw - 326);
+    }
+    return {
+      tourActive: active,
+      spotReady: !!sp,
+      spotX: sp ? sp.x+'px':'0', spotY: sp ? sp.y+'px':'0', spotW: sp ? sp.w+'px':'0', spotH: sp ? sp.h+'px':'0',
+      tipX: tipX+'px', tipY: tipY+'px',
+      tourCounter: active ? ('Алхам ' + (s.tour+1) + ' / ' + this.tourSteps.length) : '',
+      tourTitle: step ? step.title : '',
+      tourBody: step ? step.body : '',
+      tourDots: this.tourSteps.map((_,i)=>({ color: i===s.tour ? '#C8312C' : '#E0DACD' })),
+      tourHasBack: s.tour > 0,
+      tourNextText: active && s.tour === this.tourSteps.length-1 ? 'Дуусгах' : 'Цааш',
+      tourNext: () => this.tourNext(),
+      tourBack: () => this.tourBack(),
+      skipTour: () => this.endTour(),
+    };
+  }
+}
+</script>
+</body>
+</html>

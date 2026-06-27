@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#EEF1F5; }
+    @keyframes livedot{ 0%{ opacity:1;} 50%{ opacity:.3;} 100%{ opacity:1;} }
+    @keyframes rowFlash{ 0%{ background:#FBF3DF;} 100%{ background:transparent;} }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; display:flex; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436; background:#EEF1F5;">
+
+  <dc-import name="AdminNav" active="monitor" hint-size="228px,100vh"></dc-import>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <!-- topbar -->
+    <div style="height:60px; background:#FFF; border-bottom:1px solid #E1E5EC; display:flex; align-items:center; justify-content:space-between; padding:0 24px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <h1 style="margin:0; font-size:18px; font-weight:700; color:#14294A;">Шууд хяналт</h1>
+        <span style="display:flex; align-items:center; gap:6px; background:#FBEAE9; color:#C8312C; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:7px;"><span style="width:7px; height:7px; border-radius:50%; background:#C8312C; animation:livedot 1.4s infinite;"></span>{{ liveCount }} ШУУД</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; font-size:12.5px; color:#5B6677;">
+        <span style="display:flex; align-items:center; gap:6px;"><span style="width:7px; height:7px; border-radius:50%; background:#1F8A5B; animation:livedot 1.6s infinite;"></span>Сервер холбогдсон</span>
+        <span style="font-variant-numeric:tabular-nums;">{{ clock }}</span>
+      </div>
+    </div>
+
+    <!-- KPI strip -->
+    <div style="padding:18px 24px 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px;">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+        <div style="background:#FFF; border:1px solid #E1E5EC; border-radius:12px; padding:15px 17px;">
+          <div style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:#8A93A3; font-weight:600;"><span style="color:{{ k.iconColor }};">{{ k.icon }}</span>{{ k.label }}</div>
+          <div style="font-size:24px; font-weight:700; color:#14294A; font-variant-numeric:tabular-nums; margin-top:7px;">{{ k.value }}</div>
+          <div style="font-size:11.5px; color:{{ k.deltaColor }}; margin-top:3px;">{{ k.delta }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="padding:18px 24px 28px; display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap;">
+
+      <!-- live auctions table -->
+      <div style="flex:1 1 560px; min-width:340px; background:#FFF; border:1px solid #E1E5EC; border-radius:14px; overflow:hidden;">
+        <div style="padding:14px 18px; border-bottom:1px solid #EBEEF3; display:flex; align-items:center; justify-content:space-between;">
+          <h2 style="margin:0; font-size:14.5px; font-weight:700; color:#14294A;">Идэвхтэй дуудлагууд</h2>
+          <span style="font-size:11.5px; color:#8A93A3;">Бодит цагийн шинэчлэл</span>
+        </div>
+        <!-- header row -->
+        <div style="display:grid; grid-template-columns:88px 1fr 132px 96px 84px; gap:10px; padding:9px 18px; background:#F7F8FA; border-bottom:1px solid #EBEEF3; font-size:11px; font-weight:700; color:#8A93A3; letter-spacing:.03em; text-transform:uppercase;">
+          <span>Код</span><span>Тэргүүлэгч</span><span style="text-align:right;">Одоогийн үнэ</span><span style="text-align:right;">Үлдсэн</span><span style="text-align:right;">Хурд</span>
+        </div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+          <div onClick="{{ r.onSelect }}" style="display:grid; grid-template-columns:88px 1fr 132px 96px 84px; gap:10px; padding:13px 18px; border-bottom:1px solid #F1F3F6; cursor:pointer; align-items:center; background:{{ r.rowBg }}; border-left:3px solid {{ r.accent }};" style-hover="background:#F7F8FA;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; color:#14294A;">{{ r.code }}</span>
+            <span style="display:flex; align-items:center; gap:8px; min-width:0;">
+              <span style="width:24px; height:24px; border-radius:50%; background:#EEF1F5; color:#14294A; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex:0 0 auto;">{{ r.bidderInitial }}</span>
+              <span style="font-size:12.5px; color:#3A4658; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.bidder }}</span>
+            </span>
+            <span key="{{ r.priceKey }}" style="text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; color:#14294A; font-variant-numeric:tabular-nums; animation:{{ r.priceAnim }};">{{ r.price }}</span>
+            <span style="text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; color:{{ r.timeColor }}; font-variant-numeric:tabular-nums;">{{ r.time }}</span>
+            <span style="text-align:right; display:flex; align-items:center; justify-content:flex-end; gap:5px;">
+              <span style="font-size:12px; font-weight:600; color:#5B6677; font-variant-numeric:tabular-nums;">{{ r.velocity }}</span>
+              <span style="display:flex; gap:1.5px; align-items:flex-end; height:16px;">
+                <sc-for list="{{ r.spark }}" as="b" hint-placeholder-count="5">
+                  <span style="width:3px; height:{{ b.h }}; background:{{ b.color }}; border-radius:1px;"></span>
+                </sc-for>
+              </span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- focus panel -->
+      <div style="flex:1 1 300px; min-width:280px; background:#0E1E38; border-radius:14px; padding:20px; color:#fff;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600;">{{ focus.code }}</span>
+          <span style="display:flex; align-items:center; gap:6px; background:rgba(200,49,44,.18); color:#FF8B86; font-size:11px; font-weight:700; padding:4px 9px; border-radius:7px;"><span style="width:6px; height:6px; border-radius:50%; background:#FF5A5F; animation:livedot 1.4s infinite;"></span>ШУУД</span>
+        </div>
+        <div style="font-size:12px; color:#9DB0CC; margin-top:3px;">{{ focus.species }} · {{ focus.aimag }}</div>
+
+        <div style="margin-top:18px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:11px; padding:15px;">
+          <div style="font-size:11px; color:#9DB0CC; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Одоогийн үнэ</div>
+          <div style="display:flex; align-items:baseline; gap:3px; margin-top:5px;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:30px; font-weight:600; font-variant-numeric:tabular-nums;">{{ focus.price }}</span>
+            <span style="font-size:18px; color:#9DB0CC;">₮</span>
+          </div>
+          <div style="font-size:12px; color:#C7D4E6; margin-top:6px;">Тэргүүлэгч: <strong>{{ focus.bidder }}</strong></div>
+        </div>
+
+        <div style="display:flex; gap:11px; margin-top:11px;">
+          <div style="flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:11px; padding:13px 14px;">
+            <div style="font-size:10.5px; color:#9DB0CC; font-weight:600;">Үлдсэн</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:{{ focus.timeColor }}; margin-top:3px; font-variant-numeric:tabular-nums;">{{ focus.time }}</div>
+          </div>
+          <div style="flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:11px; padding:13px 14px;">
+            <div style="font-size:10.5px; color:#9DB0CC; font-weight:600;">Оролцогч</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; margin-top:3px; font-variant-numeric:tabular-nums;">{{ focus.bidders }}</div>
+          </div>
+        </div>
+
+        <!-- velocity chart -->
+        <div style="margin-top:11px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:11px; padding:14px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:11px;">
+            <span style="font-size:11px; color:#9DB0CC; font-weight:600;">Саналын хурд (сүүлийн 12)</span>
+            <span style="font-size:11px; color:#5BB98B; font-weight:600;">{{ focus.velocity }}/мин</span>
+          </div>
+          <div style="display:flex; align-items:flex-end; gap:4px; height:54px;">
+            <sc-for list="{{ focus.chart }}" as="c" hint-placeholder-count="12">
+              <span style="flex:1; height:{{ c.h }}; background:{{ c.color }}; border-radius:2px 2px 0 0;"></span>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- recent bids -->
+        <div style="margin-top:11px;">
+          <div style="font-size:11px; color:#9DB0CC; font-weight:600; margin-bottom:7px;">Сүүлийн саналууд</div>
+          <sc-for list="{{ focus.feed }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.06);">
+              <span style="width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,.08); color:#C7D4E6; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700;">{{ f.initial }}</span>
+              <span style="flex:1; font-size:12px; color:#C7D4E6;">{{ f.bidder }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums;">{{ f.amount }}</span>
+              <span style="font-size:10.5px; color:#6E82A3; font-variant-numeric:tabular-nums; width:42px; text-align:right;">{{ f.ago }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <button onClick="{{ pauseFocus }}" style="width:100%; margin-top:14px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); color:#fff; border-radius:10px; padding:11px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;" style-hover="background:rgba(255,255,255,.1);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          Дуудлагыг түр зогсоох
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const now = Date.now();
+    const mk = (code, species, aimag, price, step, bidders, end, hot) => ({
+      code, species, aimag, price, step, bidders, end, hot,
+      bidder: 'Оролцогч #'+(2+Math.floor(Math.random()*12)),
+      hist: Array.from({length:12},()=>Math.random()),
+      feed: [], flash:0, velocity: hot ? 14 : (3+Math.floor(Math.random()*6)),
+    });
+    this.state = {
+      now,
+      lots: [
+        mk('Угалз:U9','Угалз','Баян-Өлгий',5830000,530000,7,now+205000,true),
+        mk('Тэх:I4','Тэх','Ховд',4120000,380000,4,now+742000,false),
+        mk('Янгир:Y2','Янгир','Говь-Алтай',2640000,240000,5,now+486000,true),
+        mk('Загас:F3','Тул загас','Сэлэнгэ',780000,60000,3,now+1240000,false),
+        mk('Шувуу:S8','Шонхор','Дорнод',1650000,150000,6,now+320000,false),
+      ],
+      focusIdx: 0,
+    };
+    // seed feeds
+    this.state.lots.forEach(l => {
+      l.feed = [
+        { bidder:l.bidder, amount:l.price, t:now-3000 },
+        { bidder:'Оролцогч #'+(2+Math.floor(Math.random()*9)), amount:l.price-l.step, t:now-12000 },
+        { bidder:'Оролцогч #'+(2+Math.floor(Math.random()*9)), amount:l.price-2*l.step, t:now-26000 },
+        { bidder:'Оролцогч #'+(2+Math.floor(Math.random()*9)), amount:l.price-3*l.step, t:now-41000 },
+      ];
+    });
+  }
+  componentDidMount(){
+    this._clk = setInterval(()=>this.setState({now:Date.now()}),1000);
+    this._sched = setTimeout(()=>this.bump(),1600);
+  }
+  componentWillUnmount(){ clearInterval(this._clk); clearTimeout(this._sched); }
+
+  bump(){
+    this.setState(s => {
+      const lots = s.lots.slice();
+      // weight hot lots more
+      const pool = []; lots.forEach((l,i)=>{ const w = l.hot?3:1; for(let k=0;k<w;k++) pool.push(i); });
+      const i = pool[Math.floor(Math.random()*pool.length)];
+      const l = { ...lots[i] };
+      l.price += l.step;
+      l.bidder = 'Оролцогч #'+(2+Math.floor(Math.random()*12));
+      l.flash = (l.flash||0)+1;
+      l.feed = [{ bidder:l.bidder, amount:l.price, t:Date.now() }, ...l.feed].slice(0,8);
+      l.hist = [...l.hist.slice(1), Math.min(1, 0.4+Math.random()*0.6)];
+      l.velocity = Math.max(2, Math.round(l.velocity*0.7 + (l.hot?16:7)*0.3 + (Math.random()*3-1)));
+      // anti-snipe extend
+      const remain = l.end - Date.now();
+      if (remain <= 15000) l.end += 30000;
+      lots[i] = l;
+      return { lots };
+    });
+    const d = 700 + Math.random()*1600;
+    this._sched = setTimeout(()=>this.bump(), d);
+  }
+
+  fmt(n){ return Math.round(n).toLocaleString('en-US') + '₮'; }
+  fmtShort(n){ return Math.round(n).toLocaleString('en-US'); }
+  dur(ms){ const s=Math.max(0,Math.floor(ms/1000)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+  ago(t){ const d=Math.max(0,Math.round((Date.now()-t)/1000)); return d<2?'сая':(d<60?d+'с':Math.floor(d/60)+'м'); }
+
+  renderVals(){
+    const s = this.state;
+    const clock = new Date(s.now).toLocaleTimeString('en-GB');
+    const totalBidders = s.lots.reduce((a,l)=>a+l.bidders,0);
+    const totalVel = s.lots.reduce((a,l)=>a+l.velocity,0);
+    const highest = Math.max(...s.lots.map(l=>l.price));
+
+    const kpis = [
+      { icon:'●', iconColor:'#C8312C', label:'Идэвхтэй лот', value:String(s.lots.length), delta:'бүгд хэвийн', deltaColor:'#8A93A3' },
+      { icon:'👥', iconColor:'#1B5FA8', label:'Нийт оролцогч', value:String(totalBidders), delta:'+3 сүүлийн минутад', deltaColor:'#1F8A5B' },
+      { icon:'⚡', iconColor:'#C77A0A', label:'Саналын хурд', value:totalVel+'/мин', deltaColor:'#8A93A3', delta:'нийт системд' },
+      { icon:'▲', iconColor:'#1F8A5B', label:'Хамгийн өндөр', value:this.fmtShort(highest)+'₮', delta:'Угалз:U9', deltaColor:'#8A93A3' },
+    ];
+
+    const rows = s.lots.map((l, idx) => {
+      const remain = l.end - s.now;
+      const spark = l.hist.slice(-5).map(h => ({ h: Math.max(3, Math.round(h*16))+'px', color: h>0.66?'#C8312C':(h>0.33?'#E0A11E':'#CDD4DE') }));
+      return {
+        code:l.code, bidder:l.bidder, bidderInitial:'#'+l.bidder.replace(/\D/g,''),
+        price:this.fmt(l.price), priceKey:'p'+l.code+l.price, priceAnim: 'rowFlash 1s ease',
+        time:this.dur(remain), timeColor: remain<60000?'#C8312C':(remain<180000?'#C77A0A':'#14294A'),
+        velocity:l.velocity, spark,
+        rowBg: idx===s.focusIdx ? '#F2F6FB' : 'transparent',
+        accent: idx===s.focusIdx ? '#C8312C' : 'transparent',
+        onSelect: () => this.setState({ focusIdx: idx }),
+      };
+    });
+
+    const fl = s.lots[s.focusIdx];
+    const fremain = fl.end - s.now;
+    const maxH = Math.max(...fl.hist, 0.1);
+    const focus = {
+      code:fl.code, species:fl.species, aimag:fl.aimag,
+      price:this.fmt(fl.price).replace('₮',''), bidder:fl.bidder,
+      time:this.dur(fremain), timeColor: fremain<60000?'#FF8B86':(fremain<180000?'#E7B24B':'#fff'),
+      bidders:fl.bidders, velocity:fl.velocity,
+      chart: fl.hist.map(h => ({ h: Math.max(4, Math.round(h/maxH*54))+'px', color: h>0.66?'#FF5A5F':(h>0.33?'#E7B24B':'rgba(255,255,255,.3)') })),
+      feed: fl.feed.slice(0,5).map(f => ({ bidder:f.bidder, initial:'#'+f.bidder.replace(/\D/g,''), amount:this.fmt(f.amount), ago:this.ago(f.t) })),
+    };
+
+    return {
+      liveCount: s.lots.length, clock, kpis, rows, focus,
+      pauseFocus: () => {},
+    };
+  }
+}
+</script>
+</body>
+</html>

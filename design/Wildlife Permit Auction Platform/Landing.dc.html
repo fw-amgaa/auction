@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#F5F2EC; }
+    @keyframes livedot{ 0%{ opacity:1; transform:scale(1);} 50%{ opacity:.35; transform:scale(.7);} 100%{ opacity:1; transform:scale(1);} }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#F5F2EC; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436;">
+
+  <!-- public header -->
+  <header style="position:sticky; top:0; z-index:40; background:rgba(245,242,236,.88); backdrop-filter:blur(10px); border-bottom:1px solid #E6E1D6;">
+    <div style="max-width:1200px; margin:0 auto; height:68px; padding:0 26px; display:flex; align-items:center; justify-content:space-between;">
+      <a href="Landing.dc.html" style="display:flex; align-items:center; text-decoration:none;">
+        <img src="assets/logo.png" alt="АН агнуурийн үнийн санал дуудах систем" style="height:42px; width:auto; display:block;" />
+      </a>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <a href="Login.dc.html" style="font-size:14px; font-weight:600; color:#14294A; text-decoration:none; padding:10px 16px; border-radius:9px;" style-hover="background:#EDE8DE;">Нэвтрэх</a>
+        <a href="Register.dc.html" style="font-size:14px; font-weight:700; color:#fff; background:#C8312C; text-decoration:none; padding:10px 18px; border-radius:9px;" style-hover="background:#B12A26;">Бүртгүүлэх</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- hero -->
+  <section style="position:relative; overflow:hidden; background:radial-gradient(900px 500px at 78% -10%, #1C375E 0%, #0E1E38 62%); color:#fff;">
+    <div style="position:absolute; inset:0; background-image:repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 26px, transparent 26px 52px); pointer-events:none;"></div>
+    <div style="max-width:1200px; margin:0 auto; padding:64px 26px 70px; display:flex; gap:48px; align-items:center; flex-wrap:wrap; position:relative;">
+      <div style="flex:1 1 480px; min-width:300px;">
+        <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(231,178,75,.14); border:1px solid rgba(231,178,75,.34); color:#E7B24B; font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:20px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Байгаль орчны яамны албан ёсны систем
+        </div>
+        <h1 style="margin:18px 0 0; font-size:clamp(32px,5vw,48px); font-weight:700; line-height:1.12; letter-spacing:-.015em;">Агнуурын эрхийн <span style="color:#E7B24B;">шударга</span> цахим дуудлага худалдаа</h1>
+        <p style="margin:18px 0 0; font-size:16px; color:#A9BAD4; line-height:1.6; max-width:520px;">Зэрлэг ан амьтан агнах эрхийг ил тод, бодит цагийн дуудлага худалдаагаар хуваарилна. Бүртгүүлж, баталгаажаад хүссэн лотдоо санал өгөөрэй.</p>
+        <div style="display:flex; gap:12px; margin-top:28px; flex-wrap:wrap;">
+          <a href="Register.dc.html" style="display:flex; align-items:center; gap:8px; background:#C8312C; color:#fff; text-decoration:none; border-radius:11px; padding:14px 24px; font-size:15px; font-weight:700;" style-hover="background:#D8453F;">
+            Бүртгүүлэх
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+          <a href="Catalog.dc.html" style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18); color:#fff; text-decoration:none; border-radius:11px; padding:14px 22px; font-size:15px; font-weight:600;" style-hover="background:rgba(255,255,255,.14);">
+            Каталог үзэх
+          </a>
+        </div>
+        <div style="display:flex; gap:26px; margin-top:34px; flex-wrap:wrap;">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+            <div>
+              <div style="font-size:26px; font-weight:700; color:#fff; font-variant-numeric:tabular-nums;">{{ s.value }}</div>
+              <div style="font-size:12.5px; color:#7E92B2; margin-top:2px;">{{ s.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- live auction preview card -->
+      <div style="flex:0 1 380px; min-width:300px;">
+        <div style="background:#101B2E; border:1px solid rgba(255,255,255,.1); border-radius:18px; padding:20px; box-shadow:0 30px 70px rgba(0,0,0,.4);">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; color:#fff;">Угалз:U9</span>
+            <span style="display:flex; align-items:center; gap:6px; background:rgba(200,49,44,.18); color:#FF8B86; font-size:11px; font-weight:700; padding:4px 10px; border-radius:7px; letter-spacing:.06em;"><span style="width:6px; height:6px; border-radius:50%; background:#FF5A5F; animation:livedot 1.4s infinite;"></span>ШУУД</span>
+          </div>
+          <div style="height:150px; border-radius:13px; margin-top:14px; background-image:repeating-linear-gradient(135deg,#2C4A6B 0 14px,#26405F 14px 28px); display:flex; align-items:flex-end; padding:14px;">
+            <div style="color:#fff;"><div style="font-size:16px; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.4);">Алтайн аргаль</div><div style="font-size:11.5px; font-style:italic; opacity:.9;">Баян-Өлгий</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-top:16px;">
+            <div><div style="font-size:11px; color:#7E92B2;">Одоогийн үнэ</div><div style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; color:#fff; font-variant-numeric:tabular-nums;">5,830,000₮</div></div>
+            <div style="text-align:right;"><div style="font-size:11px; color:#7E92B2;">Дуусахад</div><div style="font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:#E7B24B; font-variant-numeric:tabular-nums;">03:25</div></div>
+          </div>
+          <a href="Live%20Bidding%20Room.dc.html" style="display:block; text-align:center; margin-top:16px; background:#C8312C; color:#fff; text-decoration:none; border-radius:10px; padding:12px; font-size:14px; font-weight:700;" style-hover="background:#D8453F;">Танхимд орох</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- how it works -->
+  <section style="max-width:1200px; margin:0 auto; padding:56px 26px 10px;">
+    <div style="text-align:center; max-width:600px; margin:0 auto;">
+      <h2 style="margin:0; font-size:28px; font-weight:700; color:#14294A;">Хэрхэн ажилладаг вэ?</h2>
+      <p style="margin:8px 0 0; font-size:14.5px; color:#5B6677;">Дөрвөн энгийн алхмаар агнуурын эрхэд оролцоно.</p>
+    </div>
+    <div style="margin-top:36px; display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px;">
+      <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+        <div style="background:#FFF; border:1px solid #E6E1D6; border-radius:14px; padding:24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="width:46px; height:46px; border-radius:12px; background:{{ st.bg }}; color:{{ st.fg }}; display:flex; align-items:center; justify-content:center;">{{ st.icon }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:30px; font-weight:600; color:#EDE8DE;">{{ st.num }}</span>
+          </div>
+          <div style="font-size:16px; font-weight:700; color:#14294A; margin-top:16px;">{{ st.title }}</div>
+          <div style="font-size:13px; color:#5B6677; line-height:1.55; margin-top:6px;">{{ st.body }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- auctions: upcoming -->
+  <section style="max-width:1200px; margin:0 auto; padding:48px 26px 10px;">
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div>
+        <h2 style="margin:0; font-size:24px; font-weight:700; color:#14294A;">Удахгүй болох дуудлагууд</h2>
+        <p style="margin:6px 0 0; font-size:14px; color:#5B6677;">Бүртгүүлээд эдгээр лотод санал өгөхөд бэлдээрэй.</p>
+      </div>
+      <a href="Catalog.dc.html" style="display:flex; align-items:center; gap:6px; font-size:13.5px; font-weight:600; color:#C8312C; text-decoration:none;">Бүгдийг үзэх <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></a>
+    </div>
+    <div style="margin-top:20px; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px;">
+      <sc-for list="{{ lots }}" as="l" hint-placeholder-count="4">
+        <a href="Lot%20Detail.dc.html" style="background:#FFF; border:1px solid #E6E1D6; border-radius:14px; overflow:hidden; text-decoration:none; display:block;" style-hover="border-color:#CDD4DE;">
+          <div style="position:relative; height:140px; background-image:repeating-linear-gradient(135deg,{{ l.a }} 0 12px,{{ l.b }} 12px 24px); display:flex; align-items:flex-end; padding:12px;">
+            <span style="position:absolute; top:11px; left:11px; background:rgba(255,255,255,.92); color:#14294A; font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; padding:3px 8px; border-radius:6px;">{{ l.code }}</span>
+            <span style="position:absolute; top:11px; right:11px; background:{{ l.badgeBg }}; color:#fff; font-size:10.5px; font-weight:700; letter-spacing:.04em; padding:3px 8px; border-radius:6px;">{{ l.badge }}</span>
+            <div style="color:#fff;"><div style="font-size:15px; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.35);">{{ l.species }}</div></div>
+          </div>
+          <div style="padding:14px;">
+            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#5B6677;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8A93A3" stroke-width="1.9"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              {{ l.aimag }}
+            </div>
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-top:10px;">
+              <div><div style="font-size:11px; color:#8A93A3;">Босго үнэ</div><div style="font-size:17px; font-weight:700; color:#14294A; font-variant-numeric:tabular-nums;">{{ l.reserve }}</div></div>
+              <div style="text-align:right;"><div style="font-size:11px; color:#8A93A3;">{{ l.timeLabel }}</div><div style="font-size:13px; font-weight:600; color:#5B6677; font-variant-numeric:tabular-nums;">{{ l.time }}</div></div>
+            </div>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- trust signals -->
+  <section style="max-width:1200px; margin:0 auto; padding:48px 26px 10px;">
+    <div style="background:#14294A; border-radius:18px; padding:40px; color:#fff; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:28px;">
+      <sc-for list="{{ trust }}" as="t" hint-placeholder-count="3">
+        <div style="display:flex; gap:14px; align-items:flex-start;">
+          <span style="width:44px; height:44px; border-radius:11px; flex:0 0 auto; background:rgba(231,178,75,.16); color:#E7B24B; display:flex; align-items:center; justify-content:center;">{{ t.icon }}</span>
+          <div><div style="font-size:15px; font-weight:700;">{{ t.title }}</div><div style="font-size:13px; color:#A9BAD4; line-height:1.55; margin-top:4px;">{{ t.body }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section style="max-width:1200px; margin:0 auto; padding:48px 26px 20px;">
+    <div style="background:linear-gradient(135deg,#C8312C,#9E2A3D); border-radius:18px; padding:44px; text-align:center; color:#fff;">
+      <h2 style="margin:0; font-size:28px; font-weight:700;">Оролцоход бэлэн үү?</h2>
+      <p style="margin:10px auto 0; max-width:480px; font-size:15px; color:#FCE3E1; line-height:1.6;">Бүртгэл үүсгэж, KYC баталгаажуулаад өнөөдрөөс л дуудлага худалдаанд оролцоорой.</p>
+      <div style="display:flex; gap:12px; justify-content:center; margin-top:24px; flex-wrap:wrap;">
+        <a href="Register.dc.html" style="background:#fff; color:#C8312C; text-decoration:none; border-radius:11px; padding:14px 26px; font-size:15px; font-weight:700;">Бүртгүүлэх</a>
+        <a href="Login.dc.html" style="background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.3); color:#fff; text-decoration:none; border-radius:11px; padding:14px 24px; font-size:15px; font-weight:600;">Нэвтрэх</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer style="border-top:1px solid #E6E1D6; margin-top:40px;">
+    <div style="max-width:1200px; margin:0 auto; padding:28px 26px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <img src="assets/logo.png" alt="logo" style="height:34px; width:auto;" />
+      <div style="display:flex; gap:20px; font-size:13px;">
+        <a href="Help.dc.html" style="color:#5B6677; text-decoration:none;" style-hover="color:#14294A;">Тусламж</a>
+        <a href="Terms.dc.html" style="color:#5B6677; text-decoration:none;" style-hover="color:#14294A;">Үйлчилгээний нөхцөл</a>
+        <a href="Login.dc.html" style="color:#5B6677; text-decoration:none;" style-hover="color:#14294A;">Нэвтрэх</a>
+      </div>
+      <div style="font-size:12px; color:#A2AAB6;">© 2026 Байгаль орчны яам</div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:1400}}">
+class Component extends DCLogic {
+  renderVals(){
+    const stats = [
+      { value:'8', label:'амьтны төрөл' },
+      { value:'24', label:'идэвхтэй лот' },
+      { value:'1,240+', label:'бүртгэлтэй оролцогч' },
+    ];
+    const ic = (d)=>React.createElement('svg',{width:24,height:24,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round'}, d.map((x,i)=>React.createElement('path',{key:i,d:x})));
+    const steps = [
+      { num:'01', title:'Бүртгүүлэх', body:'Иргэн эсвэл байгууллагаар бүртгэл үүсгэж, мэдээллээ оруулна.', bg:'#FBEFEE', fg:'#C8312C', icon:ic(['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2','M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z','M19 8v6','M22 11h-6']) },
+      { num:'02', title:'Баталгаажих', body:'Бичиг баримтаа илгээж, KYC шалгалт давна. Ихэвчлэн 1 өдөр.', bg:'#E5F4EC', fg:'#1F8A5B', icon:ic(['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z','m9 12 2 2 4-4']) },
+      { num:'03', title:'Лимит авах', body:'Захиргаанаас санал өгөх лимит олгогдоно. Бэлэн мөнгө шаардахгүй.', bg:'#FBF1DF', fg:'#C77A0A', icon:ic(['M12 2v20','M5 7h14','M5 12h14','M5 17h14']) },
+      { num:'04', title:'Санал өгөх', body:'Шууд танхимд орж бодит цагийн дуудлага худалдаанд оролцоно.', bg:'#E5F0FB', fg:'#1B5FA8', icon:ic(['m13 2-9 11h7l-1 9 9-11h-7z']) },
+    ];
+    const lots = [
+      { code:'Угалз:U12', species:'Угалз', aimag:'Завхан', reserve:'5,800,000₮', a:'#2C4A6B', b:'#26405F', badge:'УДАХГҮЙ', badgeBg:'rgba(20,41,74,.85)', timeLabel:'Эхлэхэд', time:'45 мин' },
+      { code:'Шувуу:S8', species:'Шонхор', aimag:'Дорнод', reserve:'1,500,000₮', a:'#3F3552', b:'#352C4A', badge:'УДАХГҮЙ', badgeBg:'rgba(20,41,74,.85)', timeLabel:'Эхлэхэд', time:'1 цаг' },
+      { code:'Янгир:Y2', species:'Янгир', aimag:'Говь-Алтай', reserve:'2,400,000₮', a:'#2B4A52', b:'#23404A', badge:'УДАХГҮЙ', badgeBg:'rgba(20,41,74,.85)', timeLabel:'Эхлэхэд', time:'2 цаг' },
+      { code:'Загас:F3', species:'Тул загас', aimag:'Сэлэнгэ', reserve:'600,000₮', a:'#1F4A56', b:'#193E4A', badge:'УДАХГҮЙ', badgeBg:'rgba(20,41,74,.85)', timeLabel:'Эхлэхэд', time:'5 цаг' },
+    ];
+    const tic = (d)=>React.createElement('svg',{width:22,height:22,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round'}, d.map((x,i)=>React.createElement('path',{key:i,d:x})));
+    const trust = [
+      { title:'Төрийн баталгаа', body:'Байгаль орчны яамны хяналт дор хууль ёсны дагуу зохион байгуулагдана.', icon:tic(['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z','m9 12 2 2 4-4']) },
+      { title:'Ил тод, шударга', body:'Бүх санал бодит цагт бүртгэгдэж, анти-снайп хамгаалалттай. Хэн ч давуу эрх эдлэхгүй.', icon:tic(['M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z','M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z']) },
+      { title:'Аюулгүй төлбөр', body:'Барьцаа автоматаар хянагдаж, давуулсан санал нэн даруй буцаагдана.', icon:tic(['M19 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z','M3 10h18']) },
+    ];
+    return { stats, steps, lots, trust };
+  }
+}
+</script>
+</body>
+</html>

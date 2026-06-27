@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#EEF1F5; }
+    textarea{ font-family:inherit; }
+    @keyframes toastIn{ from{ opacity:0; transform:translateY(-10px);} to{ opacity:1; transform:none; } }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; display:flex; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436; background:#EEF1F5;">
+
+  <dc-import name="AdminNav" active="kyc" hint-size="228px,100vh"></dc-import>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div style="height:60px; background:#FFF; border-bottom:1px solid #E1E5EC; display:flex; align-items:center; justify-content:space-between; padding:0 24px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <h1 style="margin:0; font-size:18px; font-weight:700; color:#14294A;">KYC хүсэлтүүд</h1>
+        <span style="background:#FBEAE9; color:#C8312C; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:7px;">{{ pendingCount }} хүлээгдэж буй</span>
+      </div>
+      <div style="font-size:12.5px; color:#5B6677;">Ажлын дараалал · шинээс хуучин</div>
+    </div>
+
+    <div style="flex:1; display:flex; min-height:0;">
+      <!-- queue list -->
+      <div style="flex:0 0 320px; border-right:1px solid #E1E5EC; background:#FFF; overflow-y:auto;">
+        <div style="padding:11px 14px; border-bottom:1px solid #EBEEF3; display:flex; gap:6px;">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+            <button onClick="{{ t.onClick }}" style="flex:1; padding:7px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-size:12px; font-weight:{{ t.weight }}; cursor:pointer;">{{ t.label }} {{ t.count }}</button>
+          </sc-for>
+        </div>
+        <sc-for list="{{ queue }}" as="q" hint-placeholder-count="5">
+          <div onClick="{{ q.onSelect }}" style="display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid #F1F3F6; cursor:pointer; background:{{ q.bg }}; border-left:3px solid {{ q.accent }};" style-hover="background:#F7F8FA;">
+            <span style="width:38px; height:38px; border-radius:10px; flex:0 0 auto; background:{{ q.avBg }}; color:{{ q.avFg }}; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;">{{ q.initials }}</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:13.5px; font-weight:600; color:#14294A; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ q.name }}</div>
+              <div style="display:flex; align-items:center; gap:7px; margin-top:2px;">
+                <span style="font-size:10.5px; font-weight:600; color:{{ q.typeFg }}; background:{{ q.typeBg }}; padding:1px 7px; border-radius:5px;">{{ q.typeLabel }}</span>
+                <span style="font-size:11px; color:#A2AAB6;">{{ q.ago }}</span>
+              </div>
+            </div>
+            <sc-if value="{{ q.showStatus }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:15px;">{{ q.statusIcon }}</span>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ queueEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:40px 20px; text-align:center; font-size:13px; color:#8A93A3;">Энэ ангилалд хүсэлт алга.</div>
+        </sc-if>
+      </div>
+
+      <!-- detail -->
+      <div style="flex:1; min-width:0; overflow-y:auto; padding:22px 26px;">
+        <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <!-- header -->
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:14px;">
+                <span style="width:54px; height:54px; border-radius:13px; background:{{ d.avBg }}; color:{{ d.avFg }}; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700;">{{ d.initials }}</span>
+                <div>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <h2 style="margin:0; font-size:20px; font-weight:700; color:#14294A;">{{ d.name }}</h2>
+                    <span style="font-size:11.5px; font-weight:600; color:{{ d.typeFg }}; background:{{ d.typeBg }}; padding:2px 9px; border-radius:6px;">{{ d.typeLabel }}</span>
+                  </div>
+                  <div style="font-size:12.5px; color:#8A93A3; margin-top:3px;">Хүсэлт #{{ d.id }} · {{ d.ago }} илгээсэн</div>
+                </div>
+              </div>
+              <sc-if value="{{ d.decided }}" hint-placeholder-val="{{ false }}">
+                <span style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:{{ d.decisionColor }}; background:{{ d.decisionBg }}; padding:8px 14px; border-radius:9px;">{{ d.decisionIcon }} {{ d.decisionText }}</span>
+              </sc-if>
+            </div>
+
+            <!-- fields -->
+            <div style="margin-top:20px; background:#FFF; border:1px solid #E1E5EC; border-radius:12px; overflow:hidden;">
+              <div style="padding:11px 16px; background:#F7F8FA; border-bottom:1px solid #EBEEF3; font-size:12.5px; font-weight:700; color:#14294A;">Мэдээлэл</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:#EBEEF3;">
+                <sc-for list="{{ d.fields }}" as="f" hint-placeholder-count="6">
+                  <div style="background:#FFF; padding:12px 16px;">
+                    <div style="font-size:11.5px; color:#8A93A3;">{{ f.k }}</div>
+                    <div style="font-size:13.5px; color:#14294A; font-weight:600; margin-top:2px; font-variant-numeric:tabular-nums;">{{ f.v }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- documents -->
+            <div style="margin-top:16px;">
+              <div style="font-size:13px; font-weight:700; color:#14294A; margin-bottom:10px;">Хавсаргасан баримт</div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px;">
+                <sc-for list="{{ d.docs }}" as="doc" hint-placeholder-count="2">
+                  <button onClick="{{ doc.onView }}" style="text-align:left; background:#FFF; border:1px solid #E1E5EC; border-radius:11px; overflow:hidden; cursor:pointer; padding:0;" style-hover="border-color:#14294A;">
+                    <div style="height:108px; background-image:repeating-linear-gradient(135deg,#DCE3EC 0 12px,#D2DAE5 12px 24px); display:flex; align-items:center; justify-content:center; position:relative;">
+                      <span style="font-size:13px; font-weight:700; color:#5B6677;">{{ doc.kind }}</span>
+                      <span style="position:absolute; bottom:8px; right:8px; width:26px; height:26px; border-radius:7px; background:rgba(20,41,74,.85); color:#fff; display:flex; align-items:center; justify-content:center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </span>
+                    </div>
+                    <div style="padding:10px 12px; font-size:12.5px; font-weight:600; color:#14294A;">{{ doc.label }}</div>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- decision -->
+            <sc-if value="{{ d.pending }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top:22px; background:#FFF; border:1px solid #E1E5EC; border-radius:12px; padding:18px;">
+                <div style="font-size:13.5px; font-weight:700; color:#14294A; margin-bottom:6px;">Шийдвэр</div>
+                <sc-if value="{{ rejecting }}" hint-placeholder-val="{{ false }}">
+                  <div>
+                    <label style="font-size:12.5px; color:#5B6677; display:block; margin-bottom:7px;">Татгалзах шалтгаан (өргөдөгчид харагдана)</label>
+                    <textarea value="{{ rejectReason }}" onInput="{{ onReason }}" placeholder="Ж: Иргэний үнэмлэхний зураг бүдэг байна. Тодорхой дахин оруулна уу." style="width:100%; min-height:78px; padding:11px 13px; border-radius:9px; border:1px solid #E6E1D6; background:#FAF8F4; font-size:13px; color:#1A2436; outline:none; resize:vertical;"></textarea>
+                    <div style="display:flex; gap:7px; margin-top:10px; flex-wrap:wrap;">
+                      <sc-for list="{{ reasonChips }}" as="c" hint-placeholder-count="3">
+                        <button onClick="{{ c.onClick }}" style="font-size:12px; color:#5B6677; background:#F3F5F8; border:1px solid #E1E5EC; border-radius:20px; padding:5px 12px; cursor:pointer;" style-hover="border-color:#CDD4DE;">{{ c.label }}</button>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:16px;">
+                      <button onClick="{{ confirmReject }}" disabled="{{ rejectDisabled }}" style="background:{{ rejectBtnBg }}; border:none; color:#fff; border-radius:9px; padding:11px 20px; font-size:13.5px; font-weight:700; cursor:{{ rejectCursor }};">Татгалзахыг баталгаажуулах</button>
+                      <button onClick="{{ cancelReject }}" style="background:none; border:1px solid #CDD4DE; color:#5B6677; border-radius:9px; padding:11px 18px; font-size:13.5px; font-weight:600; cursor:pointer;">Болих</button>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ notRejecting }}" hint-placeholder-val="{{ true }}">
+                  <div>
+                    <p style="margin:0 0 14px; font-size:13px; color:#5B6677; line-height:1.5;">Баримтуудыг шалгаад баталгаажуулна уу. Зөвшөөрсний дараа өргөдөгч анхны лимит авч санал өгөх боломжтой болно.</p>
+                    <div style="display:flex; gap:10px;">
+                      <button onClick="{{ approve }}" style="display:flex; align-items:center; gap:8px; background:#1F8A5B; border:none; color:#fff; border-radius:9px; padding:12px 22px; font-size:14px; font-weight:700; cursor:pointer;" style-hover="background:#1A7A4F;">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        Зөвшөөрөх
+                      </button>
+                      <button onClick="{{ startReject }}" style="display:flex; align-items:center; gap:8px; background:#FFF; border:1px solid #E0908C; color:#C8312C; border-radius:9px; padding:12px 22px; font-size:14px; font-weight:700; cursor:pointer;" style-hover="background:#FBEAE9;">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                        Татгалзах
+                      </button>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <!-- doc viewer modal -->
+  <sc-if value="{{ viewerOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeViewer }}" style="position:fixed; inset:0; z-index:70; background:rgba(14,30,56,.8); display:flex; align-items:center; justify-content:center; padding:24px; animation:toastIn .18s ease;">
+      <div onClick="{{ stop }}" style="width:min(640px,100%); background:#FFF; border-radius:16px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.4);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid #EBEEF3;">
+          <span style="font-size:14px; font-weight:700; color:#14294A;">{{ viewerLabel }}</span>
+          <button onClick="{{ closeViewer }}" style="width:32px; height:32px; border-radius:8px; border:1px solid #E1E5EC; background:#FFF; color:#5B6677; cursor:pointer; font-size:15px;">✕</button>
+        </div>
+        <div style="height:380px; background-image:repeating-linear-gradient(135deg,#DCE3EC 0 16px,#D2DAE5 16px 32px); display:flex; align-items:center; justify-content:center;">
+          <span style="font-size:15px; color:#5B6677; font-weight:600;">{{ viewerKind }} · урьдчилан харах</span>
+        </div>
+        <div style="padding:13px 18px; display:flex; gap:10px; justify-content:flex-end;">
+          <button onClick="{{ closeViewer }}" style="background:#14294A; color:#fff; border:none; border-radius:9px; padding:10px 18px; font-size:13px; font-weight:600; cursor:pointer;">Хаах</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- toast -->
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; top:18px; right:18px; z-index:80; display:flex; align-items:center; gap:11px; padding:13px 16px; border-radius:11px; background:{{ toastBg }}; border:1px solid {{ toastBorder }}; box-shadow:0 14px 36px rgba(0,0,0,.18); animation:toastIn .22s ease;">
+      <span style="font-size:16px;">{{ toastIcon }}</span>
+      <span style="font-size:13.5px; color:{{ toastColor }}; font-weight:600;">{{ toastText }}</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      tab:'pending', selId:1, rejecting:false, rejectReason:'',
+      viewer:null, toast:null,
+      apps: [
+        { id:1, type:'individual', name:'Доржийн Батбаяр', ago:'12 мин', status:'pending',
+          fields:[['Овог','Дорж'],['Нэр','Батбаяр'],['Регистр','УБ91050312'],['Утас','99112233'],['И-мэйл','batbayar@mail.mn'],['Хаяг','Улаанбаатар, БЗД, 13-р хороо']],
+          docs:[['Үнэмлэх (урд)','ЗУРАГ'],['Үнэмлэх (ар)','ЗУРАГ']] },
+        { id:2, type:'legal', name:'Алтай Хайрхан ХХК', ago:'34 мин', status:'pending',
+          fields:[['Байгууллага','Алтай Хайрхан ХХК'],['Улсын бүртгэл','123456789'],['ТТД','5012345'],['Захирал','С. Ганболд'],['Утас','88556677'],['Хаяг','Ховд аймаг, Жаргалант сум']],
+          docs:[['Улсын бүртгэлийн гэрчилгээ','PDF'],['Захирлын үнэмлэх','ЗУРАГ']] },
+        { id:3, type:'individual', name:'Цэрэнгийн Оюунаа', ago:'1 цаг', status:'pending',
+          fields:[['Овог','Цэрэн'],['Нэр','Оюунаа'],['Регистр','ЧД95081420'],['Утас','95443322'],['И-мэйл','oyunaa@mail.mn'],['Хаяг','Улаанбаатар, ХУД, 11-р хороо']],
+          docs:[['Үнэмлэх (урд)','ЗУРАГ'],['Үнэмлэх (ар)','ЗУРАГ']] },
+        { id:4, type:'individual', name:'Бат-Эрдэнийн Тэмүүлэн', ago:'2 цаг', status:'pending',
+          fields:[['Овог','Бат-Эрдэнэ'],['Нэр','Тэмүүлэн'],['Регистр','СБ88120755'],['Утас','99887766'],['И-мэйл','temuulen@mail.mn'],['Хаяг','Дархан-Уул, Дархан сум']],
+          docs:[['Үнэмлэх (урд)','ЗУРАГ'],['Үнэмлэх (ар)','ЗУРАГ']] },
+        { id:5, type:'legal', name:'Говь Анчид ХХК', ago:'3 цаг', status:'pending',
+          fields:[['Байгууллага','Говь Анчид ХХК'],['Улсын бүртгэл','987654321'],['ТТД','6098765'],['Захирал','Б. Энхтайван'],['Утас','77443311'],['Хаяг','Өмнөговь, Даланзадгад']],
+          docs:[['Улсын бүртгэлийн гэрчилгээ','PDF'],['Захирлын үнэмлэх','ЗУРАГ']] },
+        { id:6, type:'individual', name:'Лхагвын Сүхбат', ago:'1 өдөр', status:'approved',
+          fields:[['Овог','Лхагва'],['Нэр','Сүхбат'],['Регистр','БЗ90031255'],['Утас','94221100'],['И-мэйл','sukhbat@mail.mn'],['Хаяг','Сэлэнгэ, Сүхбаатар']],
+          docs:[['Үнэмлэх (урд)','ЗУРАГ'],['Үнэмлэх (ар)','ЗУРАГ']] },
+        { id:7, type:'individual', name:'Гомбын Алтанцэцэг', ago:'1 өдөр', status:'rejected', reason:'Үнэмлэхний ар тал уншигдахгүй байна.',
+          fields:[['Овог','Гомбо'],['Нэр','Алтанцэцэг'],['Регистр','ХА93074588'],['Утас','96332211'],['И-мэйл','altantsetseg@mail.mn'],['Хаяг','Архангай, Цэцэрлэг']],
+          docs:[['Үнэмлэх (урд)','ЗУРАГ'],['Үнэмлэх (ар)','ЗУРАГ']] },
+      ],
+    };
+  }
+  showToast(t){ this.setState({ toast:t }); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:null}),3000); }
+  componentWillUnmount(){ clearTimeout(this._tt); }
+
+  decide(id, status, reason){
+    this.setState(s => ({
+      apps: s.apps.map(a => a.id===id ? {...a, status, reason} : a),
+      rejecting:false, rejectReason:'',
+    }));
+  }
+
+  renderVals(){
+    const s = this.state;
+    const typeMeta = (t) => t==='legal'
+      ? { typeLabel:'Хуулийн этгээд', typeFg:'#1B5FA8', typeBg:'#E5F0FB', avBg:'#E5F0FB', avFg:'#1B5FA8' }
+      : { typeLabel:'Иргэн', typeFg:'#197a50', typeBg:'#E5F4EC', avBg:'#E5F4EC', avFg:'#1F8A5B' };
+    const initials = (n) => n.split(/\s+/).map(p=>p[0]||'').join('').slice(0,2).toUpperCase();
+
+    const counts = {
+      pending: s.apps.filter(a=>a.status==='pending').length,
+      approved: s.apps.filter(a=>a.status==='approved').length,
+      rejected: s.apps.filter(a=>a.status==='rejected').length,
+    };
+    const tabDefs = [
+      { key:'pending', label:'Хүлээгдэж буй', count:counts.pending },
+      { key:'approved', label:'Зөвшөөрсөн', count:counts.approved },
+      { key:'rejected', label:'Татгалзсан', count:counts.rejected },
+    ];
+    const tabs = tabDefs.map(t => {
+      const on = t.key===s.tab;
+      return { label:t.label, count:'('+t.count+')', bg: on?'#14294A':'#FFF', fg: on?'#FFF':'#5B6677', border: on?'#14294A':'#E1E5EC', weight: on?700:500, onClick:()=>this.setState({tab:t.key, rejecting:false}) };
+    });
+
+    const queue = s.apps.filter(a=>a.status===s.tab).map(a => {
+      const m = typeMeta(a.type);
+      return {
+        name:a.name, ago:a.ago, initials:initials(a.name),
+        typeLabel:m.typeLabel, typeFg:m.typeFg, typeBg:m.typeBg, avBg:m.avBg, avFg:m.avFg,
+        bg: a.id===s.selId ? '#F2F6FB':'transparent', accent: a.id===s.selId ? '#C8312C':'transparent',
+        showStatus: a.status!=='pending', statusIcon: a.status==='approved'?'✅':'⛔',
+        onSelect: () => this.setState({ selId:a.id, rejecting:false }),
+      };
+    });
+
+    const sel = s.apps.find(a => a.id===s.selId);
+    let d = null;
+    if (sel){
+      const m = typeMeta(sel.type);
+      d = {
+        id:sel.id, name:sel.name, ago:sel.ago, initials:initials(sel.name),
+        typeLabel:m.typeLabel, typeFg:m.typeFg, typeBg:m.typeBg, avBg:m.avBg, avFg:m.avFg,
+        fields: sel.fields.map(f=>({k:f[0], v:f[1]})),
+        docs: sel.docs.map((dc,i)=>({ label:dc[0], kind:dc[1], onView:()=>this.setState({viewer:{label:dc[0],kind:dc[1]}}) })),
+        pending: sel.status==='pending',
+        decided: sel.status!=='pending',
+        decisionText: sel.status==='approved'?'Зөвшөөрсөн':'Татгалзсан',
+        decisionIcon: sel.status==='approved'?'✓':'✕',
+        decisionColor: sel.status==='approved'?'#197a50':'#C8312C',
+        decisionBg: sel.status==='approved'?'#E5F4EC':'#FBEAE9',
+      };
+    }
+
+    const reasonChips = ['Зураг бүдэг/уншигдахгүй','Мэдээлэл зөрүүтэй','Баримт дутуу'].map(label => ({
+      label, onClick: () => this.setState({ rejectReason: label }),
+    }));
+
+    return {
+      pendingCount: counts.pending,
+      tabs, queue, queueEmpty: queue.length===0,
+      hasSelection: !!d, d: d || {},
+      rejecting: s.rejecting, notRejecting: !s.rejecting,
+      rejectReason: s.rejectReason,
+      onReason: (e)=>this.setState({rejectReason:e.target.value}),
+      reasonChips,
+      rejectDisabled: !s.rejectReason.trim(),
+      rejectBtnBg: s.rejectReason.trim() ? '#C8312C' : '#E0A9A6',
+      rejectCursor: s.rejectReason.trim() ? 'pointer' : 'not-allowed',
+      approve: () => { this.decide(s.selId,'approved'); this.showToast({icon:'✅',text:'Зөвшөөрөгдлөө — лимит олгоход бэлэн',bg:'#E5F4EC',border:'#C7E5D5',color:'#197a50'}); },
+      startReject: () => this.setState({ rejecting:true }),
+      cancelReject: () => this.setState({ rejecting:false, rejectReason:'' }),
+      confirmReject: () => { if(!s.rejectReason.trim())return; this.decide(s.selId,'rejected',s.rejectReason); this.showToast({icon:'⛔',text:'Татгалзлаа — өргөдөгчид мэдэгдэнэ',bg:'#FBEAE9',border:'#F2D6D4',color:'#A02622'}); },
+      // viewer
+      viewerOpen: !!s.viewer, viewerLabel: s.viewer?s.viewer.label:'', viewerKind: s.viewer?s.viewer.kind:'',
+      closeViewer: ()=>this.setState({viewer:null}), stop:(e)=>{if(e&&e.stopPropagation)e.stopPropagation();},
+      // toast
+      toast: !!s.toast, toastIcon: s.toast?s.toast.icon:'', toastText: s.toast?s.toast.text:'',
+      toastBg: s.toast?s.toast.bg:'#FFF', toastBorder: s.toast?s.toast.border:'#E1E5EC', toastColor: s.toast?s.toast.color:'#14294A',
+    };
+  }
+}
+</script>
+</body>
+</html>

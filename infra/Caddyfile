@@ -1,0 +1,17 @@
+# Production reverse proxy (single EC2). Caddy auto-provisions TLS.
+# Routes the live WebSocket path to the bid service, everything else to web.
+# Replace auction.example.mn with the real domain.
+
+auction.example.mn {
+	encode gzip zstd
+
+	# live bidding WebSocket -> bid service
+	handle /ws* {
+		reverse_proxy bid:8080
+	}
+
+	# everything else -> Next.js
+	handle {
+		reverse_proxy web:3000
+	}
+}

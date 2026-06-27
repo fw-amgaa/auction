@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#070B14; }
+    @keyframes feedIn{ from{ opacity:0; transform:translateY(-10px) scale(.99); } to{ opacity:1; transform:none; } }
+    @keyframes winPulse{ 0%{ box-shadow:0 0 0 0 rgba(43,208,122,.45);} 100%{ box-shadow:0 0 0 22px rgba(43,208,122,0);} }
+    @keyframes outbidPulse{ 0%{ box-shadow:0 0 0 0 rgba(255,90,95,.55); transform:translateX(0);} 18%{ transform:translateX(-5px);} 38%{ transform:translateX(5px);} 60%{ transform:translateX(-2px);} 100%{ box-shadow:0 0 0 26px rgba(255,90,95,0); transform:none;} }
+    @keyframes priceFlash{ from{ color:#FF8A4C; } to{ color:#FFFFFF; } }
+    @keyframes extendPop{ 0%{ transform:scale(1);} 35%{ transform:scale(1.14);} 100%{ transform:scale(1);} }
+    @keyframes livedot{ 0%{ opacity:1; transform:scale(1);} 50%{ opacity:.35; transform:scale(.7);} 100%{ opacity:1; transform:scale(1);} }
+    @keyframes toastIn{ from{ opacity:0; transform:translateY(-12px);} to{ opacity:1; transform:none; } }
+    @keyframes badgeFloat{ 0%{ opacity:0; transform:translateY(8px) scale(.9);} 20%{ opacity:1; transform:translateY(0) scale(1);} 80%{ opacity:1; } 100%{ opacity:0; transform:translateY(-10px); } }
+    @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:radial-gradient(1200px 600px at 70% -10%, #122036 0%, #070B14 60%); color:#EEF2F8; font-family:'IBM Plex Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased; padding:0 0 40px;">
+
+  <sc-if value="{{ practice }}" hint-placeholder-val="{{ false }}">
+    <div style="background:#3A2A0A; border-bottom:1px solid rgba(255,176,46,.4); color:#FFD27A; font-size:13px; font-weight:600; text-align:center; padding:8px 16px; letter-spacing:.2px;">
+      ⦿ Дадлага горим — энэ бол сургалтын лот, бодит мөнгө хамаарахгүй.
+    </div>
+  </sc-if>
+
+  <!-- LOT CONTEXT STRIP -->
+  <div style="max-width:1240px; margin:0 auto; padding:18px 22px 14px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+    <div style="width:54px; height:54px; border-radius:12px; flex:0 0 auto; background-image:repeating-linear-gradient(135deg,#1C2A44 0 9px,#16223A 9px 18px); border:1px solid rgba(255,255,255,.1); display:flex; align-items:flex-end; justify-content:center; overflow:hidden; position:relative;">
+      <span style="font-size:9px; color:#8AA0C0; padding-bottom:3px; font-weight:600;">Угалз</span>
+    </div>
+    <div style="min-width:0;">
+      <div style="display:flex; align-items:center; gap:9px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:15px; color:#EEF2F8;">Угалз:U9</span>
+        <span style="font-size:11px; color:#5E6B82;">Argali · Алтай хангайн угалз</span>
+      </div>
+      <div style="font-size:12px; color:#92A0B6; margin-top:2px;">Босго үнэ <span style="font-family:'IBM Plex Mono',monospace; color:#C4D0E2; font-variant-numeric:tabular-nums;">5,300,000₮</span> · Баян-Өлгий аймаг</div>
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <div style="display:flex; align-items:center; gap:7px; background:#E6395012; border:1px solid rgba(230,57,80,.5); color:#FF6B78; padding:6px 11px; border-radius:8px; font-weight:700; font-size:12px; letter-spacing:.6px;">
+      <span style="width:8px; height:8px; border-radius:50%; background:#FF5A5F; display:inline-block; animation:{{ animLive }};"></span> LIVE
+    </div>
+    <div style="display:flex; align-items:center; gap:6px; font-size:13px; color:#A9B6CC; font-variant-numeric:tabular-nums;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7E8DA6" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      {{ spectators }} хүн үзэж байна
+    </div>
+    <div title="{{ connTitle }}" style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:{{ connColor }};">
+      <span style="width:8px; height:8px; border-radius:50%; background:{{ connColor }}; display:inline-block; animation:{{ animLive }};"></span> {{ connText }}
+    </div>
+
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button onClick="{{ toggleSound }}" title="Дуу (M)" style="width:38px; height:38px; border-radius:9px; border:1px solid rgba(255,255,255,.12); background:{{ soundBg }}; color:{{ soundColor }}; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+        <span style="font-size:15px;">{{ soundIcon }}</span>
+      </button>
+      <button onClick="{{ toggleWatch }}" title="Ажиглах (W)" style="display:flex; align-items:center; gap:6px; height:38px; padding:0 12px; border-radius:9px; border:1px solid {{ watchBorder }}; background:{{ watchBg }}; color:{{ watchColor }}; cursor:pointer; font-size:12.5px; font-weight:600;" style-hover="border-color:rgba(255,255,255,.3);">
+        <span style="font-size:13px;">{{ watchIcon }}</span> {{ watchText }}
+      </button>
+      <button onClick="{{ openHelp }}" title="Тусламж / товчлол (?)" style="width:38px; height:38px; border-radius:9px; border:1px solid rgba(255,255,255,.12); background:#13203608; color:#A9B6CC; cursor:pointer; font-size:16px; font-weight:700;" style-hover="border-color:rgba(255,255,255,.3); color:#fff;">?</button>
+    </div>
+  </div>
+
+  <!-- ARENA -->
+  <div style="max-width:1240px; margin:0 auto; padding:0 22px; display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+
+    <!-- HERO COLUMN -->
+    <div style="flex:1 1 560px; min-width:300px; display:flex; flex-direction:column; gap:16px;">
+
+      <!-- STATUS BANNER -->
+      <div ref="{{ refBanner }}" key="{{ bannerKey }}" style="border-radius:16px; padding:18px 22px; display:flex; align-items:center; gap:16px; border:1.5px solid {{ banBorder }}; background:{{ banBg }}; animation:{{ banAnim }};">
+        <div style="width:46px; height:46px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; background:{{ banIconBg }}; color:{{ banIconFg }};">
+          <span style="font-size:22px; font-weight:700;">{{ banIcon }}</span>
+        </div>
+        <div style="min-width:0;">
+          <div style="font-size:clamp(20px,3.4vw,28px); font-weight:700; color:{{ banTitleColor }}; line-height:1.1;">{{ banTitle }}</div>
+          <div style="font-size:13.5px; color:{{ banSubColor }}; margin-top:3px;">{{ banSub }}</div>
+        </div>
+      </div>
+
+      <!-- PRICE + TIMER -->
+      <div ref="{{ refHero }}" style="display:flex; gap:16px; flex-wrap:wrap;">
+        <!-- current high bid hero -->
+        <div style="flex:1 1 320px; min-width:240px; background:#0E1729; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:20px 22px;">
+          <div style="font-size:12.5px; letter-spacing:.4px; text-transform:uppercase; color:#7E8DA6; font-weight:600;">Одоогийн үнэ</div>
+          <div style="display:flex; align-items:baseline; gap:4px; margin-top:6px;">
+            <span key="{{ priceKey }}" style="font-family:'IBM Plex Mono',monospace; font-size:clamp(34px,6vw,52px); font-weight:600; line-height:1; font-variant-numeric:tabular-nums; animation:{{ animPrice }};">{{ displayPrice }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:clamp(22px,4vw,34px); font-weight:600; color:#92A0B6;">₮</span>
+          </div>
+          <div style="margin-top:12px; display:flex; align-items:center; gap:8px; font-size:13px;">
+            <span style="width:22px; height:22px; border-radius:50%; background:{{ leaderDotBg }}; color:{{ leaderDotFg }}; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">{{ leaderInitial }}</span>
+            <span style="color:#A9B6CC;">Тэргүүлэгч: <strong style="color:{{ leaderColor }}; font-weight:700;">{{ leaderLabel }}</strong></span>
+          </div>
+        </div>
+
+        <!-- timer -->
+        <div style="flex:1 1 220px; min-width:200px; background:#0E1729; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:20px 22px; position:relative; overflow:hidden;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="font-size:12.5px; letter-spacing:.4px; text-transform:uppercase; color:#7E8DA6; font-weight:600;">Үлдсэн хугацаа</div>
+            <sc-if value="{{ extendMsg }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:11.5px; font-weight:700; color:#FFB02E; background:#FFB02E1A; border:1px solid rgba(255,176,46,.4); padding:2px 8px; border-radius:20px; animation:badgeFloat 1.8s ease forwards;">+30 сек</span>
+            </sc-if>
+          </div>
+          <div key="{{ timerKey }}" style="font-family:'IBM Plex Mono',monospace; font-size:clamp(40px,7vw,58px); font-weight:600; line-height:1; margin-top:8px; color:{{ timerColor }}; font-variant-numeric:tabular-nums; animation:{{ animTimer }};">{{ timerText }}</div>
+          <div style="margin-top:14px; height:6px; border-radius:6px; background:rgba(255,255,255,.08); overflow:hidden;">
+            <div style="height:100%; width:{{ timerBarW }}; background:{{ timerColor }}; border-radius:6px; transition:width 1s linear;"></div>
+          </div>
+          <div style="margin-top:9px; font-size:11.5px; color:#5E6B82;">Сүүлчийн санал цаг сунгаж болзошгүй — снайп ажиллахгүй.</div>
+        </div>
+      </div>
+
+      <!-- QUICK-BID BUTTONS -->
+      <div ref="{{ refButtons }}" style="background:#0E1729; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div style="font-size:13px; font-weight:600; color:#C4D0E2;">Үнэ нэмэх <span style="color:#5E6B82; font-weight:400;">· алхам = босго үнийн 10%</span></div>
+          <div style="font-size:11.5px; color:#5E6B82;">{{ bidHint }}</div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <sc-for list="{{ buttons }}" as="b" hint-placeholder-count="5">
+            <button onClick="{{ b.onClick }}" disabled="{{ b.disabled }}" title="{{ b.tip }}" style="flex:1 1 0; min-width:104px; position:relative; border-radius:13px; border:1.5px solid {{ b.border }}; background:{{ b.bg }}; color:{{ b.fg }}; cursor:{{ b.cursor }}; padding:14px 10px 12px; text-align:center; transition:transform .08s ease, border-color .15s;" style-hover="transform:translateY(-2px);" style-active="transform:translateY(0);">
+              <span style="position:absolute; top:7px; right:8px; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color:{{ b.keyColor }}; border:1px solid {{ b.keyBorder }}; border-radius:5px; padding:0 5px; line-height:15px;">{{ b.key }}</span>
+              <div style="font-size:23px; font-weight:700; line-height:1;">{{ b.label }}</div>
+              <div style="font-size:11px; color:{{ b.deltaColor }}; margin-top:5px; font-variant-numeric:tabular-nums;">{{ b.delta }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; margin-top:3px; font-variant-numeric:tabular-nums;">{{ b.result }}</div>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- BALANCE + KBD HINT -->
+      <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:stretch;">
+        <div ref="{{ refBalance }}" style="flex:1 1 280px; background:#0E1729; border:1px solid {{ balBorder }}; border-radius:14px; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <div>
+            <div style="font-size:12px; color:#7E8DA6; font-weight:600;">Боломжит үлдэгдэл</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; color:{{ balColor }}; font-variant-numeric:tabular-nums; margin-top:2px;">{{ availableText }}</div>
+          </div>
+          <div style="text-align:right; font-size:11.5px; color:#5E6B82; line-height:1.5;">
+            Барьцаанд: <span style="font-family:'IBM Plex Mono',monospace; color:#A9B6CC; font-variant-numeric:tabular-nums;">{{ holdText }}</span><br>
+            Лимит: <span style="font-family:'IBM Plex Mono',monospace; color:#A9B6CC; font-variant-numeric:tabular-nums;">{{ limitText }}</span>
+          </div>
+        </div>
+        <div ref="{{ refKbd }}" style="flex:1 1 240px; background:#0E1729; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px 18px; display:flex; align-items:center; gap:12px;">
+          <div style="display:flex; gap:5px;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:3px 8px; color:#C4D0E2;">1–5</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; border:1px solid rgba(255,255,255,.2); border-radius:6px; padding:3px 8px; color:#C4D0E2;">Enter</span>
+          </div>
+          <div style="font-size:12px; color:#92A0B6; line-height:1.45;">Хурдан санал. <button onClick="{{ openHelp }}" style="background:none; border:none; color:#FF6B78; cursor:pointer; font:inherit; padding:0; text-decoration:underline;">? товчоор</button> бүх товчлол.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE FEED RAIL -->
+    <div style="flex:1 1 320px; min-width:280px; background:#0E1729; border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden; align-self:stretch; display:flex; flex-direction:column; max-height:680px;">
+      <div style="padding:15px 18px; border-bottom:1px solid rgba(255,255,255,.07); display:flex; align-items:center; justify-content:space-between;">
+        <div style="font-size:13px; font-weight:700; color:#EEF2F8; display:flex; align-items:center; gap:8px;">
+          <span style="width:8px; height:8px; border-radius:50%; background:{{ connColor }}; display:inline-block; animation:{{ animLive }};"></span>
+          Шууд саналууд
+        </div>
+        <span style="font-size:11px; color:#5E6B82;">{{ feedCount }} санал</span>
+      </div>
+      <div style="overflow-y:auto; padding:8px;">
+        <sc-for list="{{ feedView }}" as="f" hint-placeholder-count="6">
+          <div style="display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:11px; margin-bottom:5px; background:{{ f.bg }}; border:1px solid {{ f.border }}; animation:{{ f.anim }};">
+            <span style="width:30px; height:30px; border-radius:50%; flex:0 0 auto; background:{{ f.dotBg }}; color:{{ f.dotFg }}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">{{ f.initial }}</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:13px; font-weight:600; color:{{ f.nameColor }};">{{ f.label }}</div>
+              <div style="font-size:11px; color:#5E6B82;">{{ f.ago }}</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; color:{{ f.amtColor }}; font-variant-numeric:tabular-nums;">{{ f.amount }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOASTS -->
+  <div style="position:fixed; top:16px; right:16px; z-index:60; display:flex; flex-direction:column; gap:9px; width:min(340px,calc(100vw - 32px));">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:12px; background:{{ t.bg }}; border:1px solid {{ t.border }}; box-shadow:0 12px 30px rgba(0,0,0,.4); animation:toastIn .22s ease;">
+        <span style="font-size:16px; flex:0 0 auto;">{{ t.icon }}</span>
+        <span style="font-size:13px; color:{{ t.color }}; font-weight:500; flex:1;">{{ t.text }}</span>
+        <sc-if value="{{ t.canUndo }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ t.onUndo }}" style="background:none; border:1px solid rgba(255,255,255,.25); color:#fff; border-radius:7px; padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer;">Болих</button>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- SHORTCUTS OVERLAY -->
+  <sc-if value="{{ showShortcuts }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeHelp }}" style="position:fixed; inset:0; z-index:70; background:rgba(6,10,18,.78); display:flex; align-items:center; justify-content:center; padding:20px; animation:toastIn .18s ease;">
+      <div onClick="{{ stop }}" style="width:min(460px,100%); background:#101B2E; border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:24px; box-shadow:0 30px 80px rgba(0,0,0,.5);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <div style="font-size:18px; font-weight:700;">Гарын товчлол</div>
+          <button onClick="{{ closeHelp }}" style="width:30px; height:30px; border-radius:8px; border:1px solid rgba(255,255,255,.14); background:none; color:#A9B6CC; cursor:pointer; font-size:16px;">✕</button>
+        </div>
+        <sc-for list="{{ shortcuts }}" as="s" hint-placeholder-count="6">
+          <div style="display:flex; align-items:center; gap:14px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; min-width:90px; color:#EEF2F8;">{{ s.keys }}</span>
+            <span style="font-size:13px; color:#A9B6CC;">{{ s.label }}</span>
+          </div>
+        </sc-for>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <button onClick="{{ startTourBtn }}" style="flex:1; background:#16233B; border:1px solid rgba(255,255,255,.14); color:#EEF2F8; border-radius:11px; padding:12px; font-size:13px; font-weight:600; cursor:pointer;">⛳ Танилцуулга аялал</button>
+          <button onClick="{{ togglePractice }}" style="flex:1; background:#16233B; border:1px solid rgba(255,176,46,.4); color:#FFD27A; border-radius:11px; padding:12px; font-size:13px; font-weight:600; cursor:pointer;">⦿ {{ practiceBtnText }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- GUIDED TOUR -->
+  <sc-if value="{{ tourActive }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; z-index:80; pointer-events:none;">
+      <sc-if value="{{ spotlightReady }}" hint-placeholder-val="{{ false }}">
+        <div style="position:fixed; left:{{ spotX }}; top:{{ spotY }}; width:{{ spotW }}; height:{{ spotH }}; border-radius:16px; box-shadow:0 0 0 9999px rgba(6,10,18,.84); border:2px solid #FF6B78; transition:all .26s cubic-bezier(.4,0,.2,1); pointer-events:none;"></div>
+      </sc-if>
+      <div style="position:fixed; left:{{ tipX }}; top:{{ tipY }}; width:320px; max-width:calc(100vw - 24px); background:#101B2E; border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:18px; box-shadow:0 24px 60px rgba(0,0,0,.55); pointer-events:auto; transition:all .26s cubic-bezier(.4,0,.2,1);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <span style="font-size:11px; font-weight:700; letter-spacing:.5px; color:#FF6B78; text-transform:uppercase;">{{ tourCounter }}</span>
+          <button onClick="{{ skipTour }}" style="background:none; border:none; color:#5E6B82; cursor:pointer; font-size:12px;">Алгасах ✕</button>
+        </div>
+        <div style="font-size:17px; font-weight:700; color:#fff;">{{ tourTitle }}</div>
+        <div style="font-size:13.5px; color:#A9B6CC; line-height:1.5; margin-top:7px;">{{ tourBody }}</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
+          <div style="display:flex; gap:6px;">
+            <sc-for list="{{ tourDots }}" as="d" hint-placeholder-count="5">
+              <span style="width:7px; height:7px; border-radius:50%; background:{{ d.color }};"></span>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <sc-if value="{{ tourHasBack }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ tourBack }}" style="background:none; border:1px solid rgba(255,255,255,.16); color:#C4D0E2; border-radius:9px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;">Буцах</button>
+            </sc-if>
+            <button onClick="{{ tourNext }}" style="background:#E63950; border:none; color:#fff; border-radius:9px; padding:8px 18px; font-size:13px; font-weight:700; cursor:pointer;">{{ tourNextText }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ENDED OVERLAY -->
+  <sc-if value="{{ ended }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; z-index:75; background:rgba(6,10,18,.85); display:flex; align-items:center; justify-content:center; padding:20px; animation:toastIn .2s ease;">
+      <div style="width:min(420px,100%); background:#101B2E; border:1.5px solid {{ endBorder }}; border-radius:20px; padding:30px; text-align:center; box-shadow:0 30px 80px rgba(0,0,0,.55);">
+        <div style="width:64px; height:64px; border-radius:50%; margin:0 auto 16px; background:{{ endIconBg }}; color:{{ endIconFg }}; display:flex; align-items:center; justify-content:center; font-size:30px;">{{ endIcon }}</div>
+        <div style="font-size:24px; font-weight:700; color:{{ endTitleColor }};">{{ endTitle }}</div>
+        <div style="font-size:14px; color:#A9B6CC; margin-top:8px; line-height:1.5;">{{ endBody }}</div>
+        <button onClick="{{ replay }}" style="margin-top:22px; background:#16233B; border:1px solid rgba(255,255,255,.16); color:#EEF2F8; border-radius:12px; padding:13px 24px; font-size:14px; font-weight:600; cursor:pointer;">↻ Дахин эхлүүлэх</button>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;reservePrice&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:5300000,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1000000,&quot;max&quot;:50000000,&quot;step&quot;:100000},&quot;creditLimit&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:9000000,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1000000,&quot;max&quot;:80000000,&quot;step&quot;:100000},&quot;startSeconds&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:120,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:20,&quot;max&quot;:600,&quot;step&quot;:5},&quot;spectatorsStart&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:247,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:5000,&quot;step&quot;:1},&quot;soundDefault&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const reserve = props.reservePrice ?? 5300000;
+    const limit = props.creditLimit ?? 9000000;
+    const dur = props.startSeconds ?? 120;
+    this.state = {
+      reserve, limit, dur,
+      price: reserve, displayPrice: reserve,
+      leader: 'rival', leaderLabel: 'Оролцогч #7', hasBid: false,
+      hold: 0,
+      timeLeft: dur, barMax: dur,
+      feed: [{ id: 1, label: 'Оролцогч #7', amount: reserve, mine: false, ts: Date.now() - 4000 }],
+      spectators: props.spectatorsStart ?? 247,
+      conn: 'live',
+      soundOn: props.soundDefault ?? false,
+      watching: true,
+      ended: false, result: null,
+      bannerPulse: 0, outbidFlash: 0, extendFlash: 0, extendMsg: false,
+      toasts: [],
+      tour: null, spotlight: null,
+      showShortcuts: false, practice: false,
+      reduceMotion: false,
+      vw: 1280, vh: 800,
+      lastBid: null,
+      now: Date.now(),
+    };
+    this._fid = 1;
+    this.refBanner = React.createRef();
+    this.refHero = React.createRef();
+    this.refButtons = React.createRef();
+    this.refBalance = React.createRef();
+    this.refKbd = React.createRef();
+    this.tourSteps = [
+      { ref: 'refBanner', title: 'Таны төлөв', body: 'Энэ хэсэг та тэргүүлж байгаа эсэх, эсвэл саналыг давсныг шууд харуулна.' },
+      { ref: 'refHero',   title: 'Үнэ ба цаг', body: 'Одоогийн өндөр үнэ ба үлдсэн хугацаа. Сүүлд санал ирвэл цаг сунгагдана — снайп хийх боломжгүй.' },
+      { ref: 'refButtons',title: 'Хурдан санал', body: 'Дарж үнэ нэмнэ. Товч бүр та яг хэдийг төлөхийг харуулна.' },
+      { ref: 'refBalance',title: 'Боломжит үлдэгдэл', body: 'Үүнээс илүү санал болгож чадахгүй. Саналыг давсан үед барьцаалсан мөнгө буцаж ирнэ.' },
+      { ref: 'refKbd',    title: 'Гарын товчлол', body: 'Хурдан оролцохыг хүсвэл 1–5 эсвэл Enter дарна. Хүссэн үедээ ? дарж тусламж аваарай.' },
+    ];
+  }
+
+  componentDidMount(){
+    this.setState({ vw: window.innerWidth, vh: window.innerHeight });
+    try { this.setState({ reduceMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches }); } catch(e){}
+    this._timer = setInterval(() => this.tick(), 1000);
+    this._spec = setInterval(() => this.setState(s => ({ spectators: Math.max(180, s.spectators + Math.round((Math.random()-.45)*6)), now: Date.now() })), 3500);
+    this._conn = setInterval(() => this.connBlip(), 34000);
+    this.scheduleRival();
+    this._onKey = (e) => this.onKey(e);
+    this._onResize = () => { this.setState({ vw: window.innerWidth, vh: window.innerHeight }); if (this.state.tour != null) this.computeSpotlight(); };
+    window.addEventListener('keydown', this._onKey);
+    window.addEventListener('resize', this._onResize);
+    try { if (!localStorage.getItem('wpa_live_tour')) this._tourT = setTimeout(() => this.startTour(), 1300); } catch(e){}
+  }
+  componentWillUnmount(){
+    clearInterval(this._timer); clearInterval(this._spec); clearInterval(this._conn);
+    clearTimeout(this._rivalT); clearTimeout(this._tourT); cancelAnimationFrame(this._raf);
+    window.removeEventListener('keydown', this._onKey);
+    window.removeEventListener('resize', this._onResize);
+  }
+
+  // ---- helpers ----
+  fmt(n){ return Math.round(n).toLocaleString('en-US') + '₮'; }
+  fmtP(n){ return Math.round(n).toLocaleString('en-US'); }
+  get step(){ return this.state.reserve * 0.1; }
+
+  animatePrice(from, to){
+    if (this.state.reduceMotion){ this.setState({ displayPrice: to }); return; }
+    cancelAnimationFrame(this._raf);
+    const start = performance.now(), dur = 460;
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / dur);
+      const e = 1 - Math.pow(1 - t, 3);
+      this.setState({ displayPrice: Math.round(from + (to - from) * e) });
+      if (t < 1) this._raf = requestAnimationFrame(tick);
+    };
+    this._raf = requestAnimationFrame(tick);
+  }
+
+  beep(kind){
+    if (!this.state.soundOn) return;
+    try {
+      const a = this._ac || (this._ac = new (window.AudioContext || window.webkitAudioContext)());
+      const o = a.createOscillator(), g = a.createGain();
+      o.connect(g); g.connect(a.destination);
+      o.frequency.value = kind === 'out' ? 200 : 680;
+      o.type = 'sine';
+      g.gain.setValueAtTime(0.09, a.currentTime);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.18);
+      o.stop(a.currentTime + 0.2);
+      if (kind === 'out') setTimeout(() => this.beep2(), 120);
+    } catch(e){}
+  }
+  beep2(){ try { const a=this._ac; const o=a.createOscillator(),g=a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value=160; g.gain.setValueAtTime(0.09,a.currentTime); o.start(); g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+0.18); o.stop(a.currentTime+0.2);}catch(e){} }
+
+  addToast(t){
+    const id = Math.random().toString(36).slice(2);
+    this.setState(s => ({ toasts: [...s.toasts, { id, ...t }] }));
+    setTimeout(() => this.setState(s => ({ toasts: s.toasts.filter(x => x.id !== id) })), t.undo ? 5000 : 3600);
+  }
+
+  flashExtend(){
+    this.setState({ extendMsg: true });
+    clearTimeout(this._extT);
+    this._extT = setTimeout(() => this.setState({ extendMsg: false }), 1900);
+  }
+
+  // ---- auction logic ----
+  tick(){
+    this.setState(s => {
+      if (s.ended || s.conn !== 'live') return { now: Date.now() };
+      const t = s.timeLeft - 1;
+      if (t <= 0){ this._endNow = true; return { timeLeft: 0, now: Date.now() }; }
+      return { timeLeft: t, now: Date.now() };
+    }, () => { if (this._endNow){ this._endNow = false; this.endAuction(); } });
+  }
+
+  endAuction(){
+    clearTimeout(this._rivalT);
+    const won = this.state.leader === 'me';
+    this.setState({ ended: true, result: won ? 'won' : 'lost' });
+  }
+
+  scheduleRival(){
+    clearTimeout(this._rivalT);
+    if (this.state.ended) return;
+    const d = 4200 + Math.random() * 6000;
+    this._rivalT = setTimeout(() => this.rivalBid(), d);
+  }
+
+  rivalBid(){
+    const s = this.state;
+    if (s.ended){ return; }
+    if (s.conn !== 'live'){ this.scheduleRival(); return; }
+    const bump = Math.random() < 0.78 ? 1 : 2;
+    const amount = s.price + bump * this.step;
+    // occasional pause so the user can actually win
+    if (s.leader === 'me' && Math.random() < 0.32){ this.scheduleRival(); return; }
+    const names = [2,3,5,8,11,14,7];
+    const label = 'Оролцогч #' + names[Math.floor(Math.random() * names.length)];
+    const wasMine = s.leader === 'me';
+    const id = ++this._fid;
+    let extend = false, t = s.timeLeft;
+    if (t <= 15){ t += 30; extend = true; }
+    this.animatePrice(s.price, amount);
+    this.setState(st => ({
+      price: amount, leader: 'rival', leaderLabel: label,
+      hold: wasMine ? 0 : st.hold,
+      feed: [{ id, label, amount, mine: false, ts: Date.now() }, ...st.feed].slice(0, 14),
+      timeLeft: t, barMax: Math.max(st.barMax, t),
+      extendFlash: extend ? st.extendFlash + 1 : st.extendFlash,
+      bannerPulse: wasMine ? st.bannerPulse + 1 : st.bannerPulse,
+      outbidFlash: wasMine ? st.outbidFlash + 1 : st.outbidFlash,
+      lastBid: wasMine ? null : st.lastBid,
+    }));
+    if (extend){ this.addToast({ kind:'warn', icon:'⏱', text:'Хугацаа сунгагдлаа +30 сек' }); this.flashExtend(); }
+    if (wasMine){ this.addToast({ kind:'danger', icon:'⚠', text:'Таны саналыг давсан! ' + this.fmt(s.hold) + ' буцаагдлаа' }); this.beep('out'); }
+    this.scheduleRival();
+  }
+
+  placeBid(n){
+    const s = this.state;
+    if (s.ended || s.conn !== 'live') return;
+    if (s.leader === 'me'){ this.addToast({ kind:'info', icon:'✓', text:'Та аль хэдийн тэргүүлж байна' }); return; }
+    const amount = s.price + n * this.step;
+    if (amount > s.limit){ this.addToast({ kind:'danger', icon:'⚠', text:'Үлдэгдэл хүрэлцэхгүй' }); return; }
+    const prev = { price: s.price, leader: s.leader, leaderLabel: s.leaderLabel, hold: s.hold };
+    const id = ++this._fid;
+    let extend = false, t = s.timeLeft;
+    if (t <= 15){ t += 30; extend = true; }
+    this.animatePrice(s.price, amount);
+    this.setState(st => ({
+      price: amount, leader: 'me', leaderLabel: 'Та', hold: amount, hasBid: true,
+      feed: [{ id, label: 'Та', amount, mine: true, ts: Date.now() }, ...st.feed].slice(0, 14),
+      timeLeft: t, barMax: Math.max(st.barMax, t),
+      extendFlash: extend ? st.extendFlash + 1 : st.extendFlash,
+      bannerPulse: st.bannerPulse + 1,
+      lastBid: { ...prev, id },
+    }));
+    if (extend){ this.addToast({ kind:'warn', icon:'⏱', text:'Хугацаа сунгагдлаа +30 сек' }); this.flashExtend(); }
+    this.addToast({ kind:'success', icon:'✓', text:'Үнэ нэмэгдлээ — ' + this.fmt(amount) + ' барьцаалагдлаа', undo: id });
+    this.beep('up');
+    this.scheduleRival();
+  }
+
+  undoBid(id){
+    const s = this.state;
+    if (!s.lastBid || s.lastBid.id !== id || s.leader !== 'me') return;
+    const p = s.lastBid;
+    this.animatePrice(s.price, p.price);
+    this.setState(st => ({
+      price: p.price, leader: p.leader, leaderLabel: p.leaderLabel, hold: p.hold,
+      feed: st.feed.filter(f => f.id !== id), lastBid: null,
+      toasts: st.toasts.filter(x => x.undo !== id),
+      bannerPulse: st.bannerPulse + 1,
+    }));
+  }
+
+  connBlip(){
+    if (this.state.ended) return;
+    this.setState({ conn: 'reconnecting' });
+    this.addToast({ kind:'info', icon:'⟳', text:'Холбогдож байна…' });
+    clearTimeout(this._connBack);
+    this._connBack = setTimeout(() => { this.setState({ conn: 'live' }); this.scheduleRival(); }, 2600);
+  }
+
+  // ---- tour ----
+  startTour(){ this.setState({ tour: 0, showShortcuts: false }); setTimeout(() => this.computeSpotlight(), 80); }
+  computeSpotlight(){
+    const i = this.state.tour;
+    if (i == null) return;
+    const step = this.tourSteps[i];
+    const el = this[step.ref] && this[step.ref].current;
+    if (!el){ this.setState({ spotlight: null }); return; }
+    const r = el.getBoundingClientRect();
+    const pad = 8;
+    this.setState({ spotlight: { x: r.left - pad, y: r.top - pad, w: r.width + pad*2, h: r.height + pad*2 } });
+  }
+  tourNext(){
+    const i = this.state.tour;
+    if (i >= this.tourSteps.length - 1){ this.endTour(); return; }
+    this.setState({ tour: i + 1, spotlight: null }, () => setTimeout(() => this.computeSpotlight(), 30));
+  }
+  tourBack(){
+    const i = this.state.tour;
+    if (i <= 0) return;
+    this.setState({ tour: i - 1, spotlight: null }, () => setTimeout(() => this.computeSpotlight(), 30));
+  }
+  endTour(){ try { localStorage.setItem('wpa_live_tour', '1'); } catch(e){} this.setState({ tour: null, spotlight: null }); }
+
+  // ---- ui handlers ----
+  toggleSound(){ this.setState(s => ({ soundOn: !s.soundOn })); }
+  toggleWatch(){ this.setState(s => ({ watching: !s.watching })); }
+  togglePractice(){ this.setState(s => ({ practice: !s.practice, showShortcuts: false })); }
+  openHelp(){ this.setState({ showShortcuts: true }); }
+  closeHelp(){ this.setState({ showShortcuts: false }); }
+  replay(){
+    const { reserve, limit, dur } = this.state;
+    cancelAnimationFrame(this._raf);
+    this._fid = 1;
+    this.setState({
+      price: reserve, displayPrice: reserve, leader: 'rival', leaderLabel: 'Оролцогч #7', hasBid: false,
+      hold: 0, timeLeft: dur, barMax: dur, ended: false, result: null, conn: 'live',
+      feed: [{ id:1, label:'Оролцогч #7', amount: reserve, mine:false, ts: Date.now() }],
+      lastBid: null, toasts: [], bannerPulse: 0, outbidFlash: 0,
+    });
+    this.scheduleRival();
+  }
+
+  onKey(e){
+    const tag = (e.target && e.target.tagName) || '';
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (e.target && e.target.isContentEditable)) return;
+    const k = e.key;
+    if (k === '?' || (k === '/' && e.shiftKey)){ e.preventDefault(); this.setState(s => ({ showShortcuts: !s.showShortcuts })); return; }
+    if (k === 'Escape'){
+      if (this.state.showShortcuts){ this.closeHelp(); return; }
+      if (this.state.tour != null){ this.endTour(); return; }
+      if (this.state.lastBid && this.state.leader === 'me'){ this.undoBid(this.state.lastBid.id); return; }
+      return;
+    }
+    if (this.state.showShortcuts || this.state.tour != null) return;
+    if (k >= '1' && k <= '5'){ e.preventDefault(); this.placeBid(parseInt(k, 10)); return; }
+    if (k === 'Enter' || k === ' '){ e.preventDefault(); this.placeBid(1); return; }
+    if (k === 'w' || k === 'W' || k === 'ц' || k === 'Ц'){ this.toggleWatch(); return; }
+    if (k === 'm' || k === 'M' || k === 'ь' || k === 'Ь'){ this.toggleSound(); return; }
+  }
+
+  // ---- render ----
+  renderVals(){
+    const s = this.state;
+    const amWinning = s.leader === 'me';
+    const available = s.limit - s.hold;
+    const step = this.step;
+
+    // banner
+    let ban;
+    if (amWinning){
+      ban = { bg:'linear-gradient(135deg,#10301F,#0C2418)', border:'rgba(43,208,122,.55)', icon:'✓', iconBg:'#2BD07A', iconFg:'#06180E',
+        title:'Та тэргүүлж байна', sub:'Таны санал одоогоор хамгийн өндөр. Барьцаа: ' + this.fmt(s.hold),
+        titleColor:'#7BF2B5', subColor:'#A7D8BE' };
+    } else if (s.hasBid){
+      ban = { bg:'linear-gradient(135deg,#2A0E14,#220A10)', border:'rgba(255,90,95,.6)', icon:'⚠', iconBg:'#FF5A5F', iconFg:'#2A0708',
+        title:'Таны саналыг давсан!', sub:'Барьцаалсан мөнгө буцаагдлаа. Дахин үнэ нэмэх үү?',
+        titleColor:'#FF8B91', subColor:'#E0A6A9' };
+    } else {
+      ban = { bg:'#0E1729', border:'rgba(255,255,255,.1)', icon:'•', iconBg:'#1C2A44', iconFg:'#8AA0C0',
+        title:'Та оролцоонд ороогүй байна', sub:'Доорх товчоор үнэ нэмж дуудлага худалдаанд оролцоно уу.',
+        titleColor:'#EEF2F8', subColor:'#92A0B6' };
+    }
+    const banAnim = s.reduceMotion ? 'none' : (amWinning ? 'winPulse .6s ease' : (s.hasBid ? 'outbidPulse .6s ease' : 'none'));
+
+    // timer
+    const mm = String(Math.floor(s.timeLeft / 60)).padStart(2, '0');
+    const ss = String(s.timeLeft % 60).padStart(2, '0');
+    const timerColor = s.timeLeft > 30 ? '#2BD07A' : (s.timeLeft > 10 ? '#FFB02E' : '#FF5A5F');
+    const timerBarW = Math.max(0, Math.min(100, (s.timeLeft / s.barMax) * 100)) + '%';
+
+    // leader badge
+    const leaderInitial = amWinning ? 'Т' : '#' + (s.leaderLabel.replace(/\D/g,'') || '·');
+    const leaderDotBg = amWinning ? '#2BD07A' : '#1C2A44';
+    const leaderDotFg = amWinning ? '#06180E' : '#8AA0C0';
+    const leaderColor = amWinning ? '#7BF2B5' : '#C4D0E2';
+
+    // bid buttons
+    const buttons = [1,2,3,4,5].map(n => {
+      const amount = s.price + n * step;
+      const overLimit = amount > s.limit;
+      const disabled = amWinning || s.ended || s.conn !== 'live' || overLimit;
+      const primary = n === 1 && !disabled;
+      return {
+        n, key: String(n), label: '+' + n,
+        delta: '+' + this.fmtP(n * step),
+        result: this.fmt(amount),
+        amount, disabled,
+        tip: overLimit ? 'Үлдэгдэл хүрэлцэхгүй' : (amWinning ? 'Та аль хэдийн тэргүүлж байна' : (s.conn !== 'live' ? 'Холболт сэргэж байна' : '')),
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        bg: disabled ? '#0B1322' : (primary ? '#E63950' : '#16233B'),
+        fg: disabled ? '#3A465C' : '#fff',
+        border: disabled ? 'rgba(255,255,255,.05)' : (primary ? '#FF5268' : 'rgba(255,255,255,.14)'),
+        deltaColor: disabled ? '#33405A' : (primary ? '#FFD2D7' : '#92A0B6'),
+        keyColor: disabled ? '#33405A' : (primary ? '#FFD2D7' : '#A9B6CC'),
+        keyBorder: disabled ? 'rgba(255,255,255,.06)' : (primary ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.18)'),
+        onClick: () => this.placeBid(n),
+      };
+    });
+
+    // balance
+    const tight = available < step * 2;
+    const balColor = available <= 0 ? '#FF5A5F' : (tight ? '#FFB02E' : '#EEF2F8');
+    const balBorder = tight ? 'rgba(255,176,46,.4)' : 'rgba(255,255,255,.08)';
+
+    // feed
+    const feedView = s.feed.map((f, idx) => ({
+      id: f.id, label: f.label, amount: this.fmt(f.amount),
+      initial: f.mine ? 'Т' : '#' + (f.label.replace(/\D/g,'') || '·'),
+      ago: this.relTime(f.ts, s.now),
+      bg: f.mine ? 'rgba(43,208,122,.1)' : 'transparent',
+      border: f.mine ? 'rgba(43,208,122,.3)' : 'rgba(255,255,255,.05)',
+      dotBg: f.mine ? '#2BD07A' : '#1C2A44',
+      dotFg: f.mine ? '#06180E' : '#8AA0C0',
+      nameColor: f.mine ? '#7BF2B5' : '#C4D0E2',
+      amtColor: f.mine ? '#7BF2B5' : '#EEF2F8',
+      anim: (s.reduceMotion || idx > 0) ? 'none' : 'feedIn .32s ease',
+    }));
+
+    // toasts
+    const palette = {
+      success: { bg:'#10301F', border:'rgba(43,208,122,.5)', color:'#9BEEC2' },
+      danger:  { bg:'#2A0E14', border:'rgba(255,90,95,.55)', color:'#FF9AA0' },
+      warn:    { bg:'#3A2A0A', border:'rgba(255,176,46,.5)', color:'#FFD27A' },
+      info:    { bg:'#142036', border:'rgba(255,255,255,.16)', color:'#C4D0E2' },
+    };
+    const toasts = s.toasts.map(t => ({
+      id: t.id, icon: t.icon, text: t.text,
+      ...(palette[t.kind] || palette.info),
+      canUndo: !!t.undo, onUndo: () => this.undoBid(t.undo),
+    }));
+
+    // connection
+    const connMap = {
+      live: { color:'#2BD07A', text:'Шууд', title:'Холболт тогтвортой' },
+      reconnecting: { color:'#FFB02E', text:'Холбогдож байна…', title:'Дахин холбогдож байна' },
+    };
+    const conn = connMap[s.conn] || connMap.live;
+
+    // shortcuts
+    const shortcuts = [
+      { keys:'1 – 5', label:'+N алхмаар санал нэмэх' },
+      { keys:'Enter / Space', label:'Хамгийн бага санал (+1)' },
+      { keys:'Esc', label:'Сүүлийн саналаа болих / хаах' },
+      { keys:'W', label:'Ажиглах жагсаалтад нэмэх' },
+      { keys:'M', label:'Дуу нээх / хаах' },
+      { keys:'?', label:'Энэ товчлолын цонх' },
+    ];
+
+    // tour
+    const tourActive = s.tour != null;
+    const step0 = tourActive ? this.tourSteps[s.tour] : null;
+    const sp = s.spotlight;
+    let tipX = 24, tipY = 100;
+    if (sp){
+      const below = sp.y + sp.h + 14;
+      const placeBelow = below < s.vh - 200;
+      tipY = placeBelow ? below : Math.max(14, sp.y - 196);
+      tipX = Math.min(Math.max(14, sp.x), s.vw - 334);
+    }
+    const tourDots = this.tourSteps.map((_, i) => ({ color: i === s.tour ? '#FF6B78' : 'rgba(255,255,255,.2)' }));
+
+    // ended
+    const won = s.result === 'won';
+
+    return {
+      practice: s.practice,
+      // strip
+      spectators: s.spectators,
+      animLive: s.reduceMotion ? 'none' : 'livedot 1.4s ease-in-out infinite',
+      connColor: conn.color, connText: conn.text, connTitle: conn.title,
+      soundIcon: s.soundOn ? '🔊' : '🔇',
+      soundBg: s.soundOn ? '#16233B' : '#0B1322',
+      soundColor: s.soundOn ? '#EEF2F8' : '#5E6B82',
+      watchIcon: s.watching ? '★' : '☆',
+      watchText: s.watching ? 'Ажиглаж байна' : 'Ажиглах',
+      watchBg: s.watching ? '#2BD07A1A' : '#0B1322',
+      watchBorder: s.watching ? 'rgba(43,208,122,.4)' : 'rgba(255,255,255,.12)',
+      watchColor: s.watching ? '#7BF2B5' : '#A9B6CC',
+      toggleSound: () => this.toggleSound(),
+      toggleWatch: () => this.toggleWatch(),
+      openHelp: () => this.openHelp(),
+      // banner
+      refBanner: this.refBanner, refHero: this.refHero, refButtons: this.refButtons, refBalance: this.refBalance, refKbd: this.refKbd,
+      bannerKey: 'bn' + s.leader + s.bannerPulse + s.outbidFlash,
+      banBg: ban.bg, banBorder: ban.border, banIcon: ban.icon, banIconBg: ban.iconBg, banIconFg: ban.iconFg,
+      banTitle: ban.title, banSub: ban.sub, banTitleColor: ban.titleColor, banSubColor: ban.subColor, banAnim,
+      // price
+      displayPrice: this.fmtP(s.displayPrice),
+      priceKey: 'p' + s.price,
+      animPrice: s.reduceMotion ? 'none' : 'priceFlash .5s ease',
+      leaderLabel: s.leaderLabel, leaderInitial, leaderDotBg, leaderDotFg, leaderColor,
+      // timer
+      timerText: mm + ':' + ss, timerColor, timerBarW,
+      timerKey: 'tm' + s.extendFlash,
+      animTimer: s.reduceMotion ? 'none' : 'extendPop .6s ease',
+      extendMsg: s.extendMsg,
+      // buttons
+      buttons,
+      bidHint: amWinning ? 'Та тэргүүлж байгаа тул хүлээнэ үү' : 'Нэг товшилт = нэг санал',
+      // balance
+      availableText: this.fmt(available), holdText: this.fmt(s.hold), limitText: this.fmt(s.limit),
+      balColor, balBorder,
+      // feed
+      feedView, feedCount: s.feed.length,
+      // toasts
+      toasts,
+      stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      // shortcuts overlay
+      showShortcuts: s.showShortcuts,
+      shortcuts,
+      closeHelp: () => this.closeHelp(),
+      startTourBtn: () => this.startTour(),
+      togglePractice: () => this.togglePractice(),
+      practiceBtnText: s.practice ? 'Дадлага зогсоох' : 'Дадлага горим',
+      // tour
+      tourActive,
+      spotlightReady: !!sp,
+      spotX: sp ? sp.x + 'px' : '0', spotY: sp ? sp.y + 'px' : '0',
+      spotW: sp ? sp.w + 'px' : '0', spotH: sp ? sp.h + 'px' : '0',
+      tipX: tipX + 'px', tipY: tipY + 'px',
+      tourCounter: tourActive ? ('Алхам ' + (s.tour + 1) + ' / ' + this.tourSteps.length) : '',
+      tourTitle: step0 ? step0.title : '',
+      tourBody: step0 ? step0.body : '',
+      tourDots,
+      tourHasBack: s.tour > 0,
+      tourNextText: tourActive && s.tour === this.tourSteps.length - 1 ? 'Дуусгах' : 'Цааш',
+      tourNext: () => this.tourNext(),
+      tourBack: () => this.tourBack(),
+      skipTour: () => this.endTour(),
+      // ended
+      ended: s.ended,
+      endIcon: won ? '🏆' : '⏱',
+      endIconBg: won ? '#2BD07A' : '#1C2A44',
+      endIconFg: won ? '#06180E' : '#8AA0C0',
+      endTitle: won ? 'Баяр хүргэе! Та хожлоо' : 'Дуудлага худалдаа дууслаа',
+      endBody: won ? ('Та энэ эрхийг ' + this.fmt(s.price) + '-өөр хожлоо. Барьцаалсан мөнгө худалдан авалтад зарцуулагдана.') : ('Эцсийн үнэ ' + this.fmt(s.price) + '. Таны барьцаалсан мөнгө бүрэн буцаагдсан.'),
+      endTitleColor: won ? '#7BF2B5' : '#EEF2F8',
+      endBorder: won ? 'rgba(43,208,122,.5)' : 'rgba(255,255,255,.12)',
+      replay: () => this.replay(),
+    };
+  }
+
+  relTime(ts, now){
+    const d = Math.max(0, Math.round(((now || Date.now()) - ts) / 1000));
+    if (d < 2) return 'дөнгөж сая';
+    if (d < 60) return d + ' сек өмнө';
+    const m = Math.floor(d / 60);
+    return m + ' мин өмнө';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#F5F2EC; }
+    @keyframes livedot{ 0%{ opacity:1; transform:scale(1);} 50%{ opacity:.35; transform:scale(.7);} 100%{ opacity:1; transform:scale(1);} }
+    @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#F5F2EC; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436;">
+
+  <dc-import name="AppNav" active="catalog" balance="9000000" notif="3" hint-size="100%,66px"></dc-import>
+
+  <div style="max-width:1240px; margin:0 auto; padding:22px 26px 60px;">
+
+    <!-- breadcrumb -->
+    <a href="Catalog.dc.html" style="display:inline-flex; align-items:center; gap:7px; font-size:13px; color:#5B6677; text-decoration:none; margin-bottom:18px;" style-hover="color:#14294A;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Каталог руу буцах
+    </a>
+
+    <div style="display:flex; gap:26px; align-items:flex-start; flex-wrap:wrap;">
+
+      <!-- LEFT: gallery + details -->
+      <div style="flex:1 1 540px; min-width:300px; display:flex; flex-direction:column; gap:18px;">
+        <!-- main image -->
+        <div style="position:relative; height:380px; border-radius:16px; overflow:hidden; background-image:repeating-linear-gradient(135deg,#2C4A6B 0 16px,#26405F 16px 32px); border:1px solid #E6E1D6; display:flex; align-items:flex-end; padding:22px;">
+          <span style="position:absolute; top:16px; left:16px; background:rgba(255,255,255,.92); color:#14294A; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; padding:5px 11px; border-radius:8px;">Угалз:U9</span>
+          <span style="position:absolute; top:16px; right:16px; display:flex; align-items:center; gap:6px; background:#C8312C; color:#fff; font-size:12px; font-weight:700; letter-spacing:.05em; padding:5px 11px; border-radius:8px;"><span style="width:7px; height:7px; border-radius:50%; background:#fff; animation:livedot 1.4s infinite;"></span>ШУУД ЯВАГДАЖ БАЙНА</span>
+          <div style="position:relative; color:#fff;">
+            <div style="font-size:26px; font-weight:700; text-shadow:0 1px 6px rgba(0,0,0,.4);">Угалз (Алтайн аргаль)</div>
+            <div style="font-size:14px; font-style:italic; opacity:.92; text-shadow:0 1px 6px rgba(0,0,0,.4);">Ovis ammon ammon</div>
+          </div>
+        </div>
+        <!-- thumbnails -->
+        <div style="display:flex; gap:12px;">
+          <sc-for list="{{ thumbs }}" as="th" hint-placeholder-count="4">
+            <div style="flex:1; height:74px; border-radius:10px; background-image:repeating-linear-gradient(135deg,{{ th.a }} 0 10px,{{ th.b }} 10px 20px); border:1px solid #E6E1D6; display:flex; align-items:center; justify-content:center;">
+              <span style="font-size:10.5px; color:rgba(255,255,255,.85); font-weight:500;">{{ th.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- info table -->
+        <div style="background:#FFF; border:1px solid #E6E1D6; border-radius:14px; padding:22px;">
+          <h2 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#14294A;">Лотын мэдээлэл</h2>
+          <p style="margin:0 0 16px; font-size:13.5px; color:#5B6677; line-height:1.55;">Алтайн нурууны бүсэд агнах аргалийн эрх. Эрх нь нэг бодгальд хүчинтэй бөгөөд агнуурын улирал, бүсийн дүрмийн дагуу хэрэгжинэ.</p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1px; background:#EFEBE1; border:1px solid #EFEBE1; border-radius:10px; overflow:hidden;">
+            <sc-for list="{{ facts }}" as="f" hint-placeholder-count="6">
+              <div style="background:#FFF; padding:13px 15px;">
+                <div style="font-size:11.5px; color:#8A93A3; font-weight:500;">{{ f.k }}</div>
+                <div style="font-size:14px; color:#14294A; font-weight:600; margin-top:3px; font-variant-numeric:tabular-nums;">{{ f.v }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- increment band explainer -->
+        <div style="background:#FFF; border:1px solid #E6E1D6; border-radius:14px; padding:22px;">
+          <h2 style="margin:0 0 4px; font-size:18px; font-weight:700; color:#14294A;">Үнийн алхам хэрхэн ажилладаг вэ?</h2>
+          <p style="margin:0 0 16px; font-size:13.5px; color:#5B6677; line-height:1.55;">Нэг алхам нь босго үнийн <strong style="color:#14294A;">10%</strong> буюу <strong style="color:#14294A; font-variant-numeric:tabular-nums;">530,000₮</strong>. Нэг удаагийн саналд <strong style="color:#14294A;">+1-ээс +5</strong> хүртэл алхам нэмж болно (дээд тал нь босго үнийн 50%).</p>
+          <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            <sc-for list="{{ steps }}" as="st" hint-placeholder-count="5">
+              <div style="flex:1 1 0; min-width:90px; border:1px solid #E6E1D6; border-radius:10px; padding:12px 10px; text-align:center; background:{{ st.bg }};">
+                <div style="font-size:11px; color:#8A93A3; font-weight:600;">+{{ st.n }} алхам</div>
+                <div style="font-size:13px; font-weight:700; color:#14294A; margin-top:4px; font-variant-numeric:tabular-nums;">{{ st.amount }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- bid history preview -->
+        <div style="background:#FFF; border:1px solid #E6E1D6; border-radius:14px; padding:22px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <h2 style="margin:0; font-size:18px; font-weight:700; color:#14294A;">Саналын түүх</h2>
+            <span style="font-size:12px; color:#8A93A3;">Сүүлийн {{ historyCount }} санал</span>
+          </div>
+          <div style="display:flex; flex-direction:column;">
+            <sc-for list="{{ history }}" as="h" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; gap:13px; padding:11px 0; border-bottom:1px solid #F0ECE2;">
+                <span style="width:30px; height:30px; border-radius:50%; background:{{ h.dotBg }}; color:{{ h.dotFg }}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">{{ h.initial }}</span>
+                <div style="flex:1;"><div style="font-size:13.5px; font-weight:600; color:{{ h.nameColor }};">{{ h.name }}</div><div style="font-size:11.5px; color:#8A93A3;">{{ h.ago }}</div></div>
+                <span style="font-size:14px; font-weight:600; color:#14294A; font-variant-numeric:tabular-nums;">{{ h.amount }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: sticky action panel -->
+      <div style="flex:0 0 360px; max-width:100%; position:sticky; top:88px; display:flex; flex-direction:column; gap:16px;">
+        <div style="background:#FFF; border:1px solid #E6E1D6; border-radius:16px; padding:22px; box-shadow:0 2px 8px rgba(20,41,74,.06);">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:13px; color:#5B6677;">Угалз · Баян-Өлгий</span>
+            <button onClick="{{ onWatch }}" style="display:flex; align-items:center; gap:6px; border:1px solid {{ watchBorder }}; background:{{ watchBg }}; color:{{ watchColor }}; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:600; cursor:pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="{{ watchFill }}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="m12 3 2.6 5.8 6.4.6-4.8 4.3 1.4 6.3L12 17l-5.6 3.3 1.4-6.3L3 9.4l6.4-.6z"/></svg>
+              {{ watchText }}
+            </button>
+          </div>
+          <div style="margin-top:16px;">
+            <div style="font-size:12px; color:#8A93A3; font-weight:500;">Одоогийн үнэ</div>
+            <div style="display:flex; align-items:baseline; gap:3px; margin-top:3px;">
+              <span style="font-size:34px; font-weight:700; color:#14294A; font-variant-numeric:tabular-nums;">{{ currentPrice }}</span>
+              <span style="font-size:22px; font-weight:600; color:#5B6677;">₮</span>
+            </div>
+            <div style="font-size:12.5px; color:#5B6677; margin-top:4px;">Босго үнэ: <span style="font-variant-numeric:tabular-nums;">5,300,000₮</span> · {{ bidders }} оролцогч</div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; align-items:center; justify-content:space-between; background:#FBEFEE; border:1px solid #F2D6D4; border-radius:10px; padding:12px 14px;">
+            <span style="display:flex; align-items:center; gap:7px; font-size:13px; color:#A02622; font-weight:600;">
+              <span style="width:7px; height:7px; border-radius:50%; background:#C8312C; animation:livedot 1.4s infinite;"></span>Дуусахад
+            </span>
+            <span style="font-size:18px; font-weight:700; color:#C8312C; font-variant-numeric:tabular-nums;">{{ countdown }}</span>
+          </div>
+
+          <a href="Live%20Bidding%20Room.dc.html" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; background:#C8312C; color:#fff; text-decoration:none; border-radius:11px; padding:15px; font-size:15px; font-weight:700;" style-hover="background:#B12A26;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            Шууд танхимд орох
+          </a>
+          <div style="text-align:center; font-size:11.5px; color:#8A93A3; margin-top:10px;">Танхимд орсноор санал өгөх боломжтой</div>
+        </div>
+
+        <!-- eligibility banner -->
+        <div style="background:#FFF; border:1px solid #C7E5D5; border-radius:14px; padding:16px 18px;">
+          <div style="display:flex; align-items:flex-start; gap:11px;">
+            <span style="width:34px; height:34px; border-radius:50%; background:#E5F4EC; color:#1F8A5B; display:flex; align-items:center; justify-content:center; flex:0 0 auto;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <div>
+              <div style="font-size:14px; font-weight:700; color:#197a50;">Та оролцох эрхтэй</div>
+              <div style="font-size:12.5px; color:#5B6677; line-height:1.5; margin-top:3px;">KYC баталгаажсан. Боломжит үлдэгдэл: <strong style="color:#14294A; font-variant-numeric:tabular-nums;">9,000,000₮</strong> — энэ лотод санал өгөхөд хүрэлцэнэ.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- schedule -->
+        <div style="background:#FFF; border:1px solid #E6E1D6; border-radius:14px; padding:18px;">
+          <h3 style="margin:0 0 12px; font-size:14px; font-weight:700; color:#14294A;">Хуваарь</h3>
+          <sc-for list="{{ schedule }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:11px; padding:7px 0;">
+              <span style="width:9px; height:9px; border-radius:50%; flex:0 0 auto; background:{{ s.dot }};"></span>
+              <span style="flex:1; font-size:13px; color:#5B6677;">{{ s.label }}</span>
+              <span style="font-size:13px; color:#14294A; font-weight:600; font-variant-numeric:tabular-nums;">{{ s.time }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = { now: Date.now(), end: Date.now() + 205000, watched: true, cur: 5830000, bidders: 7 };
+  }
+  componentDidMount(){ this._t = setInterval(() => this.setState({ now: Date.now() }), 1000); }
+  componentWillUnmount(){ clearInterval(this._t); }
+  fmt(n){ return Math.round(n).toLocaleString('en-US') + '₮'; }
+
+  renderVals(){
+    const s = this.state;
+    const remain = Math.max(0, s.end - s.now);
+    const mm = String(Math.floor(remain/60000)).padStart(2,'0');
+    const ss = String(Math.floor((remain%60000)/1000)).padStart(2,'0');
+
+    const thumbs = [
+      { a:'#2C4A6B', b:'#26405F', label:'Ерөнхий' },
+      { a:'#274463', b:'#1F3A56', label:'Бүс нутаг' },
+      { a:'#2B4A52', b:'#23404A', label:'Эвэр' },
+      { a:'#33506E', b:'#2A4660', label:'Газрын зураг' },
+    ];
+    const facts = [
+      { k:'Лотын код', v:'Угалз:U9' },
+      { k:'Зүйл', v:'Алтайн аргаль' },
+      { k:'Аймаг / бүс', v:'Баян-Өлгий' },
+      { k:'Босго үнэ', v:'5,300,000₮' },
+      { k:'Үнийн алхам', v:'530,000₮ (10%)' },
+      { k:'Агнуурын улирал', v:'2026 IX–XI сар' },
+    ];
+    const step = 530000, base = 5300000;
+    const steps = [1,2,3,4,5].map(n => ({ n, amount: this.fmt(base + n*step), bg: n===1 ? '#FBEFEE' : '#FFF' }));
+
+    const hist = [
+      { name:'Оролцогч #7', amount:5830000, mine:false, t:8 },
+      { name:'Оролцогч #3', amount:5300000, mine:false, t:32 },
+      { name:'Та', amount:4770000, mine:true, t:68 },
+      { name:'Оролцогч #11', amount:4240000, mine:false, t:95 },
+      { name:'Оролцогч #5', amount:3710000, mine:false, t:140 },
+    ];
+    const history = hist.map(h => ({
+      name:h.name, amount:this.fmt(h.amount),
+      initial: h.mine ? 'Та' : '#'+h.name.replace(/\D/g,''),
+      ago: h.t<60 ? h.t+' сек өмнө' : Math.floor(h.t/60)+' мин өмнө',
+      dotBg: h.mine ? '#E5F4EC' : '#EEF1F5', dotFg: h.mine ? '#1F8A5B' : '#14294A',
+      nameColor: h.mine ? '#197a50' : '#14294A',
+    }));
+
+    const schedule = [
+      { label:'Бүртгэл хаагдсан', time:'IX/14 18:00', dot:'#CDD4DE' },
+      { label:'Шууд эхэлсэн', time:'IX/15 10:00', dot:'#1F8A5B' },
+      { label:'Дуусах (ойролцоо)', time:'IX/15 10:30', dot:'#C8312C' },
+    ];
+
+    return {
+      thumbs, facts, steps, history, schedule,
+      historyCount: hist.length,
+      currentPrice: this.fmt(s.cur).replace('₮',''), bidders: s.bidders,
+      countdown: mm + ':' + ss,
+      watched: s.watched,
+      watchText: s.watched ? 'Ажиглаж байна' : 'Ажиглах',
+      watchFill: s.watched ? '#E0A11E' : 'none',
+      watchColor: s.watched ? '#A9760E' : '#5B6677',
+      watchBg: s.watched ? '#FBF3DF' : '#FFF',
+      watchBorder: s.watched ? '#EAD9A8' : '#CDD4DE',
+      onWatch: () => this.setState(st => ({ watched: !st.watched })),
+    };
+  }
+}
+</script>
+</body>
+</html>

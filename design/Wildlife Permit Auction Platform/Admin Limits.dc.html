@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#EEF1F5; }
+    input{ font-family:inherit; }
+    @keyframes toastIn{ from{ opacity:0; transform:translateY(-10px);} to{ opacity:1; transform:none; } }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; display:flex; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436; background:#EEF1F5;">
+
+  <dc-import name="AdminNav" active="limits" hint-size="228px,100vh"></dc-import>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div style="height:60px; background:#FFF; border-bottom:1px solid #E1E5EC; display:flex; align-items:center; justify-content:space-between; padding:0 24px;">
+      <h1 style="margin:0; font-size:18px; font-weight:700; color:#14294A;">Лимит удирдлага</h1>
+      <div style="position:relative;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A93A3" stroke-width="1.9" stroke-linecap="round" style="position:absolute; left:11px; top:50%; transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input value="{{ q }}" onInput="{{ onSearch }}" placeholder="Хэрэглэгч хайх" style="width:240px; height:38px; padding:0 12px 0 34px; border-radius:9px; border:1px solid #E1E5EC; background:#F7F8FA; font-size:13px; outline:none;" />
+      </div>
+    </div>
+
+    <div style="flex:1; overflow-y:auto; padding:20px 24px 32px;">
+      <!-- summary -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:18px;">
+        <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="3">
+          <div style="background:#FFF; border:1px solid #E1E5EC; border-radius:12px; padding:15px 17px;">
+            <div style="font-size:11.5px; color:#8A93A3; font-weight:600;">{{ k.label }}</div>
+            <div style="font-size:22px; font-weight:700; color:#14294A; font-variant-numeric:tabular-nums; margin-top:6px;">{{ k.value }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background:#FFF; border:1px solid #E1E5EC; border-radius:14px; overflow:hidden;">
+        <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr 132px; gap:12px; padding:11px 18px; background:#F7F8FA; border-bottom:1px solid #EBEEF3; font-size:11px; font-weight:700; color:#8A93A3; text-transform:uppercase; letter-spacing:.03em;">
+          <span>Хэрэглэгч</span><span style="text-align:right;">Лимит</span><span style="text-align:right;">Барьцаанд</span><span style="text-align:right;">Боломжит</span><span style="text-align:right;">Үйлдэл</span>
+        </div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+          <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr 132px; gap:12px; padding:13px 18px; border-bottom:1px solid #F1F3F6; align-items:center;">
+            <div style="display:flex; align-items:center; gap:11px; min-width:0;">
+              <span style="width:34px; height:34px; border-radius:9px; flex:0 0 auto; background:{{ r.avBg }}; color:{{ r.avFg }}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">{{ r.initials }}</span>
+              <div style="min-width:0;">
+                <div style="font-size:13.5px; font-weight:600; color:#14294A; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.name }}</div>
+                <div style="font-size:11px; color:#A2AAB6;">{{ r.typeLabel }}</div>
+              </div>
+            </div>
+            <span style="text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; color:#14294A; font-variant-numeric:tabular-nums;">{{ r.limit }}</span>
+            <span style="text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px; color:#C77A0A; font-variant-numeric:tabular-nums;">{{ r.held }}</span>
+            <span style="text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px; color:#1F8A5B; font-variant-numeric:tabular-nums;">{{ r.avail }}</span>
+            <span style="display:flex; gap:6px; justify-content:flex-end;">
+              <button onClick="{{ r.onManage }}" style="font-size:12px; font-weight:600; color:#14294A; background:#F3F5F8; border:1px solid #E1E5EC; border-radius:7px; padding:6px 11px; cursor:pointer;" style-hover="border-color:#CDD4DE;">Удирдах</button>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- manage modal -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed; inset:0; z-index:70; background:rgba(14,30,56,.8); display:flex; align-items:center; justify-content:center; padding:24px; animation:toastIn .18s ease;">
+      <div onClick="{{ stop }}" style="width:min(560px,100%); max-height:90vh; overflow-y:auto; background:#FFF; border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.4);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #EBEEF3;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="width:42px; height:42px; border-radius:10px; background:{{ m.avBg }}; color:{{ m.avFg }}; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700;">{{ m.initials }}</span>
+            <div><div style="font-size:16px; font-weight:700; color:#14294A;">{{ m.name }}</div><div style="font-size:12px; color:#8A93A3;">{{ m.typeLabel }}</div></div>
+          </div>
+          <button onClick="{{ closeModal }}" style="width:32px; height:32px; border-radius:8px; border:1px solid #E1E5EC; background:#FFF; color:#5B6677; cursor:pointer; font-size:15px;">✕</button>
+        </div>
+
+        <div style="padding:20px 22px;">
+          <!-- current -->
+          <div style="display:flex; gap:12px; margin-bottom:18px;">
+            <div style="flex:1; background:#F7F8FA; border:1px solid #EBEEF3; border-radius:10px; padding:13px;">
+              <div style="font-size:11px; color:#8A93A3; font-weight:600;">Одоогийн лимит</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:700; color:#14294A; margin-top:4px; font-variant-numeric:tabular-nums;">{{ m.limit }}</div>
+            </div>
+            <div style="flex:1; background:#F7F8FA; border:1px solid #EBEEF3; border-radius:10px; padding:13px;">
+              <div style="font-size:11px; color:#8A93A3; font-weight:600;">Барьцаанд</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:700; color:#C77A0A; margin-top:4px; font-variant-numeric:tabular-nums;">{{ m.held }}</div>
+            </div>
+          </div>
+
+          <!-- action picker -->
+          <div style="display:flex; gap:6px; background:#F3F5F8; border:1px solid #E1E5EC; border-radius:9px; padding:4px; margin-bottom:14px;">
+            <sc-for list="{{ actions }}" as="a" hint-placeholder-count="3">
+              <button onClick="{{ a.onClick }}" style="flex:1; padding:8px; border-radius:6px; border:none; background:{{ a.bg }}; color:{{ a.fg }}; font-size:13px; font-weight:{{ a.weight }}; cursor:pointer;">{{ a.label }}</button>
+            </sc-for>
+          </div>
+
+          <label style="display:block; font-size:12.5px; font-weight:600; color:#3A4658; margin-bottom:6px;">{{ amountLabel }}</label>
+          <div style="position:relative; margin-bottom:6px;">
+            <input value="{{ amount }}" onInput="{{ onAmount }}" inputmode="numeric" placeholder="0" style="width:100%; height:46px; padding:0 32px 0 14px; border-radius:10px; border:1px solid #E1E5EC; background:#FAF8F4; font-size:16px; font-family:'IBM Plex Mono',monospace; font-weight:600; color:#14294A; outline:none; font-variant-numeric:tabular-nums;" />
+            <span style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:#8A93A3; font-size:16px;">₮</span>
+          </div>
+          <div style="font-size:12px; color:#5B6677; margin-bottom:16px;">Шинэ лимит: <strong style="color:#14294A; font-variant-numeric:tabular-nums;">{{ newLimit }}</strong></div>
+
+          <label style="display:block; font-size:12.5px; font-weight:600; color:#3A4658; margin-bottom:6px;">Тэмдэглэл (аудитад үлдэнэ)</label>
+          <input value="{{ note }}" onInput="{{ onNote }}" placeholder="Ж: Хэрэглэгчийн хүсэлтээр" style="width:100%; height:42px; padding:0 13px; border-radius:9px; border:1px solid #E1E5EC; background:#FAF8F4; font-size:13px; color:#1A2436; outline:none; margin-bottom:18px;" />
+
+          <div style="display:flex; gap:10px;">
+            <button onClick="{{ apply }}" disabled="{{ applyDisabled }}" style="flex:1; background:{{ applyBg }}; border:none; color:#fff; border-radius:10px; padding:13px; font-size:14px; font-weight:700; cursor:{{ applyCursor }};">{{ applyText }}</button>
+          </div>
+
+          <!-- mini ledger -->
+          <div style="margin-top:22px;">
+            <div style="font-size:12.5px; font-weight:700; color:#14294A; margin-bottom:10px;">Лимитийн түүх</div>
+            <sc-for list="{{ m.history }}" as="h" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:11px; padding:9px 0; border-bottom:1px solid #F1F3F6;">
+                <span style="width:26px; height:26px; border-radius:7px; flex:0 0 auto; background:{{ h.bg }}; color:{{ h.fg }}; display:flex; align-items:center; justify-content:center; font-size:12px;">{{ h.icon }}</span>
+                <div style="flex:1;"><div style="font-size:12.5px; color:#14294A; font-weight:500;">{{ h.label }}</div><div style="font-size:11px; color:#A2AAB6;">{{ h.date }} · {{ h.note }}</div></div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; color:{{ h.amtColor }}; font-variant-numeric:tabular-nums;">{{ h.amount }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; top:18px; right:18px; z-index:80; display:flex; align-items:center; gap:11px; padding:13px 16px; border-radius:11px; background:#E5F4EC; border:1px solid #C7E5D5; box-shadow:0 14px 36px rgba(0,0,0,.18); animation:toastIn .22s ease;">
+      <span style="font-size:16px;">✅</span>
+      <span style="font-size:13.5px; color:#197a50; font-weight:600;">{{ toastText }}</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      q:'', selId:null, action:'raise', amount:'', note:'', toast:null,
+      users: [
+        { id:1, type:'individual', name:'Доржийн Батбаяр', limit:9000000, held:2770000,
+          history:[['raise','Лимит нэмэгдсэн',4000000,'IX/12','хүсэлтээр'],['issued','Анхны лимит',5000000,'IX/10','KYC батлагдсан']] },
+        { id:2, type:'legal', name:'Алтай Хайрхан ХХК', limit:25000000, held:11200000,
+          history:[['issued','Анхны лимит',25000000,'IX/08','KYC батлагдсан']] },
+        { id:3, type:'individual', name:'Цэрэнгийн Оюунаа', limit:4000000, held:0,
+          history:[['issued','Анхны лимит',4000000,'IX/11','KYC батлагдсан']] },
+        { id:4, type:'individual', name:'Лхагвын Сүхбат', limit:6000000, held:1500000,
+          history:[['lower','Лимит бууруулсан',-2000000,'IX/13','эрсдэл'],['issued','Анхны лимит',8000000,'IX/09','KYC батлагдсан']] },
+        { id:5, type:'legal', name:'Говь Анчид ХХК', limit:18000000, held:6300000,
+          history:[['raise','Лимит нэмэгдсэн',8000000,'IX/12','хүсэлтээр'],['issued','Анхны лимит',10000000,'IX/07','KYC батлагдсан']] },
+        { id:6, type:'individual', name:'Бат-Эрдэнийн Тэмүүлэн', limit:3000000, held:0,
+          history:[['issued','Анхны лимит',3000000,'IX/14','KYC батлагдсан']] },
+      ],
+    };
+  }
+  fmt(n){ return Math.round(n).toLocaleString('en-US')+'₮'; }
+  parseAmt(v){ return parseInt(String(v).replace(/\D/g,'')||'0',10); }
+  showToast(t){ this.setState({toast:t}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:null}),3000); }
+  componentWillUnmount(){ clearTimeout(this._tt); }
+
+  apply(){
+    const s = this.state; const u = s.users.find(x=>x.id===s.selId); if(!u) return;
+    const amt = this.parseAmt(s.amount); if(amt<=0) return;
+    const delta = s.action==='lower' ? -amt : (s.action==='refund' ? 0 : amt);
+    const newLimit = s.action==='set' ? amt : Math.max(0, u.limit + delta);
+    const labelMap = { raise:['raise','Лимит нэмэгдсэн'], lower:['lower','Лимит бууруулсан'], refund:['refund','Офлайн буцаалт бүртгэв'] };
+    const [kind,label] = labelMap[s.action] || ['raise','Лимит шинэчлэв'];
+    const recAmt = s.action==='lower' ? -amt : amt;
+    this.setState(st => ({
+      users: st.users.map(x => x.id===u.id ? { ...x, limit: s.action==='refund'?x.limit:newLimit, history:[[kind,label,recAmt,'Өнөөдөр', s.note||'—'], ...x.history] } : x),
+      amount:'', note:'',
+    }));
+    this.showToast({ text: u.name+' — '+label });
+  }
+
+  renderVals(){
+    const s = this.state;
+    const meta = (t)=> t==='legal'
+      ? { typeLabel:'Хуулийн этгээд', avBg:'#E5F0FB', avFg:'#1B5FA8' }
+      : { typeLabel:'Иргэн', avBg:'#E5F4EC', avFg:'#1F8A5B' };
+    const initials = (n)=>n.split(/\s+/).map(p=>p[0]||'').join('').slice(0,2).toUpperCase();
+
+    const totalLimit = s.users.reduce((a,u)=>a+u.limit,0);
+    const totalHeld = s.users.reduce((a,u)=>a+u.held,0);
+    const kpis = [
+      { label:'Нийт хэрэглэгч', value:String(s.users.length) },
+      { label:'Олгосон нийт лимит', value:this.fmt(totalLimit).replace('₮','')+'₮' },
+      { label:'Идэвхтэй барьцаа', value:this.fmt(totalHeld).replace('₮','')+'₮' },
+    ];
+
+    const q = s.q.trim().toLowerCase();
+    const rows = s.users.filter(u=>!q||u.name.toLowerCase().includes(q)).map(u => {
+      const m = meta(u.type);
+      return { name:u.name, initials:initials(u.name), typeLabel:m.typeLabel, avBg:m.avBg, avFg:m.avFg,
+        limit:this.fmt(u.limit), held:this.fmt(u.held), avail:this.fmt(u.limit-u.held),
+        onManage:()=>this.setState({selId:u.id, action:'raise', amount:'', note:''}) };
+    });
+
+    const u = s.users.find(x=>x.id===s.selId);
+    let m = {};
+    if (u){
+      const mt = meta(u.type);
+      const histIcon = { raise:['↑','#E5F4EC','#1F8A5B'], lower:['↓','#FBEAE9','#C8312C'], issued:['＋','#E5F0FB','#1B5FA8'], refund:['↩','#FBF1DF','#C77A0A'] };
+      m = { name:u.name, initials:initials(u.name), typeLabel:mt.typeLabel, avBg:mt.avBg, avFg:mt.avFg,
+        limit:this.fmt(u.limit), held:this.fmt(u.held),
+        history: u.history.map(h => { const ic=histIcon[h[0]]||histIcon.raise; return {
+          label:h[1], date:h[3], note:h[4], icon:ic[0], bg:ic[1], fg:ic[2],
+          amount:(h[2]<0?'−':'+')+this.fmt(Math.abs(h[2])), amtColor:h[2]<0?'#C8312C':'#1F8A5B' };
+        }) };
+    }
+
+    const actionDefs = [
+      { key:'raise', label:'Нэмэх' }, { key:'lower', label:'Бууруулах' }, { key:'refund', label:'Офлайн буцаалт' },
+    ];
+    const actions = actionDefs.map(a => {
+      const on = a.key===s.action;
+      return { label:a.label, bg: on?'#FFF':'transparent', fg: on?'#14294A':'#5B6677', weight: on?700:500, onClick:()=>this.setState({action:a.key}) };
+    });
+
+    const amt = this.parseAmt(s.amount);
+    const newLimit = u ? (s.action==='lower' ? Math.max(0,u.limit-amt) : (s.action==='refund' ? u.limit : u.limit+amt)) : 0;
+
+    return {
+      q:s.q, onSearch:(e)=>this.setState({q:e.target.value}),
+      kpis, rows,
+      modalOpen: !!u, m,
+      closeModal:()=>this.setState({selId:null}), stop:(e)=>{if(e&&e.stopPropagation)e.stopPropagation();},
+      actions,
+      amountLabel: s.action==='refund' ? 'Буцаасан дүн (бүртгэлд)' : (s.action==='lower' ? 'Бууруулах дүн' : 'Нэмэх дүн'),
+      amount: s.amount, onAmount:(e)=>this.setState({amount:e.target.value}),
+      note: s.note, onNote:(e)=>this.setState({note:e.target.value}),
+      newLimit: u ? this.fmt(newLimit) : '—',
+      applyDisabled: amt<=0, applyBg: amt>0?'#1F8A5B':'#A9CDB8', applyCursor: amt>0?'pointer':'not-allowed',
+      applyText: s.action==='refund' ? 'Буцаалт бүртгэх' : (s.action==='lower'?'Лимит бууруулах':'Лимит нэмэх'),
+      apply:()=>this.apply(),
+      toast: !!s.toast, toastText: s.toast?s.toast.text:'',
+    };
+  }
+}
+</script>
+</body>
+</html>

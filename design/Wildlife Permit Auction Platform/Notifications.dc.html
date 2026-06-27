@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#F5F2EC; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#F5F2EC; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436;">
+
+  <dc-import name="AppNav" active="notifications" balance="6230000" notif="{{ unread }}" hint-size="100%,66px"></dc-import>
+
+  <div style="max-width:880px; margin:0 auto; padding:30px 26px 60px;">
+
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div>
+        <h1 style="margin:0; font-size:28px; font-weight:700; color:#14294A;">Мэдэгдэл</h1>
+        <p style="margin:6px 0 0; font-size:14px; color:#5B6677;"><strong style="color:#C8312C;">{{ unread }}</strong> уншаагүй мэдэгдэл байна.</p>
+      </div>
+      <button onClick="{{ onReadAll }}" style="display:flex; align-items:center; gap:7px; background:#FFF; border:1px solid #CDD4DE; color:#14294A; border-radius:9px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer;" style-hover="border-color:#14294A;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
+        Бүгдийг уншсан болгох
+      </button>
+    </div>
+
+    <!-- filters -->
+    <div style="margin-top:20px; display:flex; gap:7px; overflow-x:auto; padding-bottom:4px;">
+      <sc-for list="{{ filters }}" as="f" hint-placeholder-count="6">
+        <button onClick="{{ f.onClick }}" style="flex:0 0 auto; padding:8px 14px; border-radius:9px; border:1px solid {{ f.border }}; background:{{ f.bg }}; color:{{ f.fg }}; font-size:13px; font-weight:{{ f.weight }}; cursor:pointer;">{{ f.label }}</button>
+      </sc-for>
+    </div>
+
+    <!-- grouped feed -->
+    <div style="margin-top:22px; display:flex; flex-direction:column; gap:26px;">
+      <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+        <div>
+          <div style="font-size:12px; font-weight:700; color:#8A93A3; letter-spacing:.06em; text-transform:uppercase; margin-bottom:11px;">{{ g.day }}</div>
+          <div style="background:#FFF; border:1px solid #E6E1D6; border-radius:14px; overflow:hidden;">
+            <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="3">
+              <div onClick="{{ n.onRead }}" style="display:flex; align-items:flex-start; gap:13px; padding:15px 18px; border-bottom:1px solid #F3EFE5; background:{{ n.rowBg }}; cursor:pointer;" style-hover="background:#FAF8F3;">
+                <span style="width:40px; height:40px; border-radius:11px; flex:0 0 auto; background:{{ n.iconBg }}; color:{{ n.iconFg }}; display:flex; align-items:center; justify-content:center;">{{ n.icon }}</span>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:14px; font-weight:{{ n.titleWeight }}; color:#14294A;">{{ n.title }}</span>
+                    <sc-if value="{{ n.unread }}" hint-placeholder-val="{{ false }}"><span style="width:8px; height:8px; border-radius:50%; background:#C8312C; flex:0 0 auto;"></span></sc-if>
+                  </div>
+                  <div style="font-size:13px; color:#5B6677; line-height:1.5; margin-top:3px;">{{ n.body }}</div>
+                </div>
+                <span style="font-size:11.5px; color:#A2AAB6; flex:0 0 auto; font-variant-numeric:tabular-nums;">{{ n.time }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:22px; background:#FFF; border:1px dashed #D8D2C4; border-radius:14px; padding:54px 20px; text-align:center;">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#C7BFAE" stroke-width="1.5" style="margin:0 auto;"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <div style="font-size:16px; font-weight:600; color:#3A4658; margin-top:14px;">Энэ төрлийн мэдэгдэл алга</div>
+        <div style="font-size:13.5px; color:#8A93A3; margin-top:5px;">Шинэ мэдэгдэл ирэхэд энд харагдана.</div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:880,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      filter: 'all',
+      items: [
+        { id:1, type:'outbid', day:'Өнөөдөр', time:'10:18', read:false, title:'Таны саналыг давсан!', body:'Угалз:U9 — Оролцогч #7 таныг давлаа. Барьцаалсан 2,240,000₮ буцаагдлаа.' },
+        { id:2, type:'bid', day:'Өнөөдөр', time:'10:18', read:false, title:'Санал амжилттай', body:'Угалз:U9 — 5,830,000₮ санал өглөө. 2,770,000₮ барьцаалагдлаа.' },
+        { id:3, type:'extended', day:'Өнөөдөр', time:'10:16', read:false, title:'Хугацаа сунгагдлаа', body:'Угалз:U9 — сүүлчийн санал ирсэн тул хугацаа +30 секундээр сунгагдлаа.' },
+        { id:4, type:'starting', day:'Өнөөдөр', time:'09:50', read:true, title:'Дуудлага удахгүй эхэлнэ', body:'Угалз:U9 — 10 минутын дотор шууд эхэлнэ. Бэлэн үү?' },
+        { id:5, type:'won', day:'Өчигдөр', time:'16:20', read:true, title:'Баяр хүргэе! Та хожлоо', body:'Гахай:B5 — 1,120,000₮-өөр хожлоо. Барьцаа худалдан авалтад зарцуулагдлаа.' },
+        { id:6, type:'lost', day:'Өчигдөр', time:'12:40', read:true, title:'Лот дууслаа', body:'Булга:Sa1 — өөр оролцогч хожлоо. Таны барьцаа бүрэн буцаагдсан.' },
+        { id:7, type:'limit', day:'Өчигдөр', time:'11:30', read:true, title:'Лимит нэмэгдлээ', body:'Захиргаа таны лимитийг 9,000,000₮ болгож нэмлээ.' },
+        { id:8, type:'kyc', day:'Өчигдөр', time:'09:05', read:true, title:'KYC баталгаажлаа', body:'Таны бүртгэл амжилттай баталгаажлаа. Одоо санал өгөх боломжтой.' },
+      ],
+    };
+  }
+  meta(type){
+    const m = {
+      outbid:   { icon:'⚠', bg:'#FBEAE9', fg:'#C8312C', group:'outbid' },
+      bid:      { icon:'＋', bg:'#E5F0FB', fg:'#1B5FA8', group:'bid' },
+      extended: { icon:'⏱', bg:'#FBF1DF', fg:'#C77A0A', group:'auction' },
+      starting: { icon:'◷', bg:'#FBF1DF', fg:'#C77A0A', group:'auction' },
+      won:      { icon:'🏆', bg:'#E5F4EC', fg:'#1F8A5B', group:'result' },
+      lost:     { icon:'○', bg:'#EEF1F5', fg:'#5B6677', group:'result' },
+      limit:    { icon:'↑', bg:'#E5F0FB', fg:'#1B5FA8', group:'system' },
+      kyc:      { icon:'✓', bg:'#E5F4EC', fg:'#1F8A5B', group:'system' },
+    };
+    return m[type] || m.bid;
+  }
+  renderVals(){
+    const s = this.state;
+    const unread = s.items.filter(i => !i.read).length;
+    const filterDefs = [
+      { key:'all', label:'Бүгд' }, { key:'outbid', label:'Давсан санал' },
+      { key:'bid', label:'Миний санал' }, { key:'result', label:'Үр дүн' },
+      { key:'auction', label:'Дуудлага' }, { key:'system', label:'Систем' },
+    ];
+    const filters = filterDefs.map(d => {
+      const on = d.key === s.filter;
+      return { label:d.label, bg: on ? '#14294A':'#FFF', fg: on ? '#FFF':'#5B6677', border: on ? '#14294A':'#E6E1D6', weight: on?700:500, onClick:()=>this.setState({filter:d.key}) };
+    });
+
+    const visible = s.items.filter(i => s.filter==='all' || this.meta(i.type).group===s.filter);
+    const order = ['Өнөөдөр','Өчигдөр'];
+    const groups = order.map(day => ({
+      day,
+      items: visible.filter(i => i.day===day).map(i => {
+        const m = this.meta(i.type);
+        return {
+          title:i.title, body:i.body, time:i.time, unread:!i.read,
+          icon:m.icon, iconBg:m.bg, iconFg:m.fg,
+          rowBg: i.read ? '#FFF' : '#FCF6F5',
+          titleWeight: i.read ? 600 : 700,
+          onRead: () => this.setState(st => ({ items: st.items.map(x => x.id===i.id ? {...x, read:true} : x) })),
+        };
+      }),
+    })).filter(g => g.items.length>0);
+
+    return {
+      unread, filters, groups, isEmpty: visible.length===0,
+      onReadAll: () => this.setState(st => ({ items: st.items.map(x => ({...x, read:true})) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#F5F2EC; }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none !important; scroll-behavior:auto !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#F5F2EC; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436;">
+
+  <dc-import name="AppNav" active="help" balance="6230000" notif="3" hint-size="100%,66px"></dc-import>
+
+  <div style="max-width:980px; margin:0 auto; padding:24px 26px 60px;">
+    <a href="Help.dc.html" style="display:inline-flex; align-items:center; gap:7px; font-size:13px; color:#5B6677; text-decoration:none; margin-bottom:16px;" style-hover="color:#14294A;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Тусламж руу буцах
+    </a>
+
+    <!-- header -->
+    <div style="background:#14294A; border-radius:16px; padding:28px 30px; color:#fff;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div>
+          <h1 style="margin:0; font-size:26px; font-weight:700;">Үйлчилгээний нөхцөл</h1>
+          <p style="margin:7px 0 0; font-size:13.5px; color:#A9BAD4; max-width:560px; line-height:1.55;">Зэрлэг ан амьтан агнах эрхийн цахим дуудлага худалдааны платформыг ашиглах нөхцөл, дуудлага худалдааны журам.</p>
+        </div>
+        <div style="text-align:right; flex:0 0 auto;">
+          <span style="display:inline-block; font-size:11.5px; font-weight:700; color:#E7B24B; background:rgba(231,178,75,.15); border:1px solid rgba(231,178,75,.35); padding:5px 11px; border-radius:7px;">Хувилбар v2.3</span>
+          <div style="font-size:11.5px; color:#7E92B2; margin-top:7px;">Хүчинтэй: 2026-01-15</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:22px; align-items:flex-start; margin-top:22px; flex-wrap:wrap;">
+      <!-- TOC -->
+      <div style="flex:0 0 220px; max-width:100%; position:sticky; top:84px;">
+        <div style="background:#FFF; border:1px solid #E6E1D6; border-radius:12px; padding:14px;">
+          <div style="font-size:11px; font-weight:700; color:#8A93A3; letter-spacing:.05em; text-transform:uppercase; margin-bottom:9px; padding:0 6px;">Агуулга</div>
+          <sc-for list="{{ toc }}" as="t" hint-placeholder-count="6">
+            <a href="{{ t.href }}" style="display:flex; gap:9px; padding:7px 8px; border-radius:7px; text-decoration:none; font-size:12.5px; color:#3A4658;" style-hover="background:#F3F0E9; color:#14294A;">
+              <span style="font-family:'IBM Plex Mono',monospace; color:#A2AAB6; flex:0 0 auto;">{{ t.num }}</span>
+              <span>{{ t.label }}</span>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- body -->
+      <div style="flex:1 1 540px; min-width:300px; background:#FFF; border:1px solid #E6E1D6; border-radius:14px; padding:30px 34px;">
+        <sc-for list="{{ sections }}" as="s" hint-placeholder-count="6">
+          <div id="{{ s.id }}" style="margin-bottom:26px; scroll-margin-top:84px;">
+            <h2 style="margin:0 0 11px; font-size:18px; font-weight:700; color:#14294A; display:flex; align-items:baseline; gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#C8312C;">{{ s.num }}</span>
+              {{ s.title }}
+            </h2>
+            <sc-for list="{{ s.paras }}" as="p" hint-placeholder-count="2">
+              <p style="margin:0 0 11px; font-size:13.5px; color:#3A4658; line-height:1.65;">{{ p }}</p>
+            </sc-for>
+            <sc-if value="{{ s.hasList }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:4px; display:flex; flex-direction:column; gap:8px;">
+                <sc-for list="{{ s.list }}" as="li" hint-placeholder-count="3">
+                  <div style="display:flex; gap:10px; align-items:flex-start;">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#C8312C; flex:0 0 auto; margin-top:7px;"></span>
+                    <span style="font-size:13.5px; color:#3A4658; line-height:1.6;">{{ li }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+
+        <!-- version history -->
+        <div style="margin-top:8px; padding-top:22px; border-top:1px solid #F0ECE2;">
+          <h3 style="margin:0 0 12px; font-size:14px; font-weight:700; color:#14294A;">Хувилбарын түүх</h3>
+          <sc-for list="{{ versions }}" as="v" hint-placeholder-count="3">
+            <div style="display:flex; gap:13px; padding:9px 0; border-bottom:1px solid #F3EFE5;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:{{ v.color }}; flex:0 0 64px;">{{ v.tag }}</span>
+              <span style="font-size:12.5px; color:#8A93A3; flex:0 0 90px; font-variant-numeric:tabular-nums;">{{ v.date }}</span>
+              <span style="font-size:12.5px; color:#3A4658; flex:1;">{{ v.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:980,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  renderVals(){
+    const data = [
+      { id:'s1', num:'1', title:'Ерөнхий нөхцөл', paras:[
+        'Энэхүү платформ нь зэрлэг ан амьтан агнах эрхийг ил тод, шударга байдлаар хуваарилах зорилготой төрийн албан ёсны цахим дуудлага худалдааны систем юм.',
+        'Платформыг ашигласнаар хэрэглэгч энэхүү нөхцөл болон холбогдох хууль тогтоомжийг хүлээн зөвшөөрсөнд тооцно.' ] },
+      { id:'s2', num:'2', title:'Бүртгэл ба баталгаажуулалт (KYC)', paras:[
+        'Дуудлага худалдаанд оролцохын тулд хэрэглэгч үнэн зөв мэдээлэл, шаардлагатай бичиг баримтыг бүрдүүлэн бүртгүүлж, KYC баталгаажуулалт хийлгэнэ.' ],
+        hasList:true, list:[
+        'Иргэн: иргэний үнэмлэх, регистрийн дугаар, холбоо барих мэдээлэл.',
+        'Хуулийн этгээд: улсын бүртгэлийн гэрчилгээ, эрх бүхий төлөөлөгчийн баримт.',
+        'Худал мэдээлэл өгсөн тохиолдолд бүртгэлийг цуцлах эрхтэй.' ] },
+      { id:'s3', num:'3', title:'Барьцаа ба лимит', paras:[
+        'Хэрэглэгч захиргаанаас олгосон лимитийн хүрээнд санал болгоно. Санал өгөх үед тухайн дүн түр барьцаалагдана.' ],
+        hasList:true, list:[
+        'Саналыг өөр оролцогч давсан тохиолдолд барьцаалсан дүн нэн даруй буцаагдана.',
+        'Лот хожсон тохиолдолд барьцаа худалдан авалтад зарцуулагдана.',
+        'Лимит нь захиргаанаас олгогдох ба офлайн төлбөрийн дагуу нэмэгдэж болно.' ] },
+      { id:'s4', num:'4', title:'Дуудлага худалдааны журам', paras:[
+        'Нэг үнийн алхам нь босго үнийн 10%-тай тэнцэнэ. Нэг саналд +1-ээс +5 хүртэл алхам нэмж болох ба дээд хязгаар нь босго үнийн 50%.' ],
+        hasList:true, list:[
+        'Дуусахын өмнөх 15 секундэд ирсэн санал хугацааг 30 секундээр сунгана (анти-снайп).',
+        'Хамгийн өндөр санал өгсөн оролцогч лотыг хожино.',
+        'Оролцогчдын мэдээлэл нууцлагдаж, бусдад "Оролцогч #N" хэлбэрээр харагдана.' ] },
+      { id:'s5', num:'5', title:'Төлбөр ба эрх олголт', paras:[
+        'Лот хожсон оролцогч тогтоосон хугацаанд төлбөрөө бүрэн төлснөөр агнуурын эрхийн зөвшөөрөл олгогдоно. Төлбөр төлөгдөөгүй тохиолдолд үр дүнг хүчингүй болгож болно.' ] },
+      { id:'s6', num:'6', title:'Хариуцлага ба нууцлал', paras:[
+        'Хэрэглэгчийн хувийн мэдээлэл төрийн нууцлалын журмын дагуу хамгаалагдана. Платформ нь техникийн саатал, гуравдагч этгээдийн үйлдлээс үүдэх шууд бус хохиролд хариуцлага хүлээхгүй.',
+        'Агнуурын эрхийг хэрэгжүүлэхдээ агнуурын улирал, бүс нутгийн дүрэм журмыг чанд баримтлах үүрэгтэй.' ] },
+    ];
+    const sections = data.map(s => ({
+      id:s.id, num:s.num, title:s.title, paras:s.paras,
+      hasList: !!s.hasList, list: s.list || [],
+    }));
+    const toc = data.map(s => ({ num:s.num, label:s.title, href:'#'+s.id }));
+    const versions = [
+      { tag:'v2.3', date:'2026-01-15', note:'Анти-снайп хугацаа сунгалтын журмыг тодотгов.', color:'#C8312C' },
+      { tag:'v2.2', date:'2025-09-01', note:'Хуулийн этгээдийн бүртгэлийн шаардлага шинэчлэв.', color:'#8A93A3' },
+      { tag:'v2.1', date:'2025-04-20', note:'Барьцаа буцаалтын нөхцөлийг тодорхой болгов.', color:'#8A93A3' },
+    ];
+    return { sections, toc, versions };
+  }
+}
+</script>
+</body>
+</html>

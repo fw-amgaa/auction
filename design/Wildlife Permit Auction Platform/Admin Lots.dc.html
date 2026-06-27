@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#EEF1F5; }
+    input,select{ font-family:inherit; }
+    @keyframes toastIn{ from{ opacity:0; transform:translateY(-10px);} to{ opacity:1; transform:none; } }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; display:flex; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436; background:#EEF1F5;">
+
+  <dc-import name="AdminNav" active="lots" hint-size="228px,100vh"></dc-import>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div style="height:60px; background:#FFF; border-bottom:1px solid #E1E5EC; display:flex; align-items:center; justify-content:space-between; padding:0 24px;">
+      <h1 style="margin:0; font-size:18px; font-weight:700; color:#14294A;">Лот удирдлага</h1>
+      <button onClick="{{ openCreate }}" style="display:flex; align-items:center; gap:7px; background:#C8312C; border:none; color:#fff; border-radius:9px; padding:9px 16px; font-size:13.5px; font-weight:700; cursor:pointer;" style-hover="background:#B12A26;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Шинэ лот
+      </button>
+    </div>
+
+    <div style="flex:1; overflow-y:auto; padding:20px 24px 32px;">
+      <!-- status filter -->
+      <div style="display:flex; gap:6px; margin-bottom:16px;">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onClick }}" style="padding:8px 14px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-size:13px; font-weight:{{ t.weight }}; cursor:pointer;">{{ t.label }} {{ t.count }}</button>
+        </sc-for>
+      </div>
+
+      <div style="background:#FFF; border:1px solid #E1E5EC; border-radius:14px; overflow:hidden;">
+        <div style="display:grid; grid-template-columns:96px 1.4fr 1fr 1fr 110px 150px; gap:12px; padding:11px 18px; background:#F7F8FA; border-bottom:1px solid #EBEEF3; font-size:11px; font-weight:700; color:#8A93A3; text-transform:uppercase; letter-spacing:.03em;">
+          <span>Код</span><span>Зүйл / аймаг</span><span style="text-align:right;">Босго үнэ</span><span style="text-align:right;">Алхам</span><span style="text-align:center;">Төлөв</span><span style="text-align:right;">Үйлдэл</span>
+        </div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+          <div style="display:grid; grid-template-columns:96px 1.4fr 1fr 1fr 110px 150px; gap:12px; padding:13px 18px; border-bottom:1px solid #F1F3F6; align-items:center;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; color:#14294A;">{{ r.code }}</span>
+            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+              <span style="width:32px; height:32px; border-radius:8px; flex:0 0 auto; background-image:repeating-linear-gradient(135deg,{{ r.sa }} 0 7px,{{ r.sb }} 7px 14px);"></span>
+              <div style="min-width:0;"><div style="font-size:13px; font-weight:600; color:#14294A; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.species }}</div><div style="font-size:11px; color:#A2AAB6;">{{ r.aimag }}</div></div>
+            </div>
+            <span style="text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; color:#14294A; font-variant-numeric:tabular-nums;">{{ r.reserve }}</span>
+            <span style="text-align:right; font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#5B6677; font-variant-numeric:tabular-nums;">{{ r.step }}</span>
+            <span style="display:flex; justify-content:center;"><span style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; background:{{ r.stBg }}; color:{{ r.stFg }};">{{ r.stLabel }}</span></span>
+            <span style="display:flex; gap:6px; justify-content:flex-end;">
+              <button onClick="{{ r.onEdit }}" style="font-size:12px; font-weight:600; color:#14294A; background:#F3F5F8; border:1px solid #E1E5EC; border-radius:7px; padding:6px 11px; cursor:pointer;" style-hover="border-color:#CDD4DE;">Засах</button>
+              <sc-if value="{{ r.cancellable }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ r.onCancel }}" title="Цуцлах" style="width:30px; height:30px; font-size:12px; color:#C8312C; background:#FFF; border:1px solid #E0908C; border-radius:7px; cursor:pointer;" style-hover="background:#FBEAE9;">✕</button>
+              </sc-if>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- create/edit modal -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed; inset:0; z-index:70; background:rgba(14,30,56,.8); display:flex; align-items:center; justify-content:center; padding:24px; animation:toastIn .18s ease;">
+      <div onClick="{{ stop }}" style="width:min(560px,100%); max-height:92vh; overflow-y:auto; background:#FFF; border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.4);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #EBEEF3;">
+          <span style="font-size:17px; font-weight:700; color:#14294A;">{{ modalTitle }}</span>
+          <button onClick="{{ closeModal }}" style="width:32px; height:32px; border-radius:8px; border:1px solid #E1E5EC; background:#FFF; color:#5B6677; cursor:pointer; font-size:15px;">✕</button>
+        </div>
+        <div style="padding:20px 22px; display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+          <div style="grid-column:1 / -1;">
+            <label style="display:block; font-size:12.5px; font-weight:600; color:#3A4658; margin-bottom:6px;">Зүйл</label>
+            <select value="{{ f.species }}" onChange="{{ onSpecies }}" style="width:100%; height:44px; padding:0 12px; border-radius:9px; border:1px solid #E1E5EC; background:#FAF8F4; font-size:14px; color:#1A2436; cursor:pointer;">
+              <sc-for list="{{ speciesOpts }}" as="o" hint-placeholder-count="8"><option value="{{ o }}">{{ o }}</option></sc-for>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:12.5px; font-weight:600; color:#3A4658; margin-bottom:6px;">Лотын код</label>
+            <input value="{{ f.code }}" onInput="{{ onCode }}" placeholder="Угалз:U13" style="width:100%; height:44px; padding:0 13px; border-radius:9px; border:1px solid #E1E5EC; background:#FAF8F4; font-size:14px; font-family:'IBM Plex Mono',monospace; outline:none;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:12.5px; font-weight:600; color:#3A4658; margin-bottom:6px;">Аймаг</label>
+            <input value="{{ f.aimag }}" onInput="{{ onAimag }}" placeholder="Баян-Өлгий" style="width:100%; height:44px; padding:0 13px; border-radius:9px; border:1px solid #E1E5EC; background:#FAF8F4; font-size:14px; outline:none;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:12.5px; font-weight:600; color:#3A4658; margin-bottom:6px;">Босго үнэ (₮)</label>
+            <input value="{{ f.reserve }}" onInput="{{ onReserve }}" inputmode="numeric" placeholder="5300000" style="width:100%; height:44px; padding:0 13px; border-radius:9px; border:1px solid #E1E5EC; background:#FAF8F4; font-size:14px; font-family:'IBM Plex Mono',monospace; outline:none; font-variant-numeric:tabular-nums;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:12.5px; font-weight:600; color:#3A4658; margin-bottom:6px;">Эхлэх огноо</label>
+            <input value="{{ f.start }}" onInput="{{ onStart }}" placeholder="2026-09-20 10:00" style="width:100%; height:44px; padding:0 13px; border-radius:9px; border:1px solid #E1E5EC; background:#FAF8F4; font-size:14px; outline:none;" />
+          </div>
+          <div style="grid-column:1 / -1; background:#F7F8FA; border:1px solid #EBEEF3; border-radius:10px; padding:14px;">
+            <div style="font-size:12px; font-weight:700; color:#14294A; margin-bottom:4px;">Үнийн алхмын зурвас</div>
+            <div style="font-size:12.5px; color:#5B6677; line-height:1.5;">Алхам = босго үнийн 10% = <strong style="color:#14294A; font-variant-numeric:tabular-nums;">{{ f.stepCalc }}</strong>. Нэг саналд +1…+5 алхам (дээд тал нь 50%, <strong style="color:#14294A; font-variant-numeric:tabular-nums;">{{ f.maxCalc }}</strong>).</div>
+          </div>
+        </div>
+        <div style="padding:0 22px 20px; display:flex; gap:10px; justify-content:flex-end;">
+          <button onClick="{{ closeModal }}" style="background:none; border:1px solid #CDD4DE; color:#5B6677; border-radius:9px; padding:11px 18px; font-size:13.5px; font-weight:600; cursor:pointer;">Болих</button>
+          <button onClick="{{ save }}" style="background:#1F8A5B; border:none; color:#fff; border-radius:9px; padding:11px 22px; font-size:13.5px; font-weight:700; cursor:pointer;">{{ saveText }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; top:18px; right:18px; z-index:80; display:flex; align-items:center; gap:11px; padding:13px 16px; border-radius:11px; background:{{ toastBg }}; border:1px solid {{ toastBorder }}; box-shadow:0 14px 36px rgba(0,0,0,.18); animation:toastIn .22s ease;">
+      <span style="font-size:16px;">{{ toastIcon }}</span>
+      <span style="font-size:13.5px; color:{{ toastColor }}; font-weight:600;">{{ toastText }}</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:820}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      tab:'all', toast:null, modal:null,
+      form:{ species:'Угалз', code:'', aimag:'', reserve:'', start:'' },
+      lots: [
+        { id:1, code:'Угалз:U9', species:'Угалз', aimag:'Баян-Өлгий', reserve:5300000, status:'live' },
+        { id:2, code:'Тэх:I4', species:'Тэх', aimag:'Ховд', reserve:3800000, status:'live' },
+        { id:3, code:'Угалз:U12', species:'Угалз', aimag:'Завхан', reserve:5800000, status:'scheduled' },
+        { id:4, code:'Шувуу:S8', species:'Шонхор', aimag:'Дорнод', reserve:1500000, status:'scheduled' },
+        { id:5, code:'Янгир:Y2', species:'Янгир', aimag:'Говь-Алтай', reserve:2400000, status:'draft' },
+        { id:6, code:'Гахай:B5', species:'Зэрлэг гахай', aimag:'Хэнтий', reserve:750000, status:'ended' },
+        { id:7, code:'Булга:Sa1', species:'Булга', aimag:'Хөвсгөл', reserve:450000, status:'ended' },
+      ],
+    };
+    this.stripes = { 'Угалз':['#2C4A6B','#26405F'],'Тэх':['#274463','#1F3A56'],'Янгир':['#2B4A52','#23404A'],'Шонхор':['#3F3552','#352C4A'],'Зэрлэг гахай':['#4A3A33','#3E302A'],'Булга':['#4A3E2E','#3E3326'],'Чоно':['#3A3F52','#30354A'],'Тул загас':['#1F4A56','#193E4A'] };
+  }
+  fmt(n){ return Math.round(n).toLocaleString('en-US')+'₮'; }
+  parseAmt(v){ return parseInt(String(v).replace(/\D/g,'')||'0',10); }
+  showToast(t){ this.setState({toast:t}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:null}),3000); }
+  componentWillUnmount(){ clearTimeout(this._tt); }
+
+  save(){
+    const f = this.state.form;
+    if (this.state.modal==='create'){
+      const id = Math.max(...this.state.lots.map(l=>l.id))+1;
+      this.setState(s=>({ lots:[{ id, code:f.code||'Шинэ:N'+id, species:f.species, aimag:f.aimag||'—', reserve:this.parseAmt(f.reserve), status:'draft' }, ...s.lots] }));
+      this.showToast({icon:'✅',text:'Лот үүсгэлээ (ноорог)',bg:'#E5F4EC',border:'#C7E5D5',color:'#197a50'});
+    } else {
+      this.setState(s=>({ lots:s.lots.map(l=>l.id===this.state.modal? {...l, code:f.code, species:f.species, aimag:f.aimag, reserve:this.parseAmt(f.reserve)}:l) }));
+      this.showToast({icon:'✅',text:'Лот шинэчлэгдлээ',bg:'#E5F4EC',border:'#C7E5D5',color:'#197a50'});
+    }
+    this.setState({ modal:null });
+  }
+  cancelLot(id){
+    this.setState(s=>({ lots:s.lots.map(l=>l.id===id?{...l,status:'cancelled'}:l) }));
+    this.showToast({icon:'⛔',text:'Лот цуцлагдлаа',bg:'#FBEAE9',border:'#F2D6D4',color:'#A02622'});
+  }
+
+  renderVals(){
+    const s = this.state;
+    const stMeta = {
+      live:['ШУУД','#FBEAE9','#C8312C'], scheduled:['ТӨЛӨВЛӨСӨН','#E5F0FB','#1B5FA8'],
+      draft:['НООРОГ','#F0ECE2','#8A6D3B'], ended:['ДУУССАН','#EEF1F5','#5B6677'], cancelled:['ЦУЦЛАГДСАН','#F3F1EF','#9A6A66'],
+    };
+    const counts = { all:s.lots.length };
+    ['live','scheduled','draft','ended'].forEach(k=>counts[k]=s.lots.filter(l=>l.status===k).length);
+    const tabDefs = [['all','Бүгд'],['live','Шууд'],['scheduled','Төлөвлөсөн'],['draft','Ноорог'],['ended','Дууссан']];
+    const tabs = tabDefs.map(([k,label])=>{ const on=k===s.tab; return { label, count:'('+(k==='all'?counts.all:counts[k])+')', bg:on?'#14294A':'#FFF', fg:on?'#FFF':'#5B6677', border:on?'#14294A':'#E1E5EC', weight:on?700:500, onClick:()=>this.setState({tab:k}) }; });
+
+    const rows = s.lots.filter(l=>s.tab==='all'||l.status===s.tab).map(l => {
+      const st = stMeta[l.status]||stMeta.draft;
+      const sp = this.stripes[l.species]||['#26405F','#1F3753'];
+      return { code:l.code, species:l.species, aimag:l.aimag, sa:sp[0], sb:sp[1],
+        reserve:this.fmt(l.reserve), step:this.fmt(l.reserve*0.1),
+        stLabel:st[0], stBg:st[1], stFg:st[2],
+        cancellable: l.status==='scheduled'||l.status==='draft',
+        onEdit:()=>this.openEdit(l), onCancel:()=>this.cancelLot(l.id) };
+    });
+
+    const f = s.form;
+    const reserveN = this.parseAmt(f.reserve);
+    const ff = { species:f.species, code:f.code, aimag:f.aimag, reserve:f.reserve, start:f.start,
+      stepCalc: reserveN ? this.fmt(reserveN*0.1) : '—', maxCalc: reserveN ? this.fmt(reserveN*0.5) : '—' };
+
+    return {
+      tabs, rows,
+      openCreate:()=>this.setState({modal:'create', form:{species:'Угалз',code:'',aimag:'',reserve:'',start:''}}),
+      modalOpen: s.modal!=null, modalTitle: s.modal==='create'?'Шинэ лот үүсгэх':'Лот засах',
+      saveText: s.modal==='create'?'Үүсгэх':'Хадгалах',
+      closeModal:()=>this.setState({modal:null}), stop:(e)=>{if(e&&e.stopPropagation)e.stopPropagation();},
+      f: ff,
+      speciesOpts:['Угалз','Тэх','Янгир','Шонхор','Зэрлэг гахай','Булга','Чоно','Тул загас'],
+      onSpecies:(e)=>this.setState(st=>({form:{...st.form,species:e.target.value}})),
+      onCode:(e)=>this.setState(st=>({form:{...st.form,code:e.target.value}})),
+      onAimag:(e)=>this.setState(st=>({form:{...st.form,aimag:e.target.value}})),
+      onReserve:(e)=>this.setState(st=>({form:{...st.form,reserve:e.target.value}})),
+      onStart:(e)=>this.setState(st=>({form:{...st.form,start:e.target.value}})),
+      save:()=>this.save(),
+      toast: !!s.toast, toastIcon:s.toast?s.toast.icon:'', toastText:s.toast?s.toast.text:'',
+      toastBg:s.toast?s.toast.bg:'#FFF', toastBorder:s.toast?s.toast.border:'#E1E5EC', toastColor:s.toast?s.toast.color:'#14294A',
+    };
+  }
+  openEdit(l){ this.setState({ modal:l.id, form:{ species:l.species, code:l.code, aimag:l.aimag, reserve:String(l.reserve), start:'' } }); }
+}
+</script>
+</body>
+</html>

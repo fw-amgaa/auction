@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; background:#EEF1F5; }
+    input,select{ font-family:inherit; }
+    @keyframes shimmer{ 0%{ background-position:-400px 0; } 100%{ background-position:400px 0; } }
+    @keyframes toastIn{ from{ opacity:0; transform:translateY(-10px);} to{ opacity:1; transform:none; } }
+    .sk{ background:linear-gradient(90deg,#EEF1F5 25%,#E1E6EE 50%,#EEF1F5 75%); background-size:800px 100%; animation:shimmer 1.3s infinite linear; border-radius:6px; }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; display:flex; font-family:'IBM Plex Sans',system-ui,sans-serif; color:#1A2436; background:#EEF1F5;">
+
+  <dc-import name="AdminNav" active="users" hint-size="228px,100vh"></dc-import>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div style="height:60px; background:#FFF; border-bottom:1px solid #E1E5EC; display:flex; align-items:center; justify-content:space-between; padding:0 24px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <h1 style="margin:0; font-size:18px; font-weight:700; color:#14294A;">Хэрэглэгчид</h1>
+        <span style="background:#EEF1F5; color:#5B6677; font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:7px; font-variant-numeric:tabular-nums;">{{ totalCount }} бүртгэл</span>
+      </div>
+      <a href="Admin%20Create%20User.dc.html" style="display:flex; align-items:center; gap:7px; background:#C8312C; border:none; color:#fff; border-radius:9px; padding:9px 16px; font-size:13.5px; font-weight:700; cursor:pointer; text-decoration:none;" style-hover="background:#B12A26;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Хэрэглэгч үүсгэх
+      </a>
+    </div>
+
+    <div style="flex:1; overflow-y:auto; padding:20px 24px 32px;">
+      <!-- toolbar -->
+      <div style="background:#FFF; border:1px solid #E1E5EC; border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:11px; flex-wrap:wrap; margin-bottom:16px;">
+        <div style="position:relative; flex:1 1 260px; min-width:200px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A93A3" stroke-width="1.9" stroke-linecap="round" style="position:absolute; left:12px; top:50%; transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input value="{{ q }}" onInput="{{ onSearch }}" placeholder="Нэр, регистр, и-мэйл, утсаар хайх" style="width:100%; height:40px; padding:0 12px 0 36px; border-radius:9px; border:1px solid #E1E5EC; background:#F7F8FA; font-size:13.5px; color:#1A2436; outline:none;" />
+        </div>
+        <select onChange="{{ onType }}" style="height:40px; padding:0 12px; border-radius:9px; border:1px solid #E1E5EC; background:#F7F8FA; font-size:13px; color:#3A4658; cursor:pointer;">
+          <option value="all">Бүх төрөл</option>
+          <option value="individual">Иргэн</option>
+          <option value="legal">Хуулийн этгээд</option>
+        </select>
+        <select onChange="{{ onKyc }}" style="height:40px; padding:0 12px; border-radius:9px; border:1px solid #E1E5EC; background:#F7F8FA; font-size:13px; color:#3A4658; cursor:pointer;">
+          <option value="all">Бүх KYC төлөв</option>
+          <option value="approved">Баталгаажсан</option>
+          <option value="pending">Хүлээгдэж буй</option>
+          <option value="rejected">Татгалзсан</option>
+        </select>
+        <select onChange="{{ onSort }}" style="height:40px; padding:0 12px; border-radius:9px; border:1px solid #E1E5EC; background:#F7F8FA; font-size:13px; color:#3A4658; cursor:pointer; margin-left:auto;">
+          <option value="created">Эрэмбэ: Шинээр бүртгэгдсэн</option>
+          <option value="limitDesc">Лимит: Ихээс бага</option>
+          <option value="limitAsc">Лимит: Багаас их</option>
+        </select>
+      </div>
+
+      <div style="background:#FFF; border:1px solid #E1E5EC; border-radius:14px; overflow:hidden;">
+        <div style="display:grid; grid-template-columns:1.7fr 1.1fr 1fr 1.1fr 110px 130px; gap:12px; padding:11px 18px; background:#F7F8FA; border-bottom:1px solid #EBEEF3; font-size:11px; font-weight:700; color:#8A93A3; text-transform:uppercase; letter-spacing:.03em;">
+          <span>Нэр / байгууллага</span><span>Регистр</span><span style="text-align:center;">KYC</span><span style="text-align:right;">Лимит</span><span style="text-align:right;">Бүртгэсэн</span><span style="text-align:right;">Эх сурвалж</span>
+        </div>
+
+        <!-- loading skeleton -->
+        <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <sc-for list="{{ skeletons }}" as="sk" hint-placeholder-count="6">
+              <div style="display:grid; grid-template-columns:1.7fr 1.1fr 1fr 1.1fr 110px 130px; gap:12px; padding:14px 18px; border-bottom:1px solid #F1F3F6; align-items:center;">
+                <div style="display:flex; align-items:center; gap:11px;"><span class="sk" style="width:34px; height:34px; border-radius:9px;"></span><span class="sk" style="width:130px; height:13px;"></span></div>
+                <span class="sk" style="width:84px; height:12px;"></span>
+                <span class="sk" style="width:74px; height:20px; border-radius:6px; margin:0 auto;"></span>
+                <span class="sk" style="width:80px; height:12px; margin-left:auto;"></span>
+                <span class="sk" style="width:60px; height:12px; margin-left:auto;"></span>
+                <span class="sk" style="width:70px; height:12px; margin-left:auto;"></span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- rows -->
+        <sc-if value="{{ showRows }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+              <div onClick="{{ r.onOpen }}" style="display:grid; grid-template-columns:1.7fr 1.1fr 1fr 1.1fr 110px 130px; gap:12px; padding:13px 18px; border-bottom:1px solid #F1F3F6; align-items:center; cursor:pointer;" style-hover="background:#F7F8FA;">
+                <div style="display:flex; align-items:center; gap:11px; min-width:0;">
+                  <span style="width:34px; height:34px; border-radius:9px; flex:0 0 auto; background:{{ r.avBg }}; color:{{ r.avFg }}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">{{ r.initials }}</span>
+                  <div style="min-width:0;">
+                    <div style="font-size:13.5px; font-weight:600; color:#14294A; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.name }}</div>
+                    <div style="font-size:11px; color:#A2AAB6;">{{ r.typeLabel }} · {{ r.email }}</div>
+                  </div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:#5B6677; font-variant-numeric:tabular-nums;">{{ r.registry }}</span>
+                <span style="display:flex; justify-content:center;"><span style="display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; background:{{ r.kycBg }}; color:{{ r.kycFg }};">{{ r.kycIcon }} {{ r.kycLabel }}</span></span>
+                <span style="text-align:right; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; color:{{ r.limitColor }}; font-variant-numeric:tabular-nums;">{{ r.limit }}</span>
+                <span style="text-align:right; font-size:12.5px; color:#5B6677; font-variant-numeric:tabular-nums;">{{ r.created }}</span>
+                <span style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
+                  <span style="font-size:11.5px; color:{{ r.srcColor }}; font-weight:500;">{{ r.source }}</span>
+                  <button onClick="{{ r.onMenu }}" title="Үйлдэл" style="width:28px; height:28px; border-radius:7px; border:1px solid #E1E5EC; background:#FFF; color:#5B6677; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:0 0 auto;">⋯</button>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- empty / no results -->
+        <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:54px 20px; text-align:center;">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C7CFD9" stroke-width="1.5" style="margin:0 auto;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <div style="font-size:15px; font-weight:600; color:#3A4658; margin-top:13px;">Хайлтад тохирох хэрэглэгч олдсонгүй</div>
+            <div style="font-size:13px; color:#8A93A3; margin-top:5px;">Хайлт эсвэл шүүлтүүрээ өөрчилнө үү.</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <!-- row action menu -->
+  <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeMenu }}" style="position:fixed; inset:0; z-index:60;"></div>
+    <div style="position:fixed; left:{{ menuX }}; top:{{ menuY }}; z-index:61; width:210px; background:#FFF; border:1px solid #E1E5EC; border-radius:11px; box-shadow:0 16px 40px rgba(20,41,74,.18); overflow:hidden; padding:5px;">
+      <sc-for list="{{ menuItems }}" as="mi" hint-placeholder-count="3">
+        <button onClick="{{ mi.onClick }}" style="width:100%; display:flex; align-items:center; gap:10px; padding:9px 11px; border:none; background:none; cursor:pointer; border-radius:8px; font-size:13px; color:{{ mi.color }}; text-align:left;" style-hover="background:#F3F5F8;">
+          <span style="width:18px; text-align:center;">{{ mi.icon }}</span>{{ mi.label }}
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; top:18px; right:18px; z-index:80; display:flex; align-items:center; gap:11px; padding:13px 16px; border-radius:11px; background:{{ toastBg }}; border:1px solid {{ toastBorder }}; box-shadow:0 14px 36px rgba(0,0,0,.18); animation:toastIn .22s ease;">
+      <span style="font-size:16px;">{{ toastIcon }}</span>
+      <span style="font-size:13.5px; color:{{ toastColor }}; font-weight:600;">{{ toastText }}</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:820}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      loading:true,
+      q:'', type:'all', kyc:'all', sort:'created',
+      menu:null, toast:null,
+      users: [
+        { id:1, type:'individual', name:'Доржийн Батбаяр', email:'batbayar@mail.mn', phone:'99112233', registry:'УБ91050312', kyc:'pending', limit:0, created:'2026-09-15', createdN:20260915, source:'self' },
+        { id:2, type:'legal', name:'Алтай Хайрхан ХХК', email:'info@altaikhairkhan.mn', phone:'88556677', registry:'5012345', kyc:'pending', limit:0, created:'2026-09-15', createdN:20260915, source:'self' },
+        { id:3, type:'individual', name:'Цэрэнгийн Оюунаа', email:'oyunaa@mail.mn', phone:'95443322', registry:'ЧД95081420', kyc:'approved', limit:4000000, created:'2026-09-11', createdN:20260911, source:'self' },
+        { id:4, type:'individual', name:'Лхагвын Сүхбат', email:'sukhbat@mail.mn', phone:'94221100', registry:'БЗ90031255', kyc:'approved', limit:6000000, created:'2026-09-09', createdN:20260909, source:'admin' },
+        { id:5, type:'legal', name:'Говь Анчид ХХК', email:'contact@gobianchid.mn', phone:'77443311', registry:'6098765', kyc:'approved', limit:18000000, created:'2026-09-07', createdN:20260907, source:'admin' },
+        { id:6, type:'individual', name:'Бат-Эрдэнийн Тэмүүлэн', email:'temuulen@mail.mn', phone:'99887766', registry:'СБ88120755', kyc:'approved', limit:3000000, created:'2026-09-14', createdN:20260914, source:'self' },
+        { id:7, type:'individual', name:'Гомбын Алтанцэцэг', email:'altantsetseg@mail.mn', phone:'96332211', registry:'ХА93074588', kyc:'rejected', limit:0, created:'2026-09-13', createdN:20260913, source:'self' },
+        { id:8, type:'legal', name:'Хангайн Зэрлэг ХХК', email:'admin@khangaizerleg.mn', phone:'80123456', registry:'7011223', kyc:'approved', limit:12000000, created:'2026-09-05', createdN:20260905, source:'admin' },
+      ],
+    };
+  }
+  componentDidMount(){ this._t = setTimeout(()=>this.setState({loading:false}), 1100); }
+  componentWillUnmount(){ clearTimeout(this._t); clearTimeout(this._tt); }
+  fmt(n){ return Math.round(n).toLocaleString('en-US')+'₮'; }
+  showToast(t){ this.setState({toast:t, menu:null}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:null}),3000); }
+
+  renderVals(){
+    const s = this.state;
+    const meta = (t)=> t==='legal'
+      ? { typeLabel:'Хуулийн этгээд', avBg:'#E5F0FB', avFg:'#1B5FA8' }
+      : { typeLabel:'Иргэн', avBg:'#E5F4EC', avFg:'#1F8A5B' };
+    const initials = (n,t)=> t==='legal' ? n.slice(0,2).toUpperCase() : n.split(/\s+/).map(p=>p[0]||'').join('').slice(0,2).toUpperCase();
+    const kycMeta = { approved:['✓','Баталгаажсан','#E5F4EC','#197a50'], pending:['◷','Хүлээгдэж буй','#FBF1DF','#C77A0A'], rejected:['✕','Татгалзсан','#FBEAE9','#C8312C'] };
+
+    const q = s.q.trim().toLowerCase();
+    let list = s.users.filter(u =>
+      (s.type==='all'||u.type===s.type) &&
+      (s.kyc==='all'||u.kyc===s.kyc) &&
+      (!q || u.name.toLowerCase().includes(q) || u.registry.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.phone.includes(q))
+    );
+    if (s.sort==='created') list = list.slice().sort((a,b)=>b.createdN-a.createdN);
+    else if (s.sort==='limitDesc') list = list.slice().sort((a,b)=>b.limit-a.limit);
+    else if (s.sort==='limitAsc') list = list.slice().sort((a,b)=>a.limit-b.limit);
+
+    const rows = list.map(u => {
+      const m = meta(u.type); const k = kycMeta[u.kyc];
+      return { name:u.name, email:u.email, typeLabel:m.typeLabel, avBg:m.avBg, avFg:m.avFg, initials:initials(u.name,u.type),
+        registry:u.registry,
+        kycIcon:k[0], kycLabel:k[1], kycBg:k[2], kycFg:k[3],
+        limit: u.limit>0 ? this.fmt(u.limit) : '—', limitColor: u.limit>0 ? '#14294A' : '#C7CFD9',
+        created:u.created,
+        source: u.source==='admin'?'Админ':'Өөрөө', srcColor: u.source==='admin'?'#1B5FA8':'#8A93A3',
+        onOpen:()=>{ window.location.href='Admin%20User%20Detail.dc.html'; },
+        onMenu:(e)=>{ e.stopPropagation(); const r=e.currentTarget.getBoundingClientRect(); this.setState({menu:{id:u.id, kyc:u.kyc, x:r.right-210, y:r.bottom+6}}); },
+      };
+    });
+
+    const menuItems = s.menu ? (() => {
+      const u = s.users.find(x=>x.id===s.menu.id);
+      const items = [];
+      if (u.kyc==='pending') items.push({ icon:'✓', label:'KYC баталгаажуулах', color:'#197a50', onClick:()=>this.showToast({icon:'✅',text:u.name+' — KYC баталгаажлаа',bg:'#E5F4EC',border:'#C7E5D5',color:'#197a50'}) });
+      items.push({ icon:'₮', label:'Лимит тохируулах', color:'#14294A', onClick:()=>{ window.location.href='Admin%20Limits.dc.html'; } });
+      items.push({ icon:'⟲', label:'Нэвтрэх мэдээлэл сэргээх', color:'#14294A', onClick:()=>this.showToast({icon:'📧',text:'Сэргээх холбоос илгээлээ',bg:'#E5F0FB',border:'#C5DCF3',color:'#1B5FA8'}) });
+      return items;
+    })() : [];
+
+    const isEmpty = !s.loading && rows.length===0;
+    return {
+      totalCount: s.users.length,
+      loading: s.loading,
+      skeletons: [1,2,3,4,5,6],
+      showRows: !s.loading && rows.length>0,
+      noResults: isEmpty,
+      rows,
+      q:s.q,
+      onSearch:(e)=>this.setState({q:e.target.value}),
+      onType:(e)=>this.setState({type:e.target.value}),
+      onKyc:(e)=>this.setState({kyc:e.target.value}),
+      onSort:(e)=>this.setState({sort:e.target.value}),
+      menuOpen: !!s.menu, menuX: s.menu?s.menu.x+'px':'0', menuY: s.menu?s.menu.y+'px':'0',
+      menuItems, closeMenu:()=>this.setState({menu:null}),
+      toast: !!s.toast, toastIcon:s.toast?s.toast.icon:'', toastText:s.toast?s.toast.text:'',
+      toastBg:s.toast?s.toast.bg:'#FFF', toastBorder:s.toast?s.toast.border:'#E1E5EC', toastColor:s.toast?s.toast.color:'#14294A',
+    };
+  }
+}
+</script>
+</body>
+</html>
