@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { formatTugrug } from "@auction/shared";
 
+import { Logo } from "@/components/Logo";
 import { logout } from "@/lib/session-actions";
 
 const LINKS = [
@@ -28,8 +29,8 @@ export function AppNav({
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-card/90 backdrop-blur">
       <nav className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-5">
-        <Link href="/catalog" className="font-semibold text-navy">
-          Ан агнуур
+        <Link href="/catalog" className="shrink-0">
+          <Logo height={30} />
         </Link>
         <ul className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (

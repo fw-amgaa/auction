@@ -31,8 +31,14 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
       exists: true,
     };
   }
-  const [lot] = await db.select().from(schema.lots).where(eq(schema.lots.id, lotId)).limit(1);
-  if (!lot) return { reserve: 0, step: 0, status: "ended", exists: false };
+  const [row] = await db
+    .select({ lot: schema.lots, cat: schema.categories })
+    .from(schema.lots)
+    .innerJoin(schema.categories, eq(schema.lots.categoryId, schema.categories.id))
+    .where(eq(schema.lots.id, lotId))
+    .limit(1);
+  if (!row) return { reserve: 0, step: 0, status: "ended", exists: false };
+  const lot = row.lot;
 
   const status = lot.status === "live" ? "live" : "ended";
   const price = lot.currentPrice ?? lot.reserve;
@@ -54,6 +60,8 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
     status,
     hasBids,
     seq: String(top?.seq ?? 0),
+    code: lot.code,
+    species: row.cat.name,
   });
   if (status === "live") await redis.sadd(LIVE_SET, lotId);
   return { reserve: lot.reserve, step: lot.step, status, exists: true };
@@ -161,6 +169,8 @@ async function persistAccept(p: {
 }): Promise<void> {
   const newCommitted = await getCommitted(p.userId);
   const relCommitted = p.releasedUser ? await getCommitted(p.releasedUser) : 0;
+  const meta = await redis.hmget(lotKey(p.lotId), "code", "species");
+  const lotCtx = { lotId: p.lotId, code: meta[0] ?? "", species: meta[1] ?? "" };
   try {
     await db.transaction(async (tx) => {
       await tx
@@ -195,6 +205,11 @@ async function persistAccept(p: {
           .update(schema.users)
           .set({ committedCache: relCommitted })
           .where(eq(schema.users.id, p.releasedUser));
+        await tx.insert(schema.notifications).values({
+          userId: p.releasedUser,
+          type: "outbid",
+          payload: { ...lotCtx, returned: p.releasedAmount },
+        });
       }
 
       await tx
@@ -231,8 +246,16 @@ export async function finalize(lotId: string): Promise<FinalizeResult> {
 
   const leader = h[1] || null;
   const price = Number(h[2]);
+  const meta = await redis.hmget(key, "code", "species");
+  const lotCtx = { lotId, code: meta[0] ?? "", species: meta[1] ?? "" };
   await redis.hset(key, "status", "ended");
   await redis.srem(LIVE_SET, lotId);
+
+  // distinct bidders (to notify losers)
+  const bidders = await db
+    .selectDistinct({ userId: schema.bids.userId })
+    .from(schema.bids)
+    .where(eq(schema.bids.lotId, lotId));
 
   try {
     await db.transaction(async (tx) => {
@@ -258,7 +281,13 @@ export async function finalize(lotId: string): Promise<FinalizeResult> {
           committedAfter: committed,
           lotId,
         });
-        await tx.insert(schema.notifications).values({ userId: leader, type: "won", payload: { lotId, price } });
+        await tx.insert(schema.notifications).values({ userId: leader, type: "won", payload: { ...lotCtx, price } });
+      }
+      const losers = bidders.map((b) => b.userId).filter((id) => id !== leader);
+      if (losers.length > 0) {
+        await tx.insert(schema.notifications).values(
+          losers.map((userId) => ({ userId, type: "lost" as const, payload: lotCtx })),
+        );
       }
     });
   } catch (e) {

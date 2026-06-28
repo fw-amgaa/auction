@@ -17,6 +17,7 @@ export interface LotInput {
   startsAt: string | null; // ISO from datetime-local
   endsAt: string | null;
   description: string;
+  images: string[];
 }
 
 export interface LotActionState {
@@ -62,6 +63,7 @@ export async function createLot(input: LotInput): Promise<LotActionState> {
         status: input.status,
         startsAt: parseDate(input.startsAt),
         endsAt: parseDate(input.endsAt),
+        images: input.images ?? [],
       })
       .returning({ id: schema.lots.id });
     await writeAudit({ actorId: admin.id, action: "lot.create", targetType: "lot", targetId: lot!.id, meta: { code: input.code } });
@@ -90,6 +92,7 @@ export async function updateLot(id: string, input: LotInput): Promise<LotActionS
       status: input.status,
       startsAt: parseDate(input.startsAt),
       endsAt: parseDate(input.endsAt),
+      images: input.images ?? [],
     })
     .where(eq(schema.lots.id, id));
   await writeAudit({ actorId: admin.id, action: "lot.update", targetType: "lot", targetId: id });
@@ -105,4 +108,15 @@ export async function cancelLot(id: string): Promise<void> {
   await writeAudit({ actorId: admin.id, action: "lot.cancel", targetType: "lot", targetId: id });
   revalidatePath("/admin/lots");
   revalidatePath("/catalog");
+}
+
+/** Permanently delete a lot (and its bids, via cascade). */
+export async function deleteLot(id: string): Promise<LotActionState> {
+  const admin = await requireAdmin();
+  const [lot] = await db.select({ code: schema.lots.code }).from(schema.lots).where(eq(schema.lots.id, id)).limit(1);
+  await db.delete(schema.lots).where(eq(schema.lots.id, id));
+  await writeAudit({ actorId: admin.id, action: "lot.delete", targetType: "lot", targetId: id, meta: { code: lot?.code } });
+  revalidatePath("/admin/lots");
+  revalidatePath("/catalog");
+  return {};
 }

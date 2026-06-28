@@ -232,7 +232,7 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                   disabled={pending}
                   className="rounded-[9px] border border-line-cool bg-white px-3 py-2.5 text-left text-[13px] font-semibold text-navy"
                 >
-                  ⟲ Нэвтрэх сэргээх илгээх
+                  ⟲ Нууц үг сэргээх холбоос илгээх
                 </button>
                 <button
                   onClick={() =>

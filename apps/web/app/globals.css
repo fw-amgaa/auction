@@ -10,12 +10,16 @@
   --color-navy: #14294a;
   --color-navy-deep: #0e1e38;
 
-  /* live arena (the only dark app surface) */
-  --color-arena: #070b14;
-  --color-arena-panel: #0e1729;
-  --color-arena-accent: #e63950;
-  --color-arena-success: #2bd07a;
-  --color-arena-danger: #ff5a5f;
+  /* live arena — the premium dark auction floor (only dark app surface) */
+  --color-arena: #080a0f;
+  --color-arena-panel: #0f131b;
+  --color-arena-raised: #161b25;
+  --color-arena-inset: #0b0e14;
+  --color-arena-fg: #f2f4f8;
+  --color-arena-accent: #e03b4b;
+  --color-arena-success: #27c779;
+  --color-arena-danger: #ff5c61;
+  --color-arena-gold: #e7b24b;
 
   /* action / live / urgency */
   --color-crimson: #c8312c;
@@ -64,6 +68,128 @@ body {
 .tnum {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── live arena surfaces ─────────────────────────────────────────────
+ * Layered ambient field (cool floor lift + crimson ember) + film grain,
+ * so the room reads like a lit space rather than a flat 45° gradient.
+ */
+.arena-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 78% -8%, rgba(224, 59, 75, 0.13), transparent 62%),
+    radial-gradient(1100px 680px at 22% 0%, rgba(58, 78, 120, 0.16), transparent 60%),
+    radial-gradient(1400px 900px at 50% 120%, rgba(16, 22, 34, 0.6), transparent 70%),
+    var(--color-arena);
+}
+.arena-grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* glass: real edge refraction — translucent fill + inner top highlight */
+.arena-glass {
+  background: rgba(11, 14, 21, 0.72);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* panel: lifted surface with a faint top sheen + tinted depth shadow */
+.arena-panel {
+  background: var(--color-arena-panel);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.04),
+    0 18px 40px -28px rgba(0, 0, 0, 0.9);
+}
+
+/* slim, tinted scrollbar for the live feed */
+.arena-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+.arena-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.arena-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+.arena-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+@keyframes feedIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes badgeFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  18% {
+    opacity: 1;
+    transform: none;
+  }
+  78% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes extendPop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.07);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes emberPulse {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes livedot {

@@ -27,6 +27,7 @@ export interface CatalogLot {
   status: DisplayStatus;
   startsAt: number | null;
   endsAt: number | null;
+  image: string | null;
 }
 
 const CATALOG_STATUSES: LotStatus[] = ["scheduled", "live", "ended", "settled"];
@@ -50,6 +51,7 @@ function toCatalogLot({ lot, category }: LotJoin): CatalogLot {
     status: displayStatus(lot.status),
     startsAt: lot.startsAt?.getTime() ?? null,
     endsAt: lot.endsAt?.getTime() ?? null,
+    image: lot.images?.[0] ?? null,
   };
 }
 
@@ -139,6 +141,7 @@ export interface AdminLot {
   startsAt: Date | null;
   endsAt: Date | null;
   description: string | null;
+  images: string[];
 }
 
 export async function getAdminLots(): Promise<AdminLot[]> {
@@ -159,6 +162,7 @@ export async function getAdminLots(): Promise<AdminLot[]> {
     startsAt: lot.startsAt,
     endsAt: lot.endsAt,
     description: lot.description,
+    images: lot.images ?? [],
   }));
 }
 

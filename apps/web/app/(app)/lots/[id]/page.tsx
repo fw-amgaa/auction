@@ -49,8 +49,12 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
         {/* left */}
         <div className="flex min-w-[300px] flex-1 basis-[540px] flex-col gap-[18px]">
           <div
-            className="relative flex h-[360px] items-end rounded-2xl border border-line p-6"
-            style={{ backgroundImage: `repeating-linear-gradient(135deg, ${sa} 0 16px, ${sb} 16px 32px)` }}
+            className="relative flex h-[360px] items-end rounded-2xl border border-line bg-cover bg-center p-6"
+            style={
+              lot.image
+                ? { backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,.6)), url(/api/media?key=${encodeURIComponent(lot.image)})` }
+                : { backgroundImage: `repeating-linear-gradient(135deg, ${sa} 0 16px, ${sb} 16px 32px)` }
+            }
           >
             <span className="tnum absolute left-4 top-4 rounded-lg bg-white/90 px-3 py-1.5 text-[13px] font-semibold text-navy">
               {lot.species}:{lot.code}

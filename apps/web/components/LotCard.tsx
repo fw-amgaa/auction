@@ -17,6 +17,7 @@ export interface LotCardData {
   status: "live" | "upcoming" | "ended";
   startsAt: number | null;
   endsAt: number | null;
+  image: string | null;
 }
 
 const STRIPES: Record<string, [string, string]> = {
@@ -90,8 +91,12 @@ export function LotCard({ lot }: { lot: LotCardData }) {
       style={live ? { animation: "cardLiveRing 2s ease-in-out infinite" } : undefined}
     >
       <div
-        className="relative flex h-[168px] items-end p-3.5"
-        style={{ backgroundImage: `repeating-linear-gradient(135deg, ${stripeA} 0 12px, ${stripeB} 12px 24px)` }}
+        className="relative flex h-[168px] items-end bg-cover bg-center p-3.5"
+        style={
+          lot.image
+            ? { backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.55)), url(/api/media?key=${encodeURIComponent(lot.image)})` }
+            : { backgroundImage: `repeating-linear-gradient(135deg, ${stripeA} 0 12px, ${stripeB} 12px 24px)` }
+        }
       >
         <span className="tnum absolute left-3 top-3 rounded-md bg-white/90 px-2.5 py-1 text-[12px] font-semibold text-navy">
           {lot.species}:{lot.code}

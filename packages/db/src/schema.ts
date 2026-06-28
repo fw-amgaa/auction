@@ -41,6 +41,7 @@ export const lotStatus = pgEnum("lot_status", [
   "cancelled",
 ]);
 export const bidStatus = pgEnum("bid_status", ["accepted", "superseded", "winning", "void"]);
+export const paymentStatus = pgEnum("payment_status", ["pending", "paid", "defaulted"]);
 export const ledgerType = pgEnum("ledger_type", [
   "admin_issue",
   "admin_raise",
@@ -215,6 +216,8 @@ export const lots = pgTable(
     currentPrice: bigint("current_price", { mode: "number" }), // mirrors Redis while live
     leaderUserId: uuid("leader_user_id").references(() => users.id),
     winnerUserId: uuid("winner_user_id").references(() => users.id),
+    payment: paymentStatus("payment").notNull().default("pending"),
+    permitIssuedAt: timestamp("permit_issued_at", { withTimezone: true }),
     images: jsonb("images").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     ...timestamps,
   },

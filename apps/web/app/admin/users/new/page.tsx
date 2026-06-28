@@ -5,6 +5,8 @@ import { useActionState, useState } from "react";
 
 import { formatTugrug } from "@auction/shared";
 
+import { CurrencyInput } from "@/components/CurrencyInput";
+
 import { createUserAction, type CreateUserState } from "./actions";
 
 type AccountType = "individual" | "legal_entity";
@@ -277,15 +279,13 @@ export default function CreateUserPage() {
 
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
               <div className="mb-2 text-[13.5px] font-semibold">Эхний лимит тогтоох</div>
-              <div className="relative max-w-[280px]">
-                <input
+              <div className="max-w-[280px]">
+                <CurrencyInput
                   value={limit}
-                  onChange={(e) => setLimit(e.target.value)}
-                  inputMode="numeric"
+                  onChange={setLimit}
                   placeholder="0"
                   className="tnum h-11 w-full rounded-[9px] border border-white/15 bg-white/[0.06] pl-3.5 pr-8 text-base font-semibold text-white outline-none"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9DB0CC]">₮</span>
               </div>
               <div className="mt-1.5 text-[11.5px] text-[#7E92B2]">
                 Офлайнаар төлсөн барьцааны хэмжээг илэрхийлнэ.

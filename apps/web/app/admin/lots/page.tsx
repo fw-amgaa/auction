@@ -18,6 +18,7 @@ export default async function AdminLotsPage() {
     startsAt: l.startsAt?.toISOString() ?? null,
     endsAt: l.endsAt?.toISOString() ?? null,
     description: l.description,
+    images: l.images,
   }));
   return <LotsManager lots={managed} categories={categories.map((c) => ({ id: c.id, name: c.name }))} />;
 }

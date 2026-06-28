@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
+import { Logo } from "@/components/Logo";
+
 import { loginAction, type LoginState } from "./actions";
 
 export default function LoginPage() {
@@ -20,11 +22,8 @@ export default function LoginPage() {
               "repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0 22px, transparent 22px 44px)",
           }}
         />
-        <Link
-          href="/"
-          className="relative inline-flex w-fit items-center rounded-xl bg-white px-3.5 py-2.5 font-bold text-navy"
-        >
-          Ан агнуур
+        <Link href="/" className="relative inline-flex w-fit items-center rounded-xl bg-white px-3.5 py-2.5">
+          <Logo height={30} />
         </Link>
         <div className="relative">
           <div className="text-3xl font-bold leading-tight">

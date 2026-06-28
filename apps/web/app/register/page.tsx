@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 
+import { Logo } from "@/components/Logo";
+
 import { registerAction, type RegisterState } from "./actions";
 
 type AccountType = "individual" | "legal_entity";
@@ -139,8 +141,8 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-sand text-ink-strong">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-          <Link href="/" className="font-bold text-navy">
-            Ан агнуур
+          <Link href="/">
+            <Logo height={30} />
           </Link>
           <div className="text-sm text-ink-soft">
             Бүртгэлтэй юу?{" "}

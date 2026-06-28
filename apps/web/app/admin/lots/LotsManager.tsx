@@ -5,8 +5,9 @@ import { useState, useTransition } from "react";
 import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
+import { CurrencyInput } from "@/components/CurrencyInput";
 
-import { cancelLot, createLot, type LotInput, updateLot } from "./actions";
+import { createLot, deleteLot, type LotInput, updateLot } from "./actions";
 
 type LotStatus = "draft" | "scheduled" | "live" | "ended" | "settled" | "cancelled";
 
@@ -19,9 +20,10 @@ export interface ManagedLot {
   reserve: number;
   step: number;
   status: LotStatus;
-  startsAt: string | null; // ISO
+  startsAt: string | null;
   endsAt: string | null;
   description: string | null;
+  images: string[];
 }
 
 interface CategoryOpt {
@@ -46,12 +48,16 @@ const TABS: [string, string][] = [
   ["ended", "Дууссан"],
 ];
 
-const COLS = "grid grid-cols-[96px_1.4fr_1fr_1fr_120px_140px] gap-3";
+const COLS = "grid grid-cols-[80px_1.4fr_1fr_1.1fr_1.1fr_110px_120px] gap-3";
 
 function toInput(d: string | null): string {
   if (!d) return "";
   const date = new Date(d);
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+function fmtShort(d: string | null): string {
+  if (!d) return "—";
+  return new Date(d).toISOString().slice(5, 16).replace("T", " ");
 }
 
 interface FormState {
@@ -64,6 +70,7 @@ interface FormState {
   startsAt: string;
   endsAt: string;
   description: string;
+  images: string[];
 }
 
 const emptyForm = (categoryId: string): FormState => ({
@@ -76,19 +83,15 @@ const emptyForm = (categoryId: string): FormState => ({
   startsAt: "",
   endsAt: "",
   description: "",
+  images: [],
 });
 
-export function LotsManager({
-  lots,
-  categories,
-}: {
-  lots: ManagedLot[];
-  categories: CategoryOpt[];
-}) {
+export function LotsManager({ lots, categories }: { lots: ManagedLot[]; categories: CategoryOpt[] }) {
   const [tab, setTab] = useState("all");
   const [form, setForm] = useState<FormState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const counts: Record<string, number> = { all: lots.length };
@@ -111,11 +114,26 @@ export function LotsManager({
       startsAt: toInput(l.startsAt),
       endsAt: toInput(l.endsAt),
       description: l.description ?? "",
+      images: l.images ?? [],
     });
   }
   function flash(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
+  }
+
+  async function uploadImages(files: FileList | null) {
+    if (!files || files.length === 0 || !form) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      for (const f of Array.from(files)) fd.append("files", f);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = (await res.json()) as { keys: string[] };
+      setForm((f) => (f ? { ...f, images: [...f.images, ...data.keys] } : f));
+    } finally {
+      setUploading(false);
+    }
   }
 
   function save() {
@@ -129,15 +147,23 @@ export function LotsManager({
       startsAt: form.startsAt || null,
       endsAt: form.endsAt || null,
       description: form.description,
+      images: form.images,
     };
     startTransition(async () => {
       const res = form.id ? await updateLot(form.id, input) : await createLot(input);
-      if (res.error) {
-        setError(res.error);
-      } else {
+      if (res.error) setError(res.error);
+      else {
         setForm(null);
         flash(form.id ? "Лот шинэчлэгдлээ" : "Лот үүсгэлээ");
       }
+    });
+  }
+
+  function remove(l: ManagedLot) {
+    if (!confirm(`${l.species}:${l.code} лотыг бүрмөсөн устгах уу? Энэ үйлдлийг буцаах боломжгүй.`)) return;
+    startTransition(async () => {
+      await deleteLot(l.id);
+      flash("Лот устгагдлаа");
     });
   }
 
@@ -146,10 +172,7 @@ export function LotsManager({
   return (
     <div>
       <AdminTopbar title="Лот удирдлага">
-        <button
-          onClick={openCreate}
-          className="rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover"
-        >
+        <button onClick={openCreate} className="rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover">
           + Шинэ лот
         </button>
       </AdminTopbar>
@@ -159,17 +182,7 @@ export function LotsManager({
           {TABS.map(([k, label]) => {
             const on = k === tab;
             return (
-              <button
-                key={k}
-                onClick={() => setTab(k)}
-                className="rounded-lg border px-3.5 py-2 text-[13px]"
-                style={{
-                  background: on ? "#14294A" : "#FFF",
-                  color: on ? "#FFF" : "#5B6677",
-                  borderColor: on ? "#14294A" : "#E1E5EC",
-                  fontWeight: on ? 700 : 500,
-                }}
-              >
+              <button key={k} onClick={() => setTab(k)} className="rounded-lg border px-3.5 py-2 text-[13px]" style={{ background: on ? "#14294A" : "#FFF", color: on ? "#FFF" : "#5B6677", borderColor: on ? "#14294A" : "#E1E5EC", fontWeight: on ? 700 : 500 }}>
                 {label} ({counts[k] ?? 0})
               </button>
             );
@@ -181,114 +194,77 @@ export function LotsManager({
             <span>Код</span>
             <span>Зүйл / аймаг</span>
             <span className="text-right">Босго үнэ</span>
-            <span className="text-right">Алхам</span>
+            <span>Эхлэх</span>
+            <span>Дуусах</span>
             <span className="text-center">Төлөв</span>
             <span className="text-right">Үйлдэл</span>
           </div>
           {rows.map((l) => {
             const st = STATUS_META[l.status] ?? { label: l.status, bg: "#F0ECE2", fg: "#8A6D3B" };
-            const cancellable = l.status === "scheduled" || l.status === "draft";
             return (
               <div key={l.id} className={`${COLS} items-center border-b border-[#F1F3F6] px-[18px] py-3 last:border-0`}>
                 <span className="tnum text-[12.5px] font-semibold text-navy">{l.code}</span>
-                <div className="min-w-0">
-                  <div className="truncate text-[13px] font-semibold text-navy">{l.species}</div>
-                  <div className="text-[11px] text-muted">{l.aimag ?? "—"}</div>
+                <div className="flex min-w-0 items-center gap-2.5">
+                  {l.images[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={`/api/media?key=${encodeURIComponent(l.images[0])}`} alt="" className="size-8 shrink-0 rounded-md object-cover" />
+                  ) : (
+                    <span className="size-8 shrink-0 rounded-md" style={{ backgroundImage: "repeating-linear-gradient(135deg,#26405F 0 7px,#1F3753 7px 14px)" }} />
+                  )}
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-semibold text-navy">{l.species}</div>
+                    <div className="text-[11px] text-muted">{l.aimag ?? "—"}</div>
+                  </div>
                 </div>
                 <span className="tnum text-right text-[13px] font-semibold text-navy">{formatTugrug(l.reserve)}</span>
-                <span className="tnum text-right text-[12.5px] text-ink-soft">{formatTugrug(l.step)}</span>
+                <span className="tnum text-[12px] text-ink-soft">{fmtShort(l.startsAt)}</span>
+                <span className="tnum text-[12px] text-ink-soft">{fmtShort(l.endsAt)}</span>
                 <span className="flex justify-center">
                   <span className="rounded-md px-2 py-1 text-[11px] font-bold" style={{ background: st.bg, color: st.fg }}>
                     {st.label}
                   </span>
                 </span>
                 <span className="flex justify-end gap-1.5">
-                  <button
-                    onClick={() => openEdit(l)}
-                    className="rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy"
-                  >
+                  <button onClick={() => openEdit(l)} className="rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy">
                     Засах
                   </button>
-                  {cancellable && (
-                    <button
-                      onClick={() => startTransition(async () => { await cancelLot(l.id); flash("Лот цуцлагдлаа"); })}
-                      title="Цуцлах"
-                      className="grid size-[30px] place-items-center rounded-[7px] border border-[#E0908C] bg-white text-[12px] text-crimson"
-                    >
-                      ✕
-                    </button>
-                  )}
+                  <button onClick={() => remove(l)} title="Устгах" className="grid size-[30px] place-items-center rounded-[7px] border border-[#E0908C] bg-white text-[12px] text-crimson hover:bg-[#FBEAE9]">
+                    🗑
+                  </button>
                 </span>
               </div>
             );
           })}
-          {rows.length === 0 && (
-            <div className="px-5 py-12 text-center text-[13px] text-muted">Лот алга.</div>
-          )}
+          {rows.length === 0 && <div className="px-5 py-12 text-center text-[13px] text-muted">Лот алга.</div>}
         </div>
       </div>
 
-      {/* modal */}
       {form && (
-        <div
-          onClick={() => setForm(null)}
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-navy-deep/80 p-6"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="max-h-[92vh] w-full max-w-[560px] overflow-y-auto rounded-2xl bg-white"
-          >
+        <div onClick={() => setForm(null)} className="fixed inset-0 z-[70] flex items-center justify-center bg-navy-deep/80 p-6">
+          <div onClick={(e) => e.stopPropagation()} className="max-h-[92vh] w-full max-w-[560px] overflow-y-auto rounded-2xl bg-white">
             <div className="flex items-center justify-between border-b border-[#EBEEF3] px-[22px] py-[18px]">
               <span className="text-[17px] font-bold text-navy">{form.id ? "Лот засах" : "Шинэ лот үүсгэх"}</span>
-              <button onClick={() => setForm(null)} className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft">
-                ✕
-              </button>
+              <button onClick={() => setForm(null)} className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft">✕</button>
             </div>
             <div className="grid grid-cols-2 gap-[15px] p-[22px]">
               <Field label="Зүйл" full>
-                <select
-                  value={form.categoryId}
-                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm"
-                >
+                <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm">
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </Field>
               <Field label="Лотын код">
-                <input
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value })}
-                  placeholder="U13"
-                  className="tnum h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
-                />
+                <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="U13" className="tnum h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none" />
               </Field>
               <Field label="Аймаг">
-                <input
-                  value={form.aimag}
-                  onChange={(e) => setForm({ ...form, aimag: e.target.value })}
-                  placeholder="Баян-Өлгий"
-                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
-                />
+                <input value={form.aimag} onChange={(e) => setForm({ ...form, aimag: e.target.value })} placeholder="Баян-Өлгий" className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none" />
               </Field>
               <Field label="Босго үнэ (₮)">
-                <input
-                  value={form.reserve}
-                  onChange={(e) => setForm({ ...form, reserve: e.target.value })}
-                  inputMode="numeric"
-                  placeholder="5300000"
-                  className="tnum h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
-                />
+                <CurrencyInput value={form.reserve} onChange={(v) => setForm({ ...form, reserve: v })} placeholder="5,300,000" />
               </Field>
               <Field label="Төлөв">
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value as LotInput["status"] })}
-                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm"
-                >
+                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as LotInput["status"] })} className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm">
                   <option value="draft">Ноорог</option>
                   <option value="scheduled">Төлөвлөсөн</option>
                   <option value="live">Шууд</option>
@@ -296,47 +272,43 @@ export function LotsManager({
                 </select>
               </Field>
               <Field label="Эхлэх огноо">
-                <input
-                  type="datetime-local"
-                  value={form.startsAt}
-                  onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
-                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
-                />
+                <input type="datetime-local" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none" />
               </Field>
               <Field label="Дуусах огноо">
-                <input
-                  type="datetime-local"
-                  value={form.endsAt}
-                  onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
-                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
-                />
+                <input type="datetime-local" value={form.endsAt} onChange={(e) => setForm({ ...form, endsAt: e.target.value })} className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none" />
               </Field>
               <Field label="Тайлбар" full>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={2}
-                  className="w-full resize-y rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 py-2 text-sm outline-none"
-                />
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} className="w-full resize-y rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 py-2 text-sm outline-none" />
               </Field>
+
+              {/* images */}
+              <Field label="Зураг" full>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {form.images.map((key) => (
+                    <div key={key} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/api/media?key=${encodeURIComponent(key)}`} alt="" className="size-16 rounded-lg border border-line-cool object-cover" />
+                      <button onClick={() => setForm({ ...form, images: form.images.filter((k) => k !== key) })} className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-crimson text-[10px] text-white">✕</button>
+                    </div>
+                  ))}
+                  <label className="grid size-16 cursor-pointer place-items-center rounded-lg border-[1.5px] border-dashed border-line-cool bg-[#FAF8F4] text-xl text-muted">
+                    {uploading ? "…" : "+"}
+                    <input type="file" accept="image/*" multiple onChange={(e) => uploadImages(e.target.files)} className="hidden" />
+                  </label>
+                </div>
+              </Field>
+
               <div className="col-span-2 rounded-[10px] border border-[#EBEEF3] bg-[#F7F8FA] p-3.5">
                 <div className="text-[12px] font-bold text-navy">Үнийн алхмын зурвас</div>
                 <div className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
-                  Алхам = босго үнийн 10% = <strong className="tnum text-navy">{reserveN ? formatTugrug(Math.round(reserveN * 0.1)) : "—"}</strong>.
-                  Нэг саналд +1…+5 алхам (дээд тал нь 50%, <strong className="tnum text-navy">{reserveN ? formatTugrug(Math.round(reserveN * 0.5)) : "—"}</strong>).
+                  Алхам = босго үнийн 10% = <strong className="tnum text-navy">{reserveN ? formatTugrug(Math.round(reserveN * 0.1)) : "—"}</strong>. Нэг саналд +1…+5 алхам (дээд тал нь 50%, <strong className="tnum text-navy">{reserveN ? formatTugrug(Math.round(reserveN * 0.5)) : "—"}</strong>).
                 </div>
               </div>
               {error && <div className="col-span-2 text-[12.5px] font-semibold text-crimson">{error}</div>}
             </div>
             <div className="flex justify-end gap-2.5 px-[22px] pb-5">
-              <button onClick={() => setForm(null)} className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft">
-                Болих
-              </button>
-              <button
-                onClick={save}
-                disabled={pending}
-                className="rounded-[9px] bg-success px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
-              >
+              <button onClick={() => setForm(null)} className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft">Болих</button>
+              <button onClick={save} disabled={pending} className="rounded-[9px] bg-success px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60">
                 {pending ? "Хадгалж байна…" : form.id ? "Хадгалах" : "Үүсгэх"}
               </button>
             </div>
@@ -345,9 +317,7 @@ export function LotsManager({
       )}
 
       {toast && (
-        <div className="fixed right-5 top-5 z-[80] rounded-xl border border-[#C7E5D5] bg-[#E5F4EC] px-4 py-3 text-[13.5px] font-semibold text-[#197a50] shadow-lg">
-          ✅ {toast}
-        </div>
+        <div className="fixed right-5 top-5 z-[80] rounded-xl border border-[#C7E5D5] bg-[#E5F4EC] px-4 py-3 text-[13.5px] font-semibold text-[#197a50] shadow-lg">✅ {toast}</div>
       )}
     </div>
   );

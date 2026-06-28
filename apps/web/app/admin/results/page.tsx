@@ -1,5 +1,10 @@
-import { AdminPlaceholder } from "@/components/AdminPlaceholder";
+import { getResults } from "@/lib/results";
 
-export default function AdminResultsPage() {
-  return <AdminPlaceholder title="Үр дүн" phase="7-р шат (Дуудлагын дараах)" />;
+import { ResultsManager } from "./ResultsManager";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminResultsPage() {
+  const { rows, kpis } = await getResults();
+  return <ResultsManager rows={rows} kpis={kpis} />;
 }

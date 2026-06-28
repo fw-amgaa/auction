@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
+import { CurrencyInput } from "@/components/CurrencyInput";
 import { fmtSigned, LEDGER_META, type LedgerType } from "@/lib/ledger-meta";
 
 import { adjustLimit, type LimitAction } from "./actions";
@@ -185,15 +186,13 @@ export function LimitsManager({ users }: { users: LimitRow[] }) {
               <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-strong">
                 {action === "refund" ? "Буцаасан дүн" : action === "lower" ? "Бууруулах дүн" : "Нэмэх дүн"}
               </label>
-              <div className="relative mb-1.5">
-                <input
+              <div className="mb-1.5">
+                <CurrencyInput
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  inputMode="numeric"
+                  onChange={setAmount}
                   placeholder="0"
                   className="tnum h-[46px] w-full rounded-[10px] border border-line-cool bg-[#FAF8F4] pl-3.5 pr-8 text-base font-semibold text-navy outline-none"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted">₮</span>
               </div>
               <div className="mb-4 text-[12px] text-ink-soft">
                 Шинэ лимит: <strong className="tnum text-navy">{formatTugrug(newLimit)}</strong>
