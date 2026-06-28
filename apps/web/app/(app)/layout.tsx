@@ -1,4 +1,4 @@
-import { AppNav } from "@/components/AppNav";
+import { AppShell } from "@/components/AppShell";
 import { getUnreadCount } from "@/lib/notifications";
 import { requireUser } from "@/lib/session";
 
@@ -10,14 +10,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const unread = await getUnreadCount(user.id);
 
   return (
-    <div className="min-h-screen">
-      <AppNav
-        balance={available}
-        unread={unread}
-        userName={user.name ?? user.email}
-        isAdmin={user.role === "admin"}
-      />
-      <div className="mx-auto max-w-6xl px-5 py-8">{children}</div>
-    </div>
+    <AppShell
+      balance={available}
+      unread={unread}
+      userName={user.name ?? user.email}
+      isAdmin={user.role === "admin"}
+    >
+      {children}
+    </AppShell>
   );
 }

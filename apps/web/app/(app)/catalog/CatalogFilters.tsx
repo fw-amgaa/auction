@@ -40,7 +40,7 @@ export function CatalogFilters({
   return (
     <>
       {/* species rail */}
-      <div className="mt-5 flex gap-2.5 overflow-x-auto pb-1">
+      <div data-tour="species" className="mt-5 flex gap-2.5 overflow-x-auto pb-1">
         <button onClick={() => update("species", "all")} className={chip(species === "all")}>
           Бүгд
         </button>

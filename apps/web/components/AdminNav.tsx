@@ -32,9 +32,11 @@ export function AdminNav({ adminName, pendingKyc = 0 }: { adminName: string; pen
     adminName.split(/\s+/).map((p) => p.replace(".", "")[0] ?? "").join("").slice(0, 2).toUpperCase() || "А";
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col bg-navy-deep text-[#C7D4E6]">
+    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col bg-navy-deep text-[#C7D4E6]">
       <div className="border-b border-white/10 px-4 pb-4 pt-[18px]">
-        <Logo chip />
+        <div className="flex justify-center">
+          <Logo chip height={28} />
+        </div>
         <div className="mt-2.5 text-center text-[10px] font-semibold tracking-[0.1em] text-[#7E92B2]">
           АДМИН ПАНЕЛ
         </div>

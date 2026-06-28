@@ -1,7 +1,16 @@
+import { GuidedTour, type TourStep } from "@/components/GuidedTour";
 import { LotCard } from "@/components/LotCard";
 import { getCatalogLots, getCategoryOptions } from "@/lib/lots";
 
 import { CatalogFilters } from "./CatalogFilters";
+
+const TOUR: TourStep[] = [
+  { sel: '[data-tour="species"]', title: "Амьтны төрлөөр сонгох", body: "Эндээс хүссэн амьтны төрлөө шүүж үзнэ — Угалз, Тэх, Чоно гэх мэт." },
+  { sel: '[data-tour="lots"] a', title: "Лотын карт", body: "Төлөв, үнэ, үлдсэн хугацааг нэг харцаар. ШУУД лотууд улаанаар цохилно." },
+  { sel: 'a[href="/balance"]', title: "Таны үлдэгдэл", body: "Санал өгөх лимит энд харагдана. Санал өгөхөд барьцаалагдаж, давуулбал буцна." },
+  { sel: 'a[href="/notifications"]', title: "Мэдэгдэл", body: "Таныг давуулсан тэр даруйд бид мэдэгдэнэ. Уншаагүй мэдэгдэл улаанаар тоологдоно." },
+  { sel: 'a[href="/help"]', title: "Тусламж", body: "Энэ танилцуулгыг хүссэн үедээ Тусламж хэсгээс дахин үзэх боломжтой." },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +50,7 @@ export default async function CatalogPage({
         <strong className="text-navy">{lots.length}</strong> лот олдлоо
       </div>
 
-      <div className="mt-3.5 grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-[18px]">
+      <div data-tour="lots" className="mt-3.5 grid grid-cols-[repeat(auto-fill,minmax(290px,1fr))] gap-[18px]">
         {lots.map((lot) => (
           <LotCard key={lot.id} lot={lot} />
         ))}
@@ -55,6 +64,8 @@ export default async function CatalogPage({
           </div>
         </div>
       )}
+
+      <GuidedTour steps={TOUR} storageKey="wpa_app_tour" />
     </main>
   );
 }
