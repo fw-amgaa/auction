@@ -9,23 +9,29 @@ import { hash } from "@node-rs/argon2";
 import { eq } from "drizzle-orm";
 
 import { db } from "./client";
-import { categories, termsVersions, users } from "./schema";
+import { categories, lots, termsVersions, users } from "./schema";
 
 const SPECIES = [
-  { code: "tekh", name: "Тэх", defaultReserve: 5_300_000, sortOrder: 1 },
-  { code: "chono", name: "Чоно", defaultReserve: null, sortOrder: 2 },
-  { code: "yangir", name: "Янгир", defaultReserve: null, sortOrder: 3 },
-  { code: "zagas", name: "Загас", defaultReserve: null, sortOrder: 4 },
-  { code: "ugalz", name: "Угалз", defaultReserve: 22_200_000, sortOrder: 5 },
-  { code: "gakhai", name: "Гахай", defaultReserve: null, sortOrder: 6 },
-  { code: "shuvuu", name: "Шувуу", defaultReserve: null, sortOrder: 7 },
-  { code: "bulga", name: "Булга", defaultReserve: null, sortOrder: 8 },
+  { code: "tekh", name: "Тэх", latinName: "Capra sibirica", defaultReserve: 5_300_000, sortOrder: 1 },
+  { code: "chono", name: "Чоно", latinName: "Canis lupus", defaultReserve: null, sortOrder: 2 },
+  { code: "yangir", name: "Янгир", latinName: "Capra sibirica", defaultReserve: null, sortOrder: 3 },
+  { code: "zagas", name: "Загас", latinName: "Hucho taimen", defaultReserve: null, sortOrder: 4 },
+  { code: "ugalz", name: "Угалз", latinName: "Ovis ammon (argali)", defaultReserve: 22_200_000, sortOrder: 5 },
+  { code: "gakhai", name: "Гахай", latinName: "Sus scrofa", defaultReserve: null, sortOrder: 6 },
+  { code: "shuvuu", name: "Шувуу", latinName: "Falco cherrug", defaultReserve: null, sortOrder: 7 },
+  { code: "bulga", name: "Булга", latinName: "Martes zibellina", defaultReserve: null, sortOrder: 8 },
 ];
 
 async function main() {
   console.log("Seeding categories…");
   for (const s of SPECIES) {
-    await db.insert(categories).values(s).onConflictDoNothing();
+    await db
+      .insert(categories)
+      .values(s)
+      .onConflictDoUpdate({
+        target: categories.code,
+        set: { name: s.name, latinName: s.latinName, defaultReserve: s.defaultReserve, sortOrder: s.sortOrder },
+      });
   }
 
   console.log("Seeding terms version…");
@@ -58,6 +64,43 @@ async function main() {
     console.log(`  admin created: ${adminEmail} / ${adminPassword}`);
   } else {
     console.log("  admin already exists, skipping");
+  }
+
+  console.log("Seeding sample lots…");
+  const cats = await db.select().from(categories);
+  const byCode = new Map(cats.map((c) => [c.code, c.id]));
+  const now = Date.now();
+  const at = (ms: number) => new Date(now + ms);
+  const MIN = 60_000;
+  const HOUR = 60 * MIN;
+  const DAY = 24 * HOUR;
+
+  const SAMPLE_LOTS = [
+    { code: "U9", cat: "ugalz", aimag: "Баян-Өлгий", reserve: 22_200_000, status: "live" as const, starts: -10 * MIN, ends: 30 * MIN },
+    { code: "T101", cat: "tekh", aimag: "Ховд", reserve: 5_300_000, status: "live" as const, starts: -5 * MIN, ends: 45 * MIN },
+    { code: "U12", cat: "ugalz", aimag: "Завхан", reserve: 22_200_000, status: "scheduled" as const, starts: 1 * DAY, ends: 1 * DAY + HOUR },
+    { code: "Y2", cat: "yangir", aimag: "Говь-Алтай", reserve: 2_400_000, status: "scheduled" as const, starts: 2 * DAY, ends: 2 * DAY + HOUR },
+    { code: "T102", cat: "tekh", aimag: "Ховд", reserve: 5_300_000, status: "ended" as const, starts: -2 * DAY, ends: -1 * DAY },
+  ];
+
+  for (const l of SAMPLE_LOTS) {
+    const categoryId = byCode.get(l.cat);
+    if (!categoryId) continue;
+    const cat = cats.find((c) => c.code === l.cat)!;
+    await db
+      .insert(lots)
+      .values({
+        code: l.code,
+        categoryId,
+        title: cat.name,
+        aimag: l.aimag,
+        reserve: l.reserve,
+        step: Math.round(l.reserve * 0.1),
+        status: l.status,
+        startsAt: at(l.starts),
+        endsAt: at(l.ends),
+      })
+      .onConflictDoNothing({ target: lots.code });
   }
 
   console.log("Seed complete.");

@@ -175,15 +175,20 @@ export const kycDocuments = pgTable(
 
 /* ------------------------------- categories ------------------------------- */
 
-export const categories = pgTable("categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  code: text("code").notNull(), // e.g. ugalz, tekh, chono
-  name: text("name").notNull(), // Угалз, Тэх ...
-  defaultReserve: bigint("default_reserve", { mode: "number" }),
-  icon: text("icon"),
-  sortOrder: integer("sort_order").notNull().default(0),
-  ...timestamps,
-});
+export const categories = pgTable(
+  "categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: text("code").notNull(), // e.g. ugalz, tekh, chono
+    name: text("name").notNull(), // Угалз, Тэх ...
+    latinName: text("latin_name"), // Ovis ammon (argali)
+    defaultReserve: bigint("default_reserve", { mode: "number" }),
+    icon: text("icon"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("categories_code_uniq").on(t.code)],
+);
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   lots: many(lots),
@@ -201,6 +206,7 @@ export const lots = pgTable(
       .references(() => categories.id),
     title: text("title").notNull(),
     description: text("description"),
+    aimag: text("aimag"), // province/region the permit applies to
     reserve: bigint("reserve", { mode: "number" }).notNull(),
     step: bigint("step", { mode: "number" }).notNull(), // denormalized = 10% reserve
     status: lotStatus("status").notNull().default("draft"),

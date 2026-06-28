@@ -65,3 +65,34 @@ body {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+@keyframes livedot {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cardLiveRing {
+  0%,
+  100% {
+    box-shadow: 0 1px 3px rgba(20, 41, 74, 0.08), 0 0 0 1px rgba(200, 49, 44, 0.35);
+  }
+  50% {
+    box-shadow: 0 1px 3px rgba(20, 41, 74, 0.08), 0 0 0 3px rgba(200, 49, 44, 0.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+  }
+}

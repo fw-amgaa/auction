@@ -1,5 +1,23 @@
-import { AdminPlaceholder } from "@/components/AdminPlaceholder";
+import { getAdminLots, getCategoryOptions } from "@/lib/lots";
 
-export default function AdminLotsPage() {
-  return <AdminPlaceholder title="Лот" phase="3-р шат (Каталог/лот удирдлага)" />;
+import { LotsManager, type ManagedLot } from "./LotsManager";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminLotsPage() {
+  const [lots, categories] = await Promise.all([getAdminLots(), getCategoryOptions()]);
+  const managed: ManagedLot[] = lots.map((l) => ({
+    id: l.id,
+    code: l.code,
+    categoryId: l.categoryId,
+    species: l.species,
+    aimag: l.aimag,
+    reserve: l.reserve,
+    step: l.step,
+    status: l.status,
+    startsAt: l.startsAt?.toISOString() ?? null,
+    endsAt: l.endsAt?.toISOString() ?? null,
+    description: l.description,
+  }));
+  return <LotsManager lots={managed} categories={categories.map((c) => ({ id: c.id, name: c.name }))} />;
 }

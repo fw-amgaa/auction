@@ -1,0 +1,363 @@
+"use client";
+
+import { useState, useTransition } from "react";
+
+import { formatTugrug } from "@auction/shared";
+
+import { AdminTopbar } from "@/components/AdminTopbar";
+
+import { cancelLot, createLot, type LotInput, updateLot } from "./actions";
+
+type LotStatus = "draft" | "scheduled" | "live" | "ended" | "settled" | "cancelled";
+
+export interface ManagedLot {
+  id: string;
+  code: string;
+  categoryId: string;
+  species: string;
+  aimag: string | null;
+  reserve: number;
+  step: number;
+  status: LotStatus;
+  startsAt: string | null; // ISO
+  endsAt: string | null;
+  description: string | null;
+}
+
+interface CategoryOpt {
+  id: string;
+  name: string;
+}
+
+const STATUS_META: Record<string, { label: string; bg: string; fg: string }> = {
+  live: { label: "ШУУД", bg: "#FBEAE9", fg: "#C8312C" },
+  scheduled: { label: "ТӨЛӨВЛӨСӨН", bg: "#E5F0FB", fg: "#1B5FA8" },
+  draft: { label: "НООРОГ", bg: "#F0ECE2", fg: "#8A6D3B" },
+  ended: { label: "ДУУССАН", bg: "#EEF1F5", fg: "#5B6677" },
+  settled: { label: "ТӨЛӨГДСӨН", bg: "#E5F4EC", fg: "#197a50" },
+  cancelled: { label: "ЦУЦЛАГДСАН", bg: "#F3F1EF", fg: "#9A6A66" },
+};
+
+const TABS: [string, string][] = [
+  ["all", "Бүгд"],
+  ["live", "Шууд"],
+  ["scheduled", "Төлөвлөсөн"],
+  ["draft", "Ноорог"],
+  ["ended", "Дууссан"],
+];
+
+const COLS = "grid grid-cols-[96px_1.4fr_1fr_1fr_120px_140px] gap-3";
+
+function toInput(d: string | null): string {
+  if (!d) return "";
+  const date = new Date(d);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+interface FormState {
+  id: string | null;
+  categoryId: string;
+  code: string;
+  aimag: string;
+  reserve: string;
+  status: LotInput["status"];
+  startsAt: string;
+  endsAt: string;
+  description: string;
+}
+
+const emptyForm = (categoryId: string): FormState => ({
+  id: null,
+  categoryId,
+  code: "",
+  aimag: "",
+  reserve: "",
+  status: "draft",
+  startsAt: "",
+  endsAt: "",
+  description: "",
+});
+
+export function LotsManager({
+  lots,
+  categories,
+}: {
+  lots: ManagedLot[];
+  categories: CategoryOpt[];
+}) {
+  const [tab, setTab] = useState("all");
+  const [form, setForm] = useState<FormState | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const counts: Record<string, number> = { all: lots.length };
+  for (const [k] of TABS) if (k !== "all") counts[k] = lots.filter((l) => l.status === k).length;
+  const rows = lots.filter((l) => tab === "all" || l.status === tab);
+
+  function openCreate() {
+    setError(null);
+    setForm(emptyForm(categories[0]?.id ?? ""));
+  }
+  function openEdit(l: ManagedLot) {
+    setError(null);
+    setForm({
+      id: l.id,
+      categoryId: l.categoryId,
+      code: l.code,
+      aimag: l.aimag ?? "",
+      reserve: String(l.reserve),
+      status: (l.status === "cancelled" || l.status === "settled" ? "ended" : l.status) as LotInput["status"],
+      startsAt: toInput(l.startsAt),
+      endsAt: toInput(l.endsAt),
+      description: l.description ?? "",
+    });
+  }
+  function flash(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  function save() {
+    if (!form) return;
+    const input: LotInput = {
+      categoryId: form.categoryId,
+      code: form.code,
+      aimag: form.aimag,
+      reserve: Number.parseInt(form.reserve.replace(/\D/g, "") || "0", 10),
+      status: form.status,
+      startsAt: form.startsAt || null,
+      endsAt: form.endsAt || null,
+      description: form.description,
+    };
+    startTransition(async () => {
+      const res = form.id ? await updateLot(form.id, input) : await createLot(input);
+      if (res.error) {
+        setError(res.error);
+      } else {
+        setForm(null);
+        flash(form.id ? "Лот шинэчлэгдлээ" : "Лот үүсгэлээ");
+      }
+    });
+  }
+
+  const reserveN = form ? Number.parseInt(form.reserve.replace(/\D/g, "") || "0", 10) : 0;
+
+  return (
+    <div>
+      <AdminTopbar title="Лот удирдлага">
+        <button
+          onClick={openCreate}
+          className="rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover"
+        >
+          + Шинэ лот
+        </button>
+      </AdminTopbar>
+
+      <div className="p-6">
+        <div className="mb-4 flex gap-1.5">
+          {TABS.map(([k, label]) => {
+            const on = k === tab;
+            return (
+              <button
+                key={k}
+                onClick={() => setTab(k)}
+                className="rounded-lg border px-3.5 py-2 text-[13px]"
+                style={{
+                  background: on ? "#14294A" : "#FFF",
+                  color: on ? "#FFF" : "#5B6677",
+                  borderColor: on ? "#14294A" : "#E1E5EC",
+                  fontWeight: on ? 700 : 500,
+                }}
+              >
+                {label} ({counts[k] ?? 0})
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-line-cool bg-white">
+          <div className={`${COLS} border-b border-[#EBEEF3] bg-[#F7F8FA] px-[18px] py-3 text-[11px] font-bold uppercase tracking-wide text-muted`}>
+            <span>Код</span>
+            <span>Зүйл / аймаг</span>
+            <span className="text-right">Босго үнэ</span>
+            <span className="text-right">Алхам</span>
+            <span className="text-center">Төлөв</span>
+            <span className="text-right">Үйлдэл</span>
+          </div>
+          {rows.map((l) => {
+            const st = STATUS_META[l.status] ?? { label: l.status, bg: "#F0ECE2", fg: "#8A6D3B" };
+            const cancellable = l.status === "scheduled" || l.status === "draft";
+            return (
+              <div key={l.id} className={`${COLS} items-center border-b border-[#F1F3F6] px-[18px] py-3 last:border-0`}>
+                <span className="tnum text-[12.5px] font-semibold text-navy">{l.code}</span>
+                <div className="min-w-0">
+                  <div className="truncate text-[13px] font-semibold text-navy">{l.species}</div>
+                  <div className="text-[11px] text-muted">{l.aimag ?? "—"}</div>
+                </div>
+                <span className="tnum text-right text-[13px] font-semibold text-navy">{formatTugrug(l.reserve)}</span>
+                <span className="tnum text-right text-[12.5px] text-ink-soft">{formatTugrug(l.step)}</span>
+                <span className="flex justify-center">
+                  <span className="rounded-md px-2 py-1 text-[11px] font-bold" style={{ background: st.bg, color: st.fg }}>
+                    {st.label}
+                  </span>
+                </span>
+                <span className="flex justify-end gap-1.5">
+                  <button
+                    onClick={() => openEdit(l)}
+                    className="rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy"
+                  >
+                    Засах
+                  </button>
+                  {cancellable && (
+                    <button
+                      onClick={() => startTransition(async () => { await cancelLot(l.id); flash("Лот цуцлагдлаа"); })}
+                      title="Цуцлах"
+                      className="grid size-[30px] place-items-center rounded-[7px] border border-[#E0908C] bg-white text-[12px] text-crimson"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+          {rows.length === 0 && (
+            <div className="px-5 py-12 text-center text-[13px] text-muted">Лот алга.</div>
+          )}
+        </div>
+      </div>
+
+      {/* modal */}
+      {form && (
+        <div
+          onClick={() => setForm(null)}
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-navy-deep/80 p-6"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[92vh] w-full max-w-[560px] overflow-y-auto rounded-2xl bg-white"
+          >
+            <div className="flex items-center justify-between border-b border-[#EBEEF3] px-[22px] py-[18px]">
+              <span className="text-[17px] font-bold text-navy">{form.id ? "Лот засах" : "Шинэ лот үүсгэх"}</span>
+              <button onClick={() => setForm(null)} className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft">
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-[15px] p-[22px]">
+              <Field label="Зүйл" full>
+                <select
+                  value={form.categoryId}
+                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Лотын код">
+                <input
+                  value={form.code}
+                  onChange={(e) => setForm({ ...form, code: e.target.value })}
+                  placeholder="U13"
+                  className="tnum h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
+                />
+              </Field>
+              <Field label="Аймаг">
+                <input
+                  value={form.aimag}
+                  onChange={(e) => setForm({ ...form, aimag: e.target.value })}
+                  placeholder="Баян-Өлгий"
+                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
+                />
+              </Field>
+              <Field label="Босго үнэ (₮)">
+                <input
+                  value={form.reserve}
+                  onChange={(e) => setForm({ ...form, reserve: e.target.value })}
+                  inputMode="numeric"
+                  placeholder="5300000"
+                  className="tnum h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
+                />
+              </Field>
+              <Field label="Төлөв">
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value as LotInput["status"] })}
+                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm"
+                >
+                  <option value="draft">Ноорог</option>
+                  <option value="scheduled">Төлөвлөсөн</option>
+                  <option value="live">Шууд</option>
+                  <option value="ended">Дууссан</option>
+                </select>
+              </Field>
+              <Field label="Эхлэх огноо">
+                <input
+                  type="datetime-local"
+                  value={form.startsAt}
+                  onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
+                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
+                />
+              </Field>
+              <Field label="Дуусах огноо">
+                <input
+                  type="datetime-local"
+                  value={form.endsAt}
+                  onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
+                  className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
+                />
+              </Field>
+              <Field label="Тайлбар" full>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  rows={2}
+                  className="w-full resize-y rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 py-2 text-sm outline-none"
+                />
+              </Field>
+              <div className="col-span-2 rounded-[10px] border border-[#EBEEF3] bg-[#F7F8FA] p-3.5">
+                <div className="text-[12px] font-bold text-navy">Үнийн алхмын зурвас</div>
+                <div className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
+                  Алхам = босго үнийн 10% = <strong className="tnum text-navy">{reserveN ? formatTugrug(Math.round(reserveN * 0.1)) : "—"}</strong>.
+                  Нэг саналд +1…+5 алхам (дээд тал нь 50%, <strong className="tnum text-navy">{reserveN ? formatTugrug(Math.round(reserveN * 0.5)) : "—"}</strong>).
+                </div>
+              </div>
+              {error && <div className="col-span-2 text-[12.5px] font-semibold text-crimson">{error}</div>}
+            </div>
+            <div className="flex justify-end gap-2.5 px-[22px] pb-5">
+              <button onClick={() => setForm(null)} className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft">
+                Болих
+              </button>
+              <button
+                onClick={save}
+                disabled={pending}
+                className="rounded-[9px] bg-success px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
+              >
+                {pending ? "Хадгалж байна…" : form.id ? "Хадгалах" : "Үүсгэх"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed right-5 top-5 z-[80] rounded-xl border border-[#C7E5D5] bg-[#E5F4EC] px-4 py-3 text-[13.5px] font-semibold text-[#197a50] shadow-lg">
+          ✅ {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, full, children }: { label: string; full?: boolean; children: React.ReactNode }) {
+  return (
+    <div className={full ? "col-span-2" : ""}>
+      <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-strong">{label}</label>
+      {children}
+    </div>
+  );
+}

@@ -15,6 +15,13 @@
       "when": 1782543622175,
       "tag": "0001_legal_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782621125918,
+      "tag": "0002_noisy_mysterio",
+      "breakpoints": true
     }
   ]
 }
