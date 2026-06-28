@@ -1,6 +1,5 @@
 import { formatTugrug } from "@auction/shared";
 
-import { fmtMnDateTime } from "@/lib/datetime";
 import { getUserLedger } from "@/lib/limits";
 import { requireUser } from "@/lib/session";
 
@@ -27,7 +26,7 @@ export default async function BalancePage() {
     type: l.type,
     delta: l.delta,
     note: l.note,
-    date: fmtMnDateTime(l.createdAt),
+    createdAt: l.createdAt.toISOString(),
   }));
 
   return (

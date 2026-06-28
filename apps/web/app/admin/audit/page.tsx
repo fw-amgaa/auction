@@ -3,7 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@auction/db";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
-import { fmtMnDateTime } from "@/lib/datetime";
+import { LocalTime } from "@/components/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,7 @@ export default async function AdminAuditPage() {
               key={r.id}
               className="grid grid-cols-[160px_1.2fr_1fr_1.4fr] gap-3 border-b border-[#F1F3F6] px-[18px] py-2.5 text-[13px] last:border-0"
             >
-              <span className="tnum text-ink-soft">{fmtMnDateTime(r.createdAt)}</span>
+              <LocalTime value={r.createdAt.toISOString()} mode="datetime" className="tnum text-ink-soft" />
               <span className="truncate text-navy">{r.actorEmail ?? "систем"}</span>
               <span className="font-mono text-[12px] text-ink-strong">{r.action}</span>
               <span className="tnum truncate text-muted">

@@ -1,4 +1,3 @@
-import { fmtMnDate } from "@/lib/datetime";
 import { getLimitsOverview } from "@/lib/limits";
 
 import { LimitsManager, type LimitRow } from "./LimitsManager";
@@ -19,7 +18,7 @@ export default async function AdminLimitsPage() {
       type: h.type,
       delta: h.delta,
       note: h.note,
-      date: fmtMnDate(h.createdAt),
+      date: h.createdAt.toISOString(),
     })),
   }));
   return <LimitsManager users={rows} />;

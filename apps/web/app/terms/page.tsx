@@ -3,8 +3,8 @@ import Link from "next/link";
 
 import { db, schema } from "@auction/db";
 
+import { LocalTime } from "@/components/LocalTime";
 import { Logo } from "@/components/Logo";
-import { fmtMnDate } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +31,9 @@ export default async function TermsPage() {
       <div className="mx-auto max-w-3xl px-5 py-10">
         <h1 className="text-[28px] font-bold text-navy">Үйлчилгээний нөхцөл</h1>
         <p className="mt-1.5 text-sm text-ink-soft">
-          Хувилбар {terms?.version ?? "v1"} ·{" "}
-          {terms ? fmtMnDate(terms.publishedAt) : ""}
+          Хувилбар {terms?.version ?? "v1"}
+          {terms ? " · " : ""}
+          {terms ? <LocalTime value={terms.publishedAt.toISOString()} mode="date" /> : null}
         </p>
 
         <article className="mt-6 whitespace-pre-wrap rounded-card border border-line bg-white p-7 text-[14px] leading-relaxed text-ink-strong">

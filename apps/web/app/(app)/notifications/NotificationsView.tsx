@@ -2,6 +2,9 @@
 
 import { useState, useTransition } from "react";
 
+import { LocalTime } from "@/components/LocalTime";
+import { localDayKey } from "@/lib/datetime";
+
 import { markAllRead, markRead } from "./actions";
 
 export interface NotifItem {
@@ -12,9 +15,16 @@ export interface NotifItem {
   iconFg: string;
   title: string;
   body: string;
-  day: string;
-  time: string;
+  createdAt: string;
   read: boolean;
+}
+
+function dayLabel(iso: string): string {
+  const k = localDayKey(iso);
+  const now = Date.now();
+  if (k === localDayKey(now)) return "Өнөөдөр";
+  if (k === localDayKey(now - 86400000)) return "Өчигдөр";
+  return k;
 }
 
 const FILTERS: [string, string][] = [
@@ -31,7 +41,7 @@ export function NotificationsView({ items }: { items: NotifItem[] }) {
 
   const visible = items.filter((i) => filter === "all" || i.group === filter);
   const unread = items.filter((i) => !i.read).length;
-  const days = [...new Set(visible.map((i) => i.day))];
+  const days = [...new Set(visible.map((i) => dayLabel(i.createdAt)))];
 
   return (
     <main>
@@ -72,7 +82,7 @@ export function NotificationsView({ items }: { items: NotifItem[] }) {
             <div className="mb-2.5 text-[12px] font-bold uppercase tracking-wide text-muted">{day}</div>
             <div className="overflow-hidden rounded-[14px] border border-line bg-white">
               {visible
-                .filter((i) => i.day === day)
+                .filter((i) => dayLabel(i.createdAt) === day)
                 .map((n) => (
                   <button
                     key={n.id}
@@ -90,7 +100,7 @@ export function NotificationsView({ items }: { items: NotifItem[] }) {
                       </div>
                       <div className="mt-0.5 text-[13px] leading-relaxed text-ink-soft">{n.body}</div>
                     </div>
-                    <span className="tnum shrink-0 text-[11.5px] text-muted">{n.time}</span>
+                    <LocalTime value={n.createdAt} mode="time" className="tnum shrink-0 text-[11.5px] text-muted" />
                   </button>
                 ))}
             </div>

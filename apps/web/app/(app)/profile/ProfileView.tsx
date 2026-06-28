@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 
 import { formatTugrug } from "@auction/shared";
 
+import { LocalTime } from "@/components/LocalTime";
 import { logout } from "@/lib/session-actions";
 
 import { updateMyProfile } from "./actions";
@@ -62,7 +63,9 @@ export function ProfileView({ data }: { data: ProfileData }) {
                 <h2 className="text-xl font-bold text-navy">{data.name}</h2>
                 <span className="rounded-md bg-[#E5F4EC] px-2 py-0.5 text-[11.5px] font-semibold text-[#197a50]">{data.typeLabel}</span>
               </div>
-              <div className="mt-1 text-[12.5px] text-muted">{data.memberSince}-наас гишүүн</div>
+              <div className="mt-1 text-[12.5px] text-muted">
+                <LocalTime value={data.memberSince} mode="date" />-наас гишүүн
+              </div>
             </div>
             <form action={logout}>
               <button className="rounded-[9px] border border-[#CDD4DE] px-3.5 py-2 text-[13px] text-ink-soft hover:border-navy hover:text-navy">Гарах</button>

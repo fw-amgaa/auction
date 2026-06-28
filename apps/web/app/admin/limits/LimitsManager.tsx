@@ -6,6 +6,7 @@ import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { CurrencyInput } from "@/components/CurrencyInput";
+import { LocalTime } from "@/components/LocalTime";
 import { fmtSigned, LEDGER_META, type LedgerType } from "@/lib/ledger-meta";
 
 import { adjustLimit, type LimitAction } from "./actions";
@@ -229,7 +230,7 @@ export function LimitsManager({ users }: { users: LimitRow[] }) {
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="text-[12.5px] font-medium text-navy">{m.title}</div>
-                          <div className="text-[11px] text-muted">{h.date} · {h.note ?? "—"}</div>
+                          <div className="text-[11px] text-muted"><LocalTime value={h.date} mode="date" /> · {h.note ?? "—"}</div>
                         </div>
                         <span className="tnum text-[12.5px] font-semibold" style={{ color: h.delta < 0 ? "#C8312C" : "#1F8A5B" }}>
                           {fmtSigned(h.delta)}

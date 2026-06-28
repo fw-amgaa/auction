@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { LocalTime } from "@/components/LocalTime";
 import { fmtSigned, LEDGER_META, type LedgerType } from "@/lib/ledger-meta";
 
 export interface LedgerRow {
@@ -9,7 +10,7 @@ export interface LedgerRow {
   type: LedgerType;
   delta: number;
   note: string | null;
-  date: string;
+  createdAt: string;
 }
 
 const FILTERS: [string, string][] = [
@@ -70,7 +71,7 @@ export function BalanceLedger({ entries }: { entries: LedgerRow[] }) {
               >
                 {fmtSigned(e.delta)}
               </div>
-              <div className="mt-0.5 text-[11.5px] text-muted">{e.date}</div>
+              <LocalTime value={e.createdAt} mode="datetime" className="mt-0.5 block text-[11.5px] text-muted" />
             </div>
           </div>
         );

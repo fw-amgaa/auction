@@ -7,6 +7,7 @@ import { formatTugrug } from "@auction/shared";
 
 import { approveKyc, resetCredentials, setUserDisabled, updateUserInfo } from "@/app/admin/actions";
 import { KycBadge } from "@/components/KycBadge";
+import { LocalTime } from "@/components/LocalTime";
 
 export interface DetailUser {
   id: string;
@@ -79,7 +80,8 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                   </span>
                 </div>
                 <div className="mt-1 text-[12.5px] text-muted">
-                  {user.source === "admin" ? "Админ үүсгэсэн" : "Өөрөө бүртгэсэн"} · {user.created}-нд
+                  {user.source === "admin" ? "Админ үүсгэсэн" : "Өөрөө бүртгэсэн"} ·{" "}
+                  <LocalTime value={user.created} mode="date" />-нд
                 </div>
               </div>
             </div>
@@ -185,7 +187,7 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                     </span>
                     <div className="flex-1">
                       <div className="text-[13px] font-medium text-navy">{a.label}</div>
-                      <div className="text-[11.5px] text-muted">{a.date}</div>
+                      <LocalTime value={a.date} mode="date" className="text-[11.5px] text-muted" />
                     </div>
                     <span
                       className="tnum text-[12.5px] font-semibold"

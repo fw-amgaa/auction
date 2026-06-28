@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
 
-import { fmtMnDate } from "@/lib/datetime";
 import { requireUser } from "@/lib/session";
 
 import { type ProfileData, ProfileView } from "./ProfileView";
@@ -50,7 +49,7 @@ export default async function ProfilePage() {
   const data: ProfileData = {
     name,
     typeLabel: isLegal ? "Хуулийн этгээд" : "Иргэн",
-    memberSince: fmtMnDate(user.createdAt),
+    memberSince: user.createdAt.toISOString(),
     kyc: user.kyc,
     lockedFields,
     phone: user.phone ?? "",

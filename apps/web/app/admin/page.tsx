@@ -5,13 +5,9 @@ import { db, schema } from "@auction/db";
 import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
-import { fmtMnShort } from "@/lib/datetime";
+import { LocalTime } from "@/components/LocalTime";
 
 export const dynamic = "force-dynamic";
-
-function fmtWhen(d: Date | null): string {
-  return d ? fmtMnShort(d) : "—";
-}
 
 export default async function AdminHome() {
   const [[liveN], [schedN], [pendingN], [usersN], [limitSum], liveLots, soonLots, recentAudit] =
@@ -80,7 +76,7 @@ export default async function AdminHome() {
               code: lot.code,
               species: category.name,
               price: formatTugrug(lot.currentPrice ?? lot.reserve),
-              when: fmtWhen(lot.endsAt),
+              when: lot.endsAt?.toISOString() ?? null,
             }))}
             empty="Одоогоор шууд лот алга."
           />
@@ -93,7 +89,7 @@ export default async function AdminHome() {
               code: lot.code,
               species: category.name,
               price: formatTugrug(lot.reserve),
-              when: fmtWhen(lot.startsAt),
+              when: lot.startsAt?.toISOString() ?? null,
             }))}
             empty="Төлөвлөсөн лот алга."
           />
@@ -111,7 +107,7 @@ export default async function AdminHome() {
                   <div className="truncate font-mono text-[12px] text-ink-strong">{a.action}</div>
                   <div className="truncate text-[11px] text-muted">{a.actor ?? "систем"}</div>
                 </div>
-                <span className="tnum shrink-0 text-[11px] text-muted">{fmtWhen(a.createdAt)}</span>
+                <LocalTime value={a.createdAt.toISOString()} mode="short" className="tnum shrink-0 text-[11px] text-muted" />
               </div>
             ))}
           </div>
@@ -135,7 +131,7 @@ function LotTable({
   title: string;
   badge: React.ReactNode;
   cols: string[];
-  rows: { href: string; code: string; species: string; price: string; when: string }[];
+  rows: { href: string; code: string; species: string; price: string; when: string | null }[];
   empty: string;
 }) {
   return (
@@ -155,7 +151,7 @@ function LotTable({
           <span className="tnum text-[12.5px] font-semibold text-navy">{r.code}</span>
           <span className="truncate text-[13px] text-navy">{r.species}</span>
           <span className="tnum text-right text-[13px] font-semibold text-navy">{r.price}</span>
-          <span className="tnum text-right text-[12px] text-ink-soft">{r.when}</span>
+          <LocalTime value={r.when} mode="short" className="tnum text-right text-[12px] text-ink-soft" />
         </Link>
       ))}
       {rows.length === 0 && <div className="px-5 py-10 text-center text-[13px] text-muted">{empty}</div>}

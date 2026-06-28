@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { db, schema } from "@auction/db";
 import { formatTugrug } from "@auction/shared";
 
+import { LocalTime } from "@/components/LocalTime";
 import { PrintButton } from "@/components/PrintButton";
-import { fmtMnDate } from "@/lib/datetime";
 import { requireAdmin } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +35,7 @@ export default async function PermitPage({ params }: { params: Promise<{ lotId: 
       : winner?.individualProfile?.registryNumber;
 
   const permitNo = `${row.lot.code}-${row.lot.permitIssuedAt.getFullYear()}`;
-  const issued = fmtMnDate(row.lot.permitIssuedAt);
+  const issued = <LocalTime value={row.lot.permitIssuedAt.toISOString()} mode="date" />;
 
   return (
     <div className="min-h-screen bg-white p-10 text-ink-strong">
@@ -88,7 +88,7 @@ export default async function PermitPage({ params }: { params: Promise<{ lotId: 
   );
 }
 
-function Field({ k, v }: { k: string; v: string }) {
+function Field({ k, v }: { k: string; v: React.ReactNode }) {
   return (
     <div>
       <div className="text-[11.5px] font-semibold uppercase tracking-wide text-muted">{k}</div>

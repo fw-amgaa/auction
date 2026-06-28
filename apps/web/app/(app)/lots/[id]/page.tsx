@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { formatTugrug } from "@auction/shared";
 
-import { fmtMnDateTime } from "@/lib/datetime";
+import { LocalTime } from "@/components/LocalTime";
 import { getLotDetail } from "@/lib/lots";
 import { getCurrentUser } from "@/lib/session";
 
@@ -15,11 +15,6 @@ const STRIPE: Record<string, [string, string]> = {
   ugalz: ["#2C4A6B", "#26405F"],
   tekh: ["#274463", "#1F3A56"],
 };
-
-function fmtDate(ms: number | null): string {
-  if (!ms) return "—";
-  return fmtMnDateTime(ms);
-}
 
 export default async function LotDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -160,14 +155,16 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
           />
           <div className="mt-4 rounded-[14px] border border-line bg-white p-[18px]">
             <h3 className="mb-3 text-sm font-bold text-navy">Хуваарь</h3>
-            {[
-              ["Эхлэх", fmtDate(lot.startsAt), "#1F8A5B"],
-              ["Дуусах (ойролцоо)", fmtDate(lot.endsAt), "#C8312C"],
-            ].map(([label, time, dot]) => (
+            {(
+              [
+                ["Эхлэх", lot.startsAt, "#1F8A5B"],
+                ["Дуусах (ойролцоо)", lot.endsAt, "#C8312C"],
+              ] as const
+            ).map(([label, time, dot]) => (
               <div key={label} className="flex items-center gap-3 py-1.5">
                 <span className="size-2.5 shrink-0 rounded-full" style={{ background: dot }} />
                 <span className="flex-1 text-[13px] text-ink-soft">{label}</span>
-                <span className="tnum text-[13px] font-semibold text-navy">{time}</span>
+                <LocalTime value={time} mode="datetime" className="tnum text-[13px] font-semibold text-navy" />
               </div>
             ))}
           </div>
