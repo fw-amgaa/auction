@@ -5,6 +5,7 @@ import { db, schema } from "@auction/db";
 import { formatTugrug } from "@auction/shared";
 
 import { PrintButton } from "@/components/PrintButton";
+import { fmtMnDate } from "@/lib/datetime";
 import { requireAdmin } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ export default async function PermitPage({ params }: { params: Promise<{ lotId: 
       : winner?.individualProfile?.registryNumber;
 
   const permitNo = `${row.lot.code}-${row.lot.permitIssuedAt.getFullYear()}`;
-  const issued = row.lot.permitIssuedAt.toISOString().slice(0, 10);
+  const issued = fmtMnDate(row.lot.permitIssuedAt);
 
   return (
     <div className="min-h-screen bg-white p-10 text-ink-strong">

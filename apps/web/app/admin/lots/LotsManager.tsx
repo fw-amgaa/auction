@@ -6,6 +6,7 @@ import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { CurrencyInput } from "@/components/CurrencyInput";
+import { fmtMnShort, toMnInput } from "@/lib/datetime";
 
 import { createLot, deleteLot, type LotInput, updateLot } from "./actions";
 
@@ -50,15 +51,8 @@ const TABS: [string, string][] = [
 
 const COLS = "grid grid-cols-[80px_1.4fr_1fr_1.1fr_1.1fr_110px_120px] gap-3";
 
-function toInput(d: string | null): string {
-  if (!d) return "";
-  const date = new Date(d);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-}
-function fmtShort(d: string | null): string {
-  if (!d) return "—";
-  return new Date(d).toISOString().slice(5, 16).replace("T", " ");
-}
+const toInput = (d: string | null): string => toMnInput(d);
+const fmtShort = (d: string | null): string => (d ? fmtMnShort(d) : "—");
 
 interface FormState {
   id: string | null;

@@ -5,11 +5,12 @@ import { db, schema } from "@auction/db";
 import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
+import { fmtMnShort } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
 function fmtWhen(d: Date | null): string {
-  return d ? d.toISOString().slice(5, 16).replace("T", " ") : "—";
+  return d ? fmtMnShort(d) : "—";
 }
 
 export default async function AdminHome() {

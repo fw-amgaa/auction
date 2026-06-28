@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db, schema } from "@auction/db";
 
 import { writeAudit } from "@/lib/audit";
+import { parseMnInput } from "@/lib/datetime";
 import { requireAdmin } from "@/lib/session";
 
 export interface LotInput {
@@ -24,11 +25,7 @@ export interface LotActionState {
   error?: string;
 }
 
-function parseDate(v: string | null): Date | null {
-  if (!v) return null;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
+const parseDate = (v: string | null): Date | null => parseMnInput(v);
 
 function validate(input: LotInput): string | null {
   if (!input.categoryId) return "Зүйл сонгоно уу.";

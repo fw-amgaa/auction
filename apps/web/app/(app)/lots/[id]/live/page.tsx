@@ -55,6 +55,8 @@ export default async function LiveRoomPage({ params }: { params: Promise<{ id: s
       latin={lot.latin}
       aimag={lot.aimag}
       reserve={lot.reserve}
+      title={lot.title}
+      image={lot.image}
       ticket={ticket}
       wsBase={wsUrl()}
     />

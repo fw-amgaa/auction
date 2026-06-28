@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { formatTugrug } from "@auction/shared";
 
+import { fmtMnDateTime } from "@/lib/datetime";
 import { getLotDetail } from "@/lib/lots";
 import { getCurrentUser } from "@/lib/session";
 
@@ -17,7 +18,7 @@ const STRIPE: Record<string, [string, string]> = {
 
 function fmtDate(ms: number | null): string {
   if (!ms) return "—";
-  return new Date(ms).toISOString().slice(0, 16).replace("T", " ");
+  return fmtMnDateTime(ms);
 }
 
 export default async function LotDetailPage({ params }: { params: Promise<{ id: string }> }) {

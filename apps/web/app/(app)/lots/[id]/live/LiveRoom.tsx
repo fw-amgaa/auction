@@ -17,6 +17,8 @@ export interface LiveRoomProps {
   latin: string | null;
   aimag: string | null;
   reserve: number;
+  title: string;
+  image: string | null;
   ticket: string;
   wsBase: string;
 }
@@ -350,25 +352,27 @@ export function LiveRoom(p: LiveRoomProps) {
     <div className="arena-grain relative min-h-[100dvh]" style={{ color: A.fg }}>
       <div className="arena-field" aria-hidden />
 
-      <div className="relative z-10 mx-auto max-w-[1240px] px-5 pb-24 pt-6 sm:px-7">
-        {/* ── context strip ─────────────────────────────────────────── */}
+      <div className="relative z-10 mx-auto max-w-[1320px] px-5 pb-24 pt-6 sm:px-7">
+        {/* ── status strip ──────────────────────────────────────────── */}
         <section
-          aria-label="Лотын мэдээлэл"
+          aria-label="Дуудлагын төлөв"
           className="flex flex-wrap items-center gap-x-5 gap-y-3 border-b pb-5"
           style={{ borderColor: A.hair }}
         >
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="tnum text-[17px] font-semibold tracking-tight">
+          <Link href={`/lots/${p.lotId}`} title="Лот руу буцах" className="group flex min-w-0 items-center gap-2.5">
+            <span
+              className="grid size-8 shrink-0 place-items-center rounded-full border text-[16px] leading-none transition-colors group-hover:bg-white/5"
+              style={{ borderColor: A.hairStrong, color: A.body }}
+            >
+              ‹
+            </span>
+            <span className="min-w-0">
+              <span className="tnum block truncate text-[15px] font-semibold tracking-tight">
                 {p.species} <span style={{ color: A.dim }}>·</span> {p.code}
               </span>
-              {p.latin && <span className="text-[12px] italic" style={{ color: A.faint }}>{p.latin}</span>}
-            </div>
-            <div className="mt-1 text-[12.5px]" style={{ color: A.dim }}>
-              Босго үнэ <span className="tnum font-medium" style={{ color: A.body }}>{formatTugrug(reserve)}</span>
-              {p.aimag && <> <span style={{ color: A.faint }}>·</span> {p.aimag}</>}
-            </div>
-          </div>
+              <span className="block text-[11px]" style={{ color: A.faint }}>Лот руу буцах</span>
+            </span>
+          </Link>
 
           <div className="ml-auto flex flex-wrap items-center gap-2.5">
             <span
@@ -386,17 +390,6 @@ export function LiveRoom(p: LiveRoomProps) {
               {connText}
             </span>
             <button
-              onClick={() => setWatching((v) => !v)}
-              className={`${chip} transition-all duration-200 hover:-translate-y-px active:translate-y-0`}
-              style={{
-                borderColor: watching ? "rgba(231,178,75,.5)" : A.hair,
-                background: watching ? "rgba(231,178,75,.1)" : "transparent",
-                color: watching ? A.goldSoft : A.body,
-              }}
-            >
-              <IconStar filled={watching} /> {watching ? "Ажиглаж байна" : "Ажиглах"}
-            </button>
-            <button
               onClick={() => setShowShortcuts(true)}
               aria-label="Гарын товчлол"
               className="grid size-[34px] place-items-center rounded-full border text-[15px] font-bold transition-all duration-200 hover:-translate-y-px"
@@ -409,7 +402,75 @@ export function LiveRoom(p: LiveRoomProps) {
 
         {/* ── arena ─────────────────────────────────────────────────── */}
         <div className="mt-6 flex flex-wrap items-start gap-6">
-          <div className="flex min-w-[300px] flex-1 basis-[560px] flex-col gap-5">
+          {/* lot showcase — the item under the hammer */}
+          <aside
+            className="flex w-full min-w-[260px] flex-1 basis-[300px] flex-col gap-4 lg:max-w-[340px]"
+            aria-label="Лотын танилцуулга"
+          >
+            <div className="arena-panel overflow-hidden rounded-[20px]">
+              <div className="relative aspect-[16/10] w-full overflow-hidden lg:aspect-[4/5]">
+                {p.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/api/media?key=${encodeURIComponent(p.image)}`}
+                    alt={`${p.title || p.species} — ${p.code}`}
+                    className="absolute inset-0 size-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="absolute inset-0 grid place-items-center"
+                    style={{
+                      background:
+                        "radial-gradient(120% 90% at 50% -10%, rgba(224,59,75,.12), transparent 55%), repeating-linear-gradient(135deg, #131927 0 14px, #0E131D 14px 28px)",
+                    }}
+                  >
+                    <span className="select-none text-[88px] font-semibold leading-none tracking-tight" style={{ color: "rgba(255,255,255,.06)" }}>
+                      {(p.species ?? "?").slice(0, 1)}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(8,10,15,0) 38%, rgba(8,10,15,.92))" }} />
+                <span
+                  className="tnum absolute left-3 top-3 rounded-lg px-2.5 py-1 text-[12px] font-semibold backdrop-blur"
+                  style={{ background: "rgba(8,10,15,.6)", border: `1px solid ${A.hairStrong}`, color: A.fg }}
+                >
+                  {p.species} · {p.code}
+                </span>
+                <div className="absolute inset-x-4 bottom-4">
+                  <div className="text-[20px] font-semibold leading-tight tracking-tight" style={{ textShadow: "0 2px 12px rgba(0,0,0,.6)" }}>
+                    {p.title || p.species}
+                  </div>
+                  {p.latin && (
+                    <div className="mt-0.5 text-[12px] italic" style={{ color: "rgba(255,255,255,.78)" }}>{p.latin}</div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between px-4 py-3 text-[12.5px]">
+                  <span style={{ color: A.dim }}>Аймаг / бүс</span>
+                  <span className="font-medium" style={{ color: A.body }}>{p.aimag ?? "—"}</span>
+                </div>
+                <div className="flex items-center justify-between border-t px-4 py-3 text-[12.5px]" style={{ borderColor: A.hair }}>
+                  <span style={{ color: A.dim }}>Босго үнэ</span>
+                  <span className="tnum font-semibold" style={{ color: A.fg }}>{formatTugrug(reserve)}</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setWatching((v) => !v)}
+              className="flex items-center justify-center gap-2 rounded-[14px] border py-3 text-[13px] font-semibold transition-all duration-200 hover:-translate-y-px active:translate-y-0"
+              style={{
+                borderColor: watching ? "rgba(231,178,75,.5)" : A.hairStrong,
+                background: watching ? "rgba(231,178,75,.1)" : "rgba(255,255,255,.02)",
+                color: watching ? A.goldSoft : A.body,
+              }}
+            >
+              <IconStar filled={watching} /> {watching ? "Ажиглаж байна" : "Ажиглах"}
+            </button>
+          </aside>
+
+          <div className="flex min-w-[320px] flex-[1.4] basis-[500px] flex-col gap-5">
             {/* status banner */}
             <div
               className="relative flex items-center gap-4 overflow-hidden rounded-[20px] border p-5"
@@ -431,7 +492,7 @@ export function LiveRoom(p: LiveRoomProps) {
 
             {/* price + timer */}
             <div className="flex flex-wrap gap-5">
-              <div className="arena-panel relative min-w-[240px] flex-1 basis-[320px] overflow-hidden rounded-[20px] p-5">
+              <div className="arena-panel relative min-w-[220px] flex-1 basis-[270px] overflow-hidden rounded-[20px] p-5">
                 <div className="flex items-center justify-between">
                   <div className="text-[11.5px] font-semibold uppercase tracking-[.12em]" style={{ color: A.dim }}>
                     Одоогийн үнэ
@@ -456,7 +517,7 @@ export function LiveRoom(p: LiveRoomProps) {
                 </div>
               </div>
 
-              <div className="arena-panel relative min-w-[200px] flex-1 basis-[230px] overflow-hidden rounded-[20px] p-5">
+              <div className="arena-panel relative min-w-[180px] flex-1 basis-[200px] overflow-hidden rounded-[20px] p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-[11.5px] font-semibold uppercase tracking-[.12em]" style={{ color: A.dim }}>
                     <IconClock /> Үлдсэн хугацаа
@@ -507,7 +568,7 @@ export function LiveRoom(p: LiveRoomProps) {
                     key={b.n}
                     onClick={() => placeBid(b.n)}
                     disabled={b.disabled}
-                    className="group relative min-w-[104px] flex-1 rounded-[15px] border px-2.5 pb-3 pt-4 text-center transition-all duration-200 enabled:hover:-translate-y-0.5 enabled:active:translate-y-0 enabled:active:scale-[.985]"
+                    className="group relative min-w-[92px] flex-1 rounded-[15px] border px-2.5 pb-3 pt-4 text-center transition-all duration-200 enabled:hover:-translate-y-0.5 enabled:active:translate-y-0 enabled:active:scale-[.985]"
                     style={{
                       background: b.disabled ? "rgba(255,255,255,.02)" : b.primary ? A.accent : "#171D29",
                       color: b.disabled ? A.faint : "#fff",
@@ -571,7 +632,7 @@ export function LiveRoom(p: LiveRoomProps) {
 
           {/* feed */}
           <aside
-            className="arena-panel flex max-h-[660px] min-w-[280px] flex-1 basis-[320px] flex-col self-stretch overflow-hidden rounded-[20px]"
+            className="arena-panel flex max-h-[660px] min-w-[280px] flex-1 basis-[300px] flex-col self-stretch overflow-hidden rounded-[20px] lg:max-w-[360px]"
             aria-label="Шууд саналын урсгал"
           >
             <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: A.hair }}>

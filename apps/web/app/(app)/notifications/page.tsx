@@ -1,3 +1,4 @@
+import { fmtMnDate, fmtMnTime } from "@/lib/datetime";
 import { getNotifications } from "@/lib/notifications";
 import { requireUser } from "@/lib/session";
 
@@ -6,12 +7,11 @@ import { type NotifItem, NotificationsView } from "./NotificationsView";
 export const dynamic = "force-dynamic";
 
 function dayLabel(d: Date): string {
-  const today = new Date();
-  const yest = new Date(today.getTime() - 86400000);
-  const k = (x: Date) => x.toISOString().slice(0, 10);
-  if (k(d) === k(today)) return "Өнөөдөр";
-  if (k(d) === k(yest)) return "Өчигдөр";
-  return k(d);
+  const now = Date.now();
+  const k = fmtMnDate(d);
+  if (k === fmtMnDate(now)) return "Өнөөдөр";
+  if (k === fmtMnDate(now - 86400000)) return "Өчигдөр";
+  return k;
 }
 
 export default async function NotificationsPage() {
@@ -26,7 +26,7 @@ export default async function NotificationsPage() {
     title: n.title,
     body: n.body,
     day: dayLabel(n.createdAt),
-    time: n.createdAt.toISOString().slice(11, 16),
+    time: fmtMnTime(n.createdAt),
     read: n.read,
   }));
   return <NotificationsView items={items} />;

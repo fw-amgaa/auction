@@ -5,6 +5,7 @@ import { db, schema } from "@auction/db";
 import { formatTugrug } from "@auction/shared";
 
 import { getUserView } from "@/lib/admin";
+import { fmtMnDate } from "@/lib/datetime";
 
 import { type DetailUser, UserDetailClient } from "./UserDetailClient";
 
@@ -62,7 +63,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     return {
       icon: m.icon,
       label: l.note ?? m.label,
-      date: l.createdAt.toISOString().slice(0, 10),
+      date: fmtMnDate(l.createdAt),
       amount: `${m.positive ? "+" : ""}${formatTugrug(l.delta)}`,
       positive: m.positive,
     };
@@ -74,7 +75,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     accountType: view.accountType,
     kyc: view.kyc,
     source: view.source,
-    created: view.createdAt.toISOString().slice(0, 10),
+    created: fmtMnDate(view.createdAt),
     limit: view.limit,
     committed: view.committed,
     disabled: view.disabled,

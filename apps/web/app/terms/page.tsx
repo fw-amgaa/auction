@@ -4,6 +4,7 @@ import Link from "next/link";
 import { db, schema } from "@auction/db";
 
 import { Logo } from "@/components/Logo";
+import { fmtMnDate } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function TermsPage() {
         <h1 className="text-[28px] font-bold text-navy">Үйлчилгээний нөхцөл</h1>
         <p className="mt-1.5 text-sm text-ink-soft">
           Хувилбар {terms?.version ?? "v1"} ·{" "}
-          {terms ? terms.publishedAt.toISOString().slice(0, 10) : ""}
+          {terms ? fmtMnDate(terms.publishedAt) : ""}
         </p>
 
         <article className="mt-6 whitespace-pre-wrap rounded-card border border-line bg-white p-7 text-[14px] leading-relaxed text-ink-strong">
