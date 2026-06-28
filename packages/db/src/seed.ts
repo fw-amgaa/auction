@@ -87,20 +87,32 @@ async function main() {
     const categoryId = byCode.get(l.cat);
     if (!categoryId) continue;
     const cat = cats.find((c) => c.code === l.cat)!;
+    const values = {
+      code: l.code,
+      categoryId,
+      title: cat.name,
+      aimag: l.aimag,
+      reserve: l.reserve,
+      step: Math.round(l.reserve * 0.1),
+      status: l.status,
+      startsAt: at(l.starts),
+      endsAt: at(l.ends),
+    };
     await db
       .insert(lots)
-      .values({
-        code: l.code,
-        categoryId,
-        title: cat.name,
-        aimag: l.aimag,
-        reserve: l.reserve,
-        step: Math.round(l.reserve * 0.1),
-        status: l.status,
-        startsAt: at(l.starts),
-        endsAt: at(l.ends),
-      })
-      .onConflictDoNothing({ target: lots.code });
+      .values(values)
+      .onConflictDoUpdate({
+        target: lots.code,
+        // refresh the demo window + clear auction state so re-seeding gives a clean live lot
+        set: {
+          status: l.status,
+          startsAt: at(l.starts),
+          endsAt: at(l.ends),
+          currentPrice: null,
+          leaderUserId: null,
+          winnerUserId: null,
+        },
+      });
   }
 
   console.log("Seed complete.");
