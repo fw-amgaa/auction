@@ -71,7 +71,7 @@ const timestamps = {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()
-    .$onUpdate(() => sql`now()`),
+    .$onUpdate(() => new Date()),
 };
 
 /* ---------------------------------- users --------------------------------- */
@@ -103,14 +103,8 @@ export const users = pgTable(
 );
 
 export const usersRelations = relations(users, ({ one, many }) => ({
-  individualProfile: one(individualProfiles, {
-    fields: [users.id],
-    references: [individualProfiles.userId],
-  }),
-  legalEntityProfile: one(legalEntityProfiles, {
-    fields: [users.id],
-    references: [legalEntityProfiles.userId],
-  }),
+  individualProfile: one(individualProfiles),
+  legalEntityProfile: one(legalEntityProfiles),
   documents: many(kycDocuments),
   bids: many(bids),
   ledger: many(limitLedger),
@@ -379,3 +373,26 @@ export const verificationTokens = pgTable(
   },
   (t) => [primaryKey({ columns: [t.identifier, t.token] })],
 );
+
+/* --------------------- inverse relations (declared last) ------------------ */
+/* Drizzle's relational query API needs both sides of every relation. */
+
+export const individualProfilesRelations = relations(individualProfiles, ({ one }) => ({
+  user: one(users, { fields: [individualProfiles.userId], references: [users.id] }),
+}));
+
+export const legalEntityProfilesRelations = relations(legalEntityProfiles, ({ one }) => ({
+  user: one(users, { fields: [legalEntityProfiles.userId], references: [users.id] }),
+}));
+
+export const kycDocumentsRelations = relations(kycDocuments, ({ one }) => ({
+  user: one(users, { fields: [kycDocuments.userId], references: [users.id] }),
+}));
+
+export const limitLedgerRelations = relations(limitLedger, ({ one }) => ({
+  user: one(users, { fields: [limitLedger.userId], references: [users.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -19,4 +19,20 @@ export async function putObject(key: string, bytes: Buffer): Promise<string> {
   await mkdir(path.dirname(dest), { recursive: true });
   await writeFile(dest, bytes);
   return key;
+}
+
+export async function getObject(key: string): Promise<Buffer> {
+  if (process.env.S3_BUCKET) {
+    throw new Error("S3 storage not yet wired; unset S3_BUCKET for local disk.");
+  }
+  return readFile(path.join(UPLOAD_DIR, key));
+}
+
+export function contentTypeFor(fileName: string): string {
+  const ext = path.extname(fileName).toLowerCase();
+  if (ext === ".pdf") return "application/pdf";
+  if (ext === ".png") return "image/png";
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".webp") return "image/webp";
+  return "application/octet-stream";
 }

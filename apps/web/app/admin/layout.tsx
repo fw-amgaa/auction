@@ -5,8 +5,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
   return (
     <div className="flex min-h-screen bg-admin-bg">
-      <AdminNav active="/admin" />
-      <main className="flex-1 p-8">{children}</main>
+      <AdminNav />
+      <main className="flex-1 overflow-x-hidden">{children}</main>
     </div>
   );
 }
