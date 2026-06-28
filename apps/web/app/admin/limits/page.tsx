@@ -1,5 +1,25 @@
-import { AdminPlaceholder } from "@/components/AdminPlaceholder";
+import { getLimitsOverview } from "@/lib/limits";
 
-export default function AdminLimitsPage() {
-  return <AdminPlaceholder title="Лимит" phase="4-р шат (Лимит/үлдэгдэл)" />;
+import { LimitsManager, type LimitRow } from "./LimitsManager";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminLimitsPage() {
+  const users = await getLimitsOverview();
+  const rows: LimitRow[] = users.map((u) => ({
+    id: u.id,
+    accountType: u.accountType,
+    name: u.name,
+    limit: u.limit,
+    committed: u.committed,
+    available: u.available,
+    history: u.history.map((h) => ({
+      id: h.id,
+      type: h.type,
+      delta: h.delta,
+      note: h.note,
+      date: h.createdAt.toISOString().slice(0, 10),
+    })),
+  }));
+  return <LimitsManager users={rows} />;
 }
