@@ -17,6 +17,23 @@ export function stepFor(reserve: number): number {
 }
 
 /**
+ * Resulting price for the live-room quick-bid button N (1..5).
+ * Honors "first bid may equal the reserve": when there are no bids yet, button 1
+ * opens AT the reserve, button 2 = reserve+step, … (the authoritative bid service
+ * replicates this exact formula in Lua).
+ */
+export function liveBidAmount(
+  price: number,
+  reserve: number,
+  step: number,
+  hasBids: boolean,
+  nSteps: number,
+): number {
+  if (!hasBids) return reserve + (nSteps - 1) * step;
+  return price + nSteps * step;
+}
+
+/**
  * The price resulting from raising the current price by N steps.
  */
 export function priceForSteps(currentPrice: number, reserve: number, nSteps: number): number {
@@ -56,13 +73,6 @@ export function bidOptions(params: {
   return opts;
 }
 
-export type BidRejectReason =
-  | "closed"
-  | "self"
-  | "bad_increment"
-  | "insufficient"
-  | "not_eligible";
-
 export interface BidValidationInput {
   reserve: number;
   currentPrice: number;
@@ -79,7 +89,7 @@ export interface BidValidationInput {
 
 export type BidValidationResult =
   | { ok: true; amount: number }
-  | { ok: false; reason: BidRejectReason };
+  | { ok: false; reason: "closed" | "self" | "bad_increment" | "insufficient" | "not_eligible" };
 
 /**
  * Pure, authoritative validation of a single bid. Mirrors the Redis Lua logic

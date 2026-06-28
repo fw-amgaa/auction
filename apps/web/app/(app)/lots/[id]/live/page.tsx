@@ -1,27 +1,56 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { getLotDetail } from "@/lib/lots";
+import { requireUser } from "@/lib/session";
+import { mintTicket, wsUrl } from "@/lib/ws-ticket";
+
+import { LiveRoom } from "./LiveRoom";
 
 export const dynamic = "force-dynamic";
 
-export default async function LiveRoomPlaceholder({ params }: { params: Promise<{ id: string }> }) {
+export default async function LiveRoomPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const lot = await getLotDetail(id);
+  const user = await requireUser();
+  const lot = await getLotDetail(id, user.id);
   if (!lot) notFound();
 
-  return (
-    <main className="mx-auto max-w-2xl py-10 text-center">
-      <h1 className="text-2xl font-bold text-navy">
-        {lot.species}:{lot.code} — Шууд танхим
-      </h1>
-      <div className="mt-6 rounded-card border border-dashed border-line bg-card p-12">
-        <div className="text-base font-semibold text-navy">Бодит цагийн дуудлагын танхим</div>
-        <div className="mt-2 text-sm text-muted">5-р шат (Дуудлагын систем)-д хийгдэнэ.</div>
-        <Link href={`/lots/${lot.id}`} className="mt-6 inline-block text-sm font-semibold text-crimson">
+  // Only live lots are biddable; otherwise send to the detail page.
+  if (lot.status !== "live") redirect(`/lots/${id}`);
+
+  // KYC gate
+  if (user.kyc !== "approved") {
+    return (
+      <main className="mx-auto max-w-xl py-12 text-center">
+        <h1 className="text-2xl font-bold text-navy">Баталгаажуулалт шаардлагатай</h1>
+        <p className="mt-3 text-sm text-ink-soft">
+          Дуудлага худалдаанд оролцохын тулд таны KYC баталгаажсан байх ёстой.
+          {user.kyc === "pending" ? " Таны хүсэлт хүлээгдэж байна." : ""}
+        </p>
+        <Link href={`/lots/${id}`} className="mt-6 inline-block text-sm font-semibold text-crimson">
           ‹ Лот руу буцах
         </Link>
-      </div>
-    </main>
+      </main>
+    );
+  }
+
+  const ticket = mintTicket({
+    uid: user.id,
+    role: user.role,
+    kyc: user.kyc,
+    limit: user.limit,
+  });
+
+  return (
+    <LiveRoom
+      lotId={lot.id}
+      code={lot.code}
+      species={lot.species}
+      latin={lot.latin}
+      aimag={lot.aimag}
+      reserve={lot.reserve}
+      ticket={ticket}
+      wsBase={wsUrl()}
+    />
   );
 }
