@@ -7,6 +7,9 @@
  */
 import { createServer } from "node:http";
 
+import { and, eq, gt, inArray, lte } from "drizzle-orm";
+
+import { db, schema } from "@auction/db";
 import { BID_RATE_PER_SEC, ClientMessage, type ServerMessage } from "@auction/shared";
 import { WebSocketServer, type WebSocket } from "ws";
 
@@ -15,7 +18,6 @@ import {
   ensureUserCommitted,
   finalize,
   getCommitted,
-  getLiveLots,
   placeBid,
   pseudonym,
   recentFeed,
@@ -266,23 +268,50 @@ async function onMessage(conn: Conn, msg: ClientMessage) {
   }
 }
 
-/* ------------------------------ close sweep ------------------------------- */
+/* --------------------------- schedule sweep ------------------------------- *
+ * Phases advance by the clock, not by an admin: scheduled lots whose window has
+ * opened become live; published lots past their end get finalized. DB-driven so
+ * it works even when nobody is watching.                                       */
 
 setInterval(() => {
   void (async () => {
-    const live = await getLiveLots();
-    for (const lotId of live) {
-      const r = await finalize(lotId);
+    const now = new Date();
+
+    // finalize anything past its end (scheduled that never opened, or live)
+    const due = await db
+      .select({ id: schema.lots.id })
+      .from(schema.lots)
+      .where(and(inArray(schema.lots.status, ["scheduled", "live"]), lte(schema.lots.endsAt, now)));
+    for (const { id } of due) {
+      await ensureLot(id);
+      const r = await finalize(id);
       if (r.finalized) {
         await redis.publish(
           EVENTS,
-          JSON.stringify({ type: "closed", lotId, leaderUserId: r.leaderUserId, price: r.price }),
+          JSON.stringify({ type: "closed", lotId: id, leaderUserId: r.leaderUserId, price: r.price }),
         );
-        log.info({ lotId, winner: r.leaderUserId, price: r.price }, "lot finalized");
+        log.info({ lotId: id, winner: r.leaderUserId, price: r.price }, "lot finalized");
       }
     }
+
+    // promote scheduled lots whose window has opened -> live
+    const opening = await db
+      .select({ id: schema.lots.id })
+      .from(schema.lots)
+      .where(
+        and(
+          eq(schema.lots.status, "scheduled"),
+          lte(schema.lots.startsAt, now),
+          gt(schema.lots.endsAt, now),
+        ),
+      );
+    for (const { id } of opening) {
+      await db.update(schema.lots).set({ status: "live" }).where(eq(schema.lots.id, id));
+      await ensureLot(id);
+      log.info({ lotId: id }, "lot opened (scheduled -> live)");
+    }
   })();
-}, 1000);
+}, 2000);
 
 /* ------------------------------ heartbeat --------------------------------- */
 

@@ -8,10 +8,24 @@ export type LotStatus = (typeof schema.lots.status.enumValues)[number];
 /** Catalog display status (the design's three-way view). */
 export type DisplayStatus = "live" | "upcoming" | "ended";
 
-export function displayStatus(s: LotStatus): DisplayStatus {
-  if (s === "live") return "live";
-  if (s === "scheduled") return "upcoming";
-  return "ended"; // ended | settled
+/**
+ * The auction PHASE is derived from the clock, not stored: a published lot is
+ * upcoming before startsAt, live within the window, ended after endsAt. Only the
+ * lifecycle states (draft/cancelled/settled/finalized-ended) are authoritative.
+ */
+export function displayStatus(status: LotStatus, startsAt: Date | null, endsAt: Date | null): DisplayStatus {
+  if (status === "ended" || status === "settled") return "ended";
+  const now = Date.now();
+  if (startsAt && now < startsAt.getTime()) return "upcoming";
+  if (endsAt && now >= endsAt.getTime()) return "ended";
+  return "live"; // scheduled/live and inside the window
+}
+
+/** Full lifecycle phase for admin display (includes draft/cancelled). */
+export type Phase = "draft" | "upcoming" | "live" | "ended" | "cancelled" | "settled";
+export function lotPhase(status: LotStatus, startsAt: Date | null, endsAt: Date | null): Phase {
+  if (status === "draft" || status === "cancelled" || status === "settled") return status;
+  return displayStatus(status, startsAt, endsAt); // live | upcoming | ended (by clock)
 }
 
 export interface CatalogLot {
@@ -48,7 +62,7 @@ function toCatalogLot({ lot, category }: LotJoin): CatalogLot {
     reserve: lot.reserve,
     step: lot.step,
     currentPrice: lot.currentPrice,
-    status: displayStatus(lot.status),
+    status: displayStatus(lot.status, lot.startsAt, lot.endsAt),
     startsAt: lot.startsAt?.getTime() ?? null,
     endsAt: lot.endsAt?.getTime() ?? null,
     image: lot.images?.[0] ?? null,
@@ -137,7 +151,8 @@ export interface AdminLot {
   aimag: string | null;
   reserve: number;
   step: number;
-  status: LotStatus;
+  status: LotStatus; // raw lifecycle (draft / published-scheduled / …)
+  phase: Phase; // computed phase for display
   startsAt: Date | null;
   endsAt: Date | null;
   description: string | null;
@@ -159,6 +174,7 @@ export async function getAdminLots(): Promise<AdminLot[]> {
     reserve: lot.reserve,
     step: lot.step,
     status: lot.status,
+    phase: lotPhase(lot.status, lot.startsAt, lot.endsAt),
     startsAt: lot.startsAt,
     endsAt: lot.endsAt,
     description: lot.description,

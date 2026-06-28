@@ -19,6 +19,8 @@ type LotStatus =
   | "settled"
   | "cancelled";
 
+type Phase = "draft" | "upcoming" | "live" | "ended" | "cancelled" | "settled";
+
 export interface ManagedLot {
   id: string;
   code: string;
@@ -28,6 +30,7 @@ export interface ManagedLot {
   reserve: number;
   step: number;
   status: LotStatus;
+  phase: Phase;
   startsAt: string | null;
   endsAt: string | null;
   description: string | null;
@@ -39,9 +42,9 @@ interface CategoryOpt {
   name: string;
 }
 
-const STATUS_META: Record<string, { label: string; bg: string; fg: string }> = {
+const PHASE_META: Record<Phase, { label: string; bg: string; fg: string }> = {
   live: { label: "ШУУД", bg: "#FBEAE9", fg: "#C8312C" },
-  scheduled: { label: "ТӨЛӨВЛӨСӨН", bg: "#E5F0FB", fg: "#1B5FA8" },
+  upcoming: { label: "ТӨЛӨВЛӨСӨН", bg: "#E5F0FB", fg: "#1B5FA8" },
   draft: { label: "НООРОГ", bg: "#F0ECE2", fg: "#8A6D3B" },
   ended: { label: "ДУУССАН", bg: "#EEF1F5", fg: "#5B6677" },
   settled: { label: "ТӨЛӨГДСӨН", bg: "#E5F4EC", fg: "#197a50" },
@@ -51,7 +54,7 @@ const STATUS_META: Record<string, { label: string; bg: string; fg: string }> = {
 const TABS: [string, string][] = [
   ["all", "Бүгд"],
   ["live", "Шууд"],
-  ["scheduled", "Төлөвлөсөн"],
+  ["upcoming", "Төлөвлөсөн"],
   ["draft", "Ноорог"],
   ["ended", "Дууссан"],
 ];
@@ -102,8 +105,8 @@ export function LotsManager({
 
   const counts: Record<string, number> = { all: lots.length };
   for (const [k] of TABS)
-    if (k !== "all") counts[k] = lots.filter((l) => l.status === k).length;
-  const rows = lots.filter((l) => tab === "all" || l.status === tab);
+    if (k !== "all") counts[k] = lots.filter((l) => l.phase === k).length;
+  const rows = lots.filter((l) => tab === "all" || l.phase === tab);
 
   function openCreate() {
     setError(null);
@@ -117,9 +120,8 @@ export function LotsManager({
       code: l.code,
       aimag: l.aimag ?? "",
       reserve: String(l.reserve),
-      status: (l.status === "cancelled" || l.status === "settled"
-        ? "ended"
-        : l.status) as LotInput["status"],
+      // the form only controls publish state: draft vs published(scheduled)
+      status: (l.status === "draft" ? "draft" : "scheduled") as LotInput["status"],
       startsAt: toInput(l.startsAt),
       endsAt: toInput(l.endsAt),
       description: l.description ?? "",
@@ -236,11 +238,7 @@ export function LotsManager({
             <span className="text-right">Үйлдэл</span>
           </div>
           {rows.map((l) => {
-            const st = STATUS_META[l.status] ?? {
-              label: l.status,
-              bg: "#F0ECE2",
-              fg: "#8A6D3B",
-            };
+            const st = PHASE_META[l.phase];
             return (
               <div
                 key={l.id}
@@ -375,7 +373,7 @@ export function LotsManager({
               </Field>
               <Field label="Төлөв">
                 <select
-                  value={form.status}
+                  value={form.status === "draft" ? "draft" : "scheduled"}
                   onChange={(e) =>
                     setForm({
                       ...form,
@@ -384,11 +382,12 @@ export function LotsManager({
                   }
                   className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm"
                 >
-                  <option value="draft">Ноорог</option>
-                  <option value="scheduled">Төлөвлөсөн</option>
-                  <option value="live">Шууд</option>
-                  <option value="ended">Дууссан</option>
+                  <option value="draft">Ноорог (нийтлээгүй)</option>
+                  <option value="scheduled">Нийтэлсэн</option>
                 </select>
+                <div className="mt-1.5 text-[11px] text-muted">
+                  Шууд / дууссан төлөв нь огнооноос автоматаар тодорхойлогдоно.
+                </div>
               </Field>
               <Field label="Эхлэх огноо">
                 <input

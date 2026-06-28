@@ -15,6 +15,7 @@ export default async function AdminLotsPage() {
     reserve: l.reserve,
     step: l.step,
     status: l.status,
+    phase: l.phase,
     startsAt: l.startsAt?.toISOString() ?? null,
     endsAt: l.endsAt?.toISOString() ?? null,
     description: l.description,

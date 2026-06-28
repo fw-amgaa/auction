@@ -12,11 +12,22 @@ const committedKey = (uid: string) => `u:${uid}:committed`;
 const pseudoKey = (id: string) => `lot:${id}:pseudo`;
 const LIVE_SET = "live:lots";
 
+export type LiveStatus = "scheduled" | "live" | "ended";
+
 export interface LotMeta {
   reserve: number;
   step: number;
-  status: "live" | "ended";
+  status: LiveStatus;
   exists: boolean;
+}
+
+/** Auction phase from the clock — the lifecycle status is only a publish gate. */
+function computeLive(dbStatus: string, startsAt: number, endsAt: number): LiveStatus {
+  if (dbStatus !== "scheduled" && dbStatus !== "live") return "ended"; // draft/cancelled/ended/settled
+  const now = Date.now();
+  if (now < startsAt) return "scheduled";
+  if (now >= endsAt) return "ended";
+  return "live";
 }
 
 /** Load a lot's auction state into Redis from Postgres if not already present. */
@@ -24,10 +35,19 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
   const key = lotKey(lotId);
   const existing = await redis.hgetall(key);
   if (existing && existing.status) {
+    // re-derive scheduled -> live as the clock advances, even from cache
+    if (existing.status === "scheduled") {
+      const live = computeLive("scheduled", Number(existing.startsAt || 0), Number(existing.endsAt || 0));
+      if (live !== "scheduled") {
+        await redis.hset(key, "status", live);
+        if (live === "live") await redis.sadd(LIVE_SET, lotId);
+        existing.status = live;
+      }
+    }
     return {
       reserve: Number(existing.reserve),
       step: Number(existing.step),
-      status: existing.status === "live" ? "live" : "ended",
+      status: existing.status as LiveStatus,
       exists: true,
     };
   }
@@ -40,7 +60,9 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
   if (!row) return { reserve: 0, step: 0, status: "ended", exists: false };
   const lot = row.lot;
 
-  const status = lot.status === "live" ? "live" : "ended";
+  const startsAt = lot.startsAt?.getTime() ?? 0;
+  const endsAt = lot.endsAt?.getTime() ?? Date.now() + 60_000;
+  const status = computeLive(lot.status, startsAt, endsAt);
   const price = lot.currentPrice ?? lot.reserve;
   const hasBids = lot.currentPrice != null ? "1" : "0";
   // max seq from durable bids (crash-recovery rehydrate)
@@ -56,7 +78,8 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
     leader: lot.leaderUserId ?? "",
     step: String(lot.step),
     reserve: String(lot.reserve),
-    endsAt: String(lot.endsAt?.getTime() ?? Date.now() + 60_000),
+    startsAt: String(startsAt),
+    endsAt: String(endsAt),
     status,
     hasBids,
     seq: String(top?.seq ?? 0),
@@ -233,21 +256,26 @@ export interface FinalizeResult {
   price: number;
 }
 
-/** Close a lot whose time is up: set winner, consume the winner's hold, notify. */
+/**
+ * Close a lot whose time is up. DB-driven so it works even with no live viewers
+ * (and so a scheduled lot whose window fully elapsed while the service was down
+ * still gets ended). Winner/price come from Redis if live, else from Postgres.
+ */
 export async function finalize(lotId: string): Promise<FinalizeResult> {
   const key = lotKey(lotId);
-  const h = await redis.hmget(key, "status", "leader", "price", "endsAt");
-  const status = h[0];
-  if (status !== "live") {
+  const [lot] = await db.select().from(schema.lots).where(eq(schema.lots.id, lotId)).limit(1);
+  if (!lot || (lot.status !== "live" && lot.status !== "scheduled")) {
     await redis.srem(LIVE_SET, lotId);
     return { finalized: false, leaderUserId: null, price: 0 };
   }
-  if (Date.now() <= Number(h[3])) return { finalized: false, leaderUserId: null, price: 0 };
+  if (!lot.endsAt || lot.endsAt.getTime() > Date.now()) {
+    return { finalized: false, leaderUserId: null, price: 0 };
+  }
 
-  const leader = h[1] || null;
-  const price = Number(h[2]);
-  const meta = await redis.hmget(key, "code", "species");
-  const lotCtx = { lotId, code: meta[0] ?? "", species: meta[1] ?? "" };
+  const h = await redis.hmget(key, "leader", "price", "code", "species");
+  const leader = h[0] && h[0] !== "" ? h[0] : (lot.leaderUserId ?? null);
+  const price = Number(h[1] ?? lot.currentPrice ?? lot.reserve);
+  const lotCtx = { lotId, code: h[2] ?? lot.code, species: h[3] ?? "" };
   await redis.hset(key, "status", "ended");
   await redis.srem(LIVE_SET, lotId);
 
