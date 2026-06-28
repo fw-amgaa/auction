@@ -11,6 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         balance={available}
         unread={0}
         userName={user.name ?? user.email}
+        isAdmin={user.role === "admin"}
       />
       <div className="mx-auto max-w-6xl px-5 py-8">{children}</div>
     </div>

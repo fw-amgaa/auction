@@ -17,11 +17,13 @@ export function AppNav({
   balance = 0,
   unread = 0,
   userName,
+  isAdmin = false,
 }: {
   active?: string;
   balance?: number;
   unread?: number;
   userName?: string;
+  isAdmin?: boolean;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-card/90 backdrop-blur">
@@ -44,6 +46,14 @@ export function AppNav({
           ))}
         </ul>
         <div className="ml-auto flex items-center gap-3">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="rounded-lg border border-navy/20 px-3 py-1.5 text-sm font-semibold text-navy transition-colors hover:bg-navy hover:text-white"
+            >
+              Удирдлага
+            </Link>
+          )}
           <span className="hidden rounded-pill bg-sand px-3 py-1.5 text-sm sm:inline">
             <span className="text-ink-soft">Үлдэгдэл: </span>
             <span className="tnum font-medium">{formatTugrug(balance)}</span>

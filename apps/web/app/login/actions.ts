@@ -1,6 +1,9 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { AuthError } from "next-auth";
+
+import { db, schema } from "@auction/db";
 
 import { signIn } from "@/auth";
 
@@ -9,11 +12,20 @@ export interface LoginState {
 }
 
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  // route admins to the admin console, everyone else to the catalog
+  const [u] = await db
+    .select({ role: schema.users.role })
+    .from(schema.users)
+    .where(eq(schema.users.email, email))
+    .limit(1);
+  const redirectTo = u?.role === "admin" ? "/admin" : "/catalog";
+
   try {
     await signIn("credentials", {
       email: formData.get("email"),
       password: formData.get("password"),
-      redirectTo: "/catalog",
+      redirectTo,
     });
     return {};
   } catch (e) {
