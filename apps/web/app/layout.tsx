@@ -5,7 +5,7 @@ import { ibmPlexMono, ibmPlexSans } from "@/lib/fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ан агнуурын үнийн санал дуудах систем",
+  title: "Ан агнуурын дуудлага худалдааны систем",
   description:
     "Зэрлэг ан амьтны агнуурын эрхийн цахим дуудлага худалдааны албан ёсны систем.",
 };

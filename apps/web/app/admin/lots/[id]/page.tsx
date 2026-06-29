@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/session";
 import { mintTicket, wsUrl } from "@/lib/ws-ticket";
 
 import { AdminLotMonitor } from "./AdminLotMonitor";
+import { RerunPanel } from "./RerunPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ export default async function AdminLotDetailPage({ params }: { params: Promise<{
 
   const live = lot.phase === "live";
   const ended = lot.phase === "ended" || lot.phase === "settled";
+  const finished = ended || lot.phase === "cancelled";
   const ph = PHASE[lot.phase] ?? PHASE.ended!;
   const ticket = live ? mintTicket({ uid: admin.id, role: admin.role, kyc: admin.kyc, limit: admin.limit }) : null;
 
@@ -188,6 +190,16 @@ export default async function AdminLotDetailPage({ params }: { params: Promise<{
             {lot.description && <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">{lot.description}</p>}
           </div>
         </div>
+
+        {/* re-run (relist) — only for finished lots, e.g. winner didn't pay */}
+        {finished && (
+          <RerunPanel
+            lotId={lot.id}
+            winnerName={lot.winnerName}
+            finalPrice={lot.finalPrice}
+            payment={lot.payment}
+          />
+        )}
       </div>
     </div>
   );

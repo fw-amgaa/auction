@@ -14,7 +14,14 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen text-ink-strong">
       {/* left brand panel */}
-      <div className="relative hidden flex-1 flex-col justify-between overflow-hidden bg-navy-deep p-14 text-white md:flex">
+      <div className="relative isolate hidden flex-1 flex-col justify-between overflow-hidden bg-navy-deep p-14 text-white md:flex">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/argali.png"
+          alt="Ховд аймгийн уулархаг агнуурын нутаг — угалз"
+          className="absolute inset-0 -z-10 size-full object-cover"
+        />
+        <div className="login-scrim absolute inset-0 -z-10" />
         <div
           className="pointer-events-none absolute inset-0"
           style={{

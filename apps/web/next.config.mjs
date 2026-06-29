@@ -18,6 +18,15 @@ const config = {
   // monorepo root so workspace packages are traced into .next/standalone.
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../../"),
+  experimental: {
+    // Self-registration submits 3–4 KYC documents (UI allows up to 10MB each)
+    // through a Server Action. Next's default Server Action body limit is 1MB,
+    // which rejects the POST with a framework-level 500 before registerAction
+    // ever runs. Raise it to cover the advertised per-file size × max doc count.
+    serverActions: {
+      bodySizeLimit: "50mb",
+    },
+  },
 };
 
 export default config;

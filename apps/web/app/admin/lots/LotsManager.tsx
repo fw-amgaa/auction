@@ -64,7 +64,7 @@ const TABS: [string, string][] = [
   ["ended", "Дууссан"],
 ];
 
-const COLS = "grid grid-cols-[80px_1.4fr_1fr_1.1fr_1.1fr_110px_120px] gap-3";
+const COLS = "grid grid-cols-[80px_1.4fr_1fr_1.1fr_1.1fr_110px_196px] gap-3";
 
 const toInput = (d: string | null): string => toLocalInput(d);
 
@@ -353,24 +353,25 @@ export function LotsManager({
                     {st.label}
                   </span>
                 </span>
-                <span className="flex justify-end gap-1.5">
+                <span className="flex items-center justify-end gap-1.5">
                   <Link
                     href={`/admin/lots/${l.id}`}
-                    className="rounded-[7px] border border-line-cool bg-white px-2.5 py-1.5 text-[12px] font-semibold text-crimson hover:bg-[#FBEAE9]"
+                    className="shrink-0 whitespace-nowrap rounded-[7px] border border-line-cool bg-white px-2.5 py-1.5 text-[12px] font-semibold text-crimson hover:bg-[#FBEAE9]"
                     style={l.phase === "live" ? { borderColor: "#E0908C" } : undefined}
                   >
                     {l.phase === "live" ? "Хянах" : "Дэлгэрэнгүй"}
                   </Link>
                   <button
                     onClick={() => openEdit(l)}
-                    className="rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy"
+                    className="shrink-0 whitespace-nowrap rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy hover:bg-[#E9EDF2]"
                   >
                     Засах
                   </button>
                   <button
                     onClick={() => remove(l)}
                     title="Устгах"
-                    className="grid size-[30px] place-items-center rounded-[7px] border border-[#E0908C] bg-white text-[12px] text-crimson hover:bg-[#FBEAE9]"
+                    aria-label="Лот устгах"
+                    className="grid size-[30px] shrink-0 place-items-center rounded-[7px] border border-[#E0908C] bg-white text-[12px] leading-none text-crimson hover:bg-[#FBEAE9]"
                   >
                     🗑
                   </button>

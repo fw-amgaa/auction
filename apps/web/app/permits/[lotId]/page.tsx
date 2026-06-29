@@ -47,7 +47,7 @@ export default async function PermitPage({ params }: { params: Promise<{ lotId: 
         <div className="rounded-2xl border-2 border-navy p-10">
           <div className="text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="" className="mx-auto h-12 w-auto" />
+            <img src="/emblem.png" alt="" className="mx-auto h-16 w-auto" />
             <div className="mt-4 text-xl font-bold text-navy">АГНУУРЫН ТУСГАЙ ЗОРИУЛАЛТЫН ЭРХ</div>
             <div className="mt-1 text-sm text-ink-soft">Зэрлэг ан амьтан агнах зөвшөөрөл</div>
           </div>

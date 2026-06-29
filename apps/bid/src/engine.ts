@@ -10,7 +10,14 @@ import { redis } from "./redis";
 const lotKey = (id: string) => `lot:${id}`;
 const committedKey = (uid: string) => `u:${uid}:committed`;
 const pseudoKey = (id: string) => `lot:${id}:pseudo`;
+const specKey = (id: string) => `lot:${id}:spec`;
 const LIVE_SET = "live:lots";
+
+/** Drop every per-run Redis key for a lot so the next ensureLot reseeds fresh. */
+async function purgeLotCache(lotId: string): Promise<void> {
+  await redis.del(lotKey(lotId), pseudoKey(lotId), `${pseudoKey(lotId)}:count`, specKey(lotId));
+  await redis.srem(LIVE_SET, lotId);
+}
 
 export type LiveStatus = "scheduled" | "live" | "ended";
 
@@ -36,22 +43,47 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
   const key = lotKey(lotId);
   const existing = await redis.hgetall(key);
   if (existing && existing.status) {
-    // re-derive scheduled -> live as the clock advances, even from cache
-    if (existing.status === "scheduled") {
-      const live = computeLive("scheduled", Number(existing.startsAt || 0), Number(existing.endsAt || 0));
-      if (live !== "scheduled") {
-        await redis.hset(key, "status", live);
-        if (live === "live") await redis.sadd(LIVE_SET, lotId);
-        existing.status = live;
+    if (existing.status === "ended") {
+      // A cached "ended" lot is normally terminal — but an admin re-run (relist)
+      // resets the durable lot back to scheduled/live with a fresh window. If we
+      // trusted the cache here the lot could never reopen (the bug behind
+      // "lot is over, go back to list"). Reconcile against Postgres: when the DB
+      // says the lot is live again, purge the stale per-run cache and reseed.
+      const [chk] = await db
+        .select({ status: schema.lots.status })
+        .from(schema.lots)
+        .where(eq(schema.lots.id, lotId))
+        .limit(1);
+      if (chk && (chk.status === "scheduled" || chk.status === "live")) {
+        await purgeLotCache(lotId);
+        // fall through to reseed from Postgres below
+      } else {
+        return {
+          reserve: Number(existing.reserve),
+          inc1: Number(existing.inc1),
+          inc2: Number(existing.inc2),
+          status: "ended",
+          exists: true,
+        };
       }
+    } else {
+      // re-derive scheduled -> live as the clock advances, even from cache
+      if (existing.status === "scheduled") {
+        const live = computeLive("scheduled", Number(existing.startsAt || 0), Number(existing.endsAt || 0));
+        if (live !== "scheduled") {
+          await redis.hset(key, "status", live);
+          if (live === "live") await redis.sadd(LIVE_SET, lotId);
+          existing.status = live;
+        }
+      }
+      return {
+        reserve: Number(existing.reserve),
+        inc1: Number(existing.inc1),
+        inc2: Number(existing.inc2),
+        status: existing.status as LiveStatus,
+        exists: true,
+      };
     }
-    return {
-      reserve: Number(existing.reserve),
-      inc1: Number(existing.inc1),
-      inc2: Number(existing.inc2),
-      status: existing.status as LiveStatus,
-      exists: true,
-    };
   }
   const [row] = await db
     .select({ lot: schema.lots, cat: schema.categories })
