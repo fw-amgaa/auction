@@ -1,0 +1,88 @@
+name: deploy
+
+# Push-to-deploy for the single-EC2 auction box. On push to master, the runner
+# rsyncs the code to the instance and re-runs bootstrap (migrate + rebuild +
+# restart). The box's SSH is locked down, so the runner briefly authorizes its
+# own IP on the security group and revokes it afterward.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   EC2_SSH_KEY            contents of ~/.ssh/auction-key.pem
+#   AWS_ACCESS_KEY_ID      scoped CI IAM user (auction-ci)
+#   AWS_SECRET_ACCESS_KEY  "
+# Until they're set, this workflow runs green and skips (no-op).
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-anav
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-1
+  APP_SG: sg-040bafa3686b1eab3
+  HOST: 47.130.205.214
+  DOMAIN: anav.mn
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secrets configured
+        id: cfg
+        env:
+          KEY: ${{ secrets.EC2_SSH_KEY }}
+          AK: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        run: |
+          if [ -n "$KEY" ] && [ -n "$AK" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Auto-deploy skipped — add repo secrets EC2_SSH_KEY, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY to enable it."
+          fi
+
+      - name: Checkout
+        if: steps.cfg.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        if: steps.cfg.outputs.ready == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write SSH key
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/auction-key.pem
+          chmod 600 ~/.ssh/auction-key.pem
+
+      - name: Open SSH for this runner
+        id: sg
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          IP="$(curl -s https://checkip.amazonaws.com)/32"
+          echo "cidr=$IP" >> "$GITHUB_OUTPUT"
+          aws ec2 authorize-security-group-ingress --group-id "$APP_SG" --protocol tcp --port 22 --cidr "$IP" 2>/dev/null || true
+
+      - name: Deploy
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          rsync -az --delete \
+            --exclude node_modules --exclude .next --exclude .turbo \
+            --exclude infra/data --exclude infra/.aws-resources \
+            --exclude .git --exclude .env --exclude .uploads \
+            -e "ssh -i ~/.ssh/auction-key.pem -o StrictHostKeyChecking=accept-new" \
+            ./ "ec2-user@${HOST}:~/auction/"
+          ssh -i ~/.ssh/auction-key.pem -o StrictHostKeyChecking=accept-new "ec2-user@${HOST}" \
+            "cd ~/auction && DOMAIN=${DOMAIN} REGION=${AWS_REGION} SKIP_SEED=1 bash infra/bootstrap.sh"
+
+      - name: Close SSH for this runner
+        if: always() && steps.sg.outputs.cidr != ''
+        run: |
+          aws ec2 revoke-security-group-ingress --group-id "$APP_SG" --protocol tcp --port 22 --cidr "${{ steps.sg.outputs.cidr }}" 2>/dev/null || true

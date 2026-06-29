@@ -44,9 +44,11 @@ sed -i "s/REPLACE_DOMAIN/$DOMAIN/g" .env
 grep -q '^WS_PUBLIC_URL=' .env || echo "WS_PUBLIC_URL=wss://$DOMAIN/ws" >> .env
 
 # ---- DB migrate + seed (host -> RDS, via .env) ----
+# Migrations are idempotent. Seeding is NOT re-run on redeploys (SKIP_SEED=1),
+# since the demo seed resets lot state and would disrupt a live auction.
 pnpm install --frozen-lockfile
 pnpm db:migrate
-pnpm db:seed
+[ "${SKIP_SEED:-}" = "1" ] || pnpm db:seed
 
 # ---- run the stack ----
 sudo -E DOMAIN="$DOMAIN" docker compose -f infra/docker-compose.prod.yml up -d --build
