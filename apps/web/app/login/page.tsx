@@ -22,16 +22,10 @@ export default function LoginPage() {
           className="absolute inset-0 -z-10 size-full object-cover"
         />
         <div className="login-scrim absolute inset-0 -z-10" />
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0 22px, transparent 22px 44px)",
-          }}
-        />
         <Link href="/" className="relative inline-flex w-fit items-center rounded-xl bg-white px-3.5 py-2.5">
           <Logo height={30} />
         </Link>
+        {/* copy sits at the bottom so it clears the argali's head in the photo */}
         <div className="relative">
           <div className="text-3xl font-bold leading-tight">
             Зэрлэг ан амьтан
@@ -40,12 +34,12 @@ export default function LoginPage() {
             <br />
             ёсны дуудлага худалдаа
           </div>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/75">
             Ил тод, шударга, бодит цагийн дуудлага худалдаагаар агнуурын эрхийг хуваарилна.
           </p>
-        </div>
-        <div className="relative text-xs text-white/40">
-          © 2026 Байгаль орчны яам. Бүх эрх хуулиар хамгаалагдсан.
+          <div className="mt-8 text-xs text-white/55">
+            © 2026 Байгаль орчны яам. Бүх эрх хуулиар хамгаалагдсан.
+          </div>
         </div>
       </div>
 

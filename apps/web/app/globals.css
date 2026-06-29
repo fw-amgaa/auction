@@ -83,12 +83,13 @@ body {
     linear-gradient(180deg, rgba(8, 12, 22, 0.42) 0%, rgba(10, 18, 38, 0.72) 52%, rgba(14, 30, 56, 0.94) 100%);
 }
 
-/* login brand panel photo scrim — a cool, dark-blue wash (no crimson ember)
- * so the white wordmark + headline stay legible over the wilderness shot. */
+/* login brand panel photo scrim — a light, cool dark-blue wash (no crimson
+ * ember). Kept airy so the wilderness shot stays bright; the bottom darkens a
+ * little more so the white headline + copyright there stay legible. */
 .login-scrim {
   background:
-    radial-gradient(680px 420px at 72% 6%, rgba(58, 78, 120, 0.22), transparent 62%),
-    linear-gradient(180deg, rgba(8, 14, 28, 0.58) 0%, rgba(10, 20, 42, 0.80) 50%, rgba(14, 30, 56, 0.96) 100%);
+    radial-gradient(720px 460px at 70% 4%, rgba(58, 78, 120, 0.16), transparent 64%),
+    linear-gradient(180deg, rgba(10, 18, 38, 0.24) 0%, rgba(12, 22, 44, 0.42) 56%, rgba(14, 30, 56, 0.82) 100%);
 }
 
 /* tinted, layered depth shadow for raised cards on the sand page */
