@@ -16,6 +16,9 @@ const PROTECTED_PREFIXES = [
 ];
 
 export const authConfig = {
+  // Self-hosted behind Caddy: trust the proxied Host header (anav.mn) instead of
+  // failing with UntrustedHost. Safe because the only ingress is our reverse proxy.
+  trustHost: true,
   pages: { signIn: "/login" },
   session: { strategy: "jwt" },
   providers: [], // real providers added in auth.ts
