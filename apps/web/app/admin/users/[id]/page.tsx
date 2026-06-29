@@ -35,6 +35,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   const editFields =
     view.accountType === "legal_entity"
       ? [
+          { key: "email", label: "И-мэйл (нэвтрэх хаяг)", value: view.email, full: true },
           { key: "registeredName", label: "Байгууллагын нэр", value: leg?.registeredName ?? "", full: true },
           { key: "stateCertNumber", label: "Улсын бүртгэл", value: leg?.stateCertNumber ?? "" },
           { key: "registryNumber", label: "Регистр (ТТД)", value: leg?.registryNumber ?? "" },
@@ -43,6 +44,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           { key: "address", label: "Хаяг", value: leg?.address ?? "", full: true },
         ]
       : [
+          { key: "email", label: "И-мэйл (нэвтрэх хаяг)", value: view.email, full: true },
           { key: "surname", label: "Овог", value: ind?.surname ?? "" },
           { key: "givenName", label: "Нэр", value: ind?.givenName ?? "" },
           { key: "registryNumber", label: "Регистр", value: ind?.registryNumber ?? "" },

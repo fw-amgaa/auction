@@ -121,7 +121,9 @@ export function LotsManager({
       aimag: l.aimag ?? "",
       reserve: String(l.reserve),
       // the form only controls publish state: draft vs published(scheduled)
-      status: (l.status === "draft" ? "draft" : "scheduled") as LotInput["status"],
+      status: (l.status === "draft"
+        ? "draft"
+        : "scheduled") as LotInput["status"],
       startsAt: toInput(l.startsAt),
       endsAt: toInput(l.endsAt),
       description: l.description ?? "",
@@ -273,8 +275,16 @@ export function LotsManager({
                     </div>
                   </div>
                 </div>
-                <LocalTime value={l.startsAt} mode="short" className="tnum text-[12px] text-ink-soft" />
-                <LocalTime value={l.endsAt} mode="short" className="tnum text-[12px] text-ink-soft" />
+                <LocalTime
+                  value={l.startsAt}
+                  mode="short"
+                  className="tnum text-[12px] text-ink-soft"
+                />
+                <LocalTime
+                  value={l.endsAt}
+                  mode="short"
+                  className="tnum text-[12px] text-ink-soft"
+                />
                 <span className="tnum text-right text-[13px] font-semibold text-navy">
                   {formatTugrug(l.reserve)}
                 </span>

@@ -1,0 +1,64 @@
+# Production stack for the single EC2: caddy + web + bid + redis.
+# Postgres is managed (RDS) and is NOT in this file.
+# Config/secrets come from the repo-root .env, written by secrets-to-env.sh
+# (which pulls from AWS Secrets Manager using the instance IAM role).
+name: auction
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in the environment}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - bid
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - redis
+    expose:
+      - "3000"
+
+  bid:
+    build:
+      context: ..
+      dockerfile: apps/bid/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - redis
+    expose:
+      - "8080"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+
+volumes:
+  caddy_data:
+  caddy_config:
+  redis_data:

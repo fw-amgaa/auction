@@ -63,6 +63,9 @@ export default function LoginPage() {
 
           <div className="mt-4 mb-1.5 flex items-center justify-between">
             <label className="text-xs font-semibold text-ink-strong">Нууц үг</label>
+            <Link href="/forgot" className="text-xs font-semibold text-crimson hover:underline">
+              Нууц үг мартсан уу?
+            </Link>
           </div>
           <div className="relative">
             <input

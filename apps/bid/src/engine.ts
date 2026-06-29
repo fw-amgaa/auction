@@ -196,6 +196,12 @@ async function persistAccept(p: {
   const lotCtx = { lotId: p.lotId, code: meta[0] ?? "", species: meta[1] ?? "" };
   try {
     await db.transaction(async (tx) => {
+      // Serialize persistence per lot: Redis already ordered the arbitration,
+      // but concurrent persists could otherwise interleave the supersede+insert
+      // and leave multiple "winning" rows. A row lock on the lot makes the
+      // durable bookkeeping atomic per lot.
+      await tx.select({ id: schema.lots.id }).from(schema.lots).where(eq(schema.lots.id, p.lotId)).for("update");
+
       await tx
         .update(schema.bids)
         .set({ status: "superseded" })

@@ -1,8 +1,8 @@
-# Production reverse proxy (single EC2). Caddy auto-provisions TLS.
+# Production reverse proxy (single EC2). Caddy auto-provisions TLS for {$DOMAIN}.
 # Routes the live WebSocket path to the bid service, everything else to web.
-# Replace auction.example.mn with the real domain.
+# DOMAIN is supplied by docker-compose.prod.yml (from the environment).
 
-auction.example.mn {
+{$DOMAIN} {
 	encode gzip zstd
 
 	# live bidding WebSocket -> bid service

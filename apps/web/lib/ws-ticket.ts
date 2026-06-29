@@ -31,5 +31,12 @@ export function mintTicket(input: TicketInput): string {
 }
 
 export function wsUrl(): string {
-  return process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
+  // Read at request time on the server (this module is server-only and the
+  // value is passed to the client as a prop). WS_PUBLIC_URL has no NEXT_PUBLIC_
+  // prefix so it is NOT inlined at build time — the prod domain can be supplied
+  // at runtime via .env without rebuilding the image. NEXT_PUBLIC_WS_URL stays
+  // as a fallback for existing local setups.
+  return (
+    process.env.WS_PUBLIC_URL ?? process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080"
+  );
 }

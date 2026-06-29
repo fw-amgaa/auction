@@ -31,6 +31,9 @@ pnpm-debug.log*
 # docker volumes (local data)
 infra/data/
 
+# provisioning output (resource ids / endpoints)
+infra/.aws-resources
+
 # local uploaded files (dev storage)
 .uploads/
 

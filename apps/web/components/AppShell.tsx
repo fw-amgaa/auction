@@ -3,18 +3,21 @@
 import { usePathname } from "next/navigation";
 
 import { AppNav } from "@/components/AppNav";
+import type { NotifPreview } from "@/components/NotificationBell";
 
 const NAV_HREFS = ["/catalog", "/my-bids", "/balance", "/notifications", "/help"];
 
 export function AppShell({
   balance,
   unread,
+  notifications,
   userName,
   isAdmin,
   children,
 }: {
   balance: number;
   unread: number;
+  notifications: NotifPreview[];
   userName: string;
   isAdmin: boolean;
   children: React.ReactNode;
@@ -35,6 +38,7 @@ export function AppShell({
         active={active}
         balance={balance}
         unread={unread}
+        notifications={notifications}
         userName={userName}
         isAdmin={isAdmin}
         arena={arena}

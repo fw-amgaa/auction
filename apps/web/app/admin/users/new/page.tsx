@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
 
 import { formatTugrug } from "@auction/shared";
 
@@ -56,10 +57,14 @@ function fieldDefs(t: AccountType) {
 }
 
 export default function CreateUserPage() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState<CreateUserState, FormData>(
     createUserAction,
     {},
   );
+  useEffect(() => {
+    if (state.ok) router.push("/admin/users");
+  }, [state.ok, router]);
   const [type, setType] = useState<AccountType>("individual");
   const [values, setValues] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<Record<string, File>>({});
@@ -170,9 +175,11 @@ export default function CreateUserPage() {
 
           {/* documents */}
           <section className="rounded-2xl border border-line-cool bg-white p-5">
-            <div className="text-[13px] font-bold text-navy">Бичиг баримт</div>
+            <div className="text-[13px] font-bold text-navy">
+              Бичиг баримт <span className="font-normal text-muted">· заавал биш</span>
+            </div>
             <div className="mb-4 text-xs text-muted">
-              Өргөдөгчийн офлайнаар ирүүлсэн баримтыг хавсаргана.
+              Өргөдөгчийн офлайнаар ирүүлсэн баримтыг хавсаргана. Дараа нь нэмж болно.
             </div>
             <div className="flex flex-col gap-3.5">
               {DOCS[type].map((d) => {
@@ -181,7 +188,7 @@ export default function CreateUserPage() {
                 return (
                   <div key={d.key}>
                     <div className="mb-2 text-[12.5px] font-semibold text-ink-strong">
-                      {d.label} <span className="text-crimson">*</span>
+                      {d.label}
                     </div>
                     {!file ? (
                       <label
@@ -352,11 +359,11 @@ export default function CreateUserPage() {
               <button
                 type="button"
                 onClick={submit}
-                disabled={pending}
+                disabled={pending || state.ok}
                 className="rounded-[10px] px-6 py-3 text-sm font-bold text-white"
-                style={{ background: pending ? "#A9756F" : "#C8312C" }}
+                style={{ background: pending || state.ok ? "#A9756F" : "#C8312C" }}
               >
-                {pending ? "Үүсгэж байна…" : "Үүсгэх"}
+                {pending || state.ok ? "Үүсгэж байна…" : "Үүсгэх"}
               </button>
             </div>
           </div>

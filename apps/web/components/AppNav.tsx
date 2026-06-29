@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatTugrug } from "@auction/shared";
 
 import { Logo } from "@/components/Logo";
+import { NotificationBell, type NotifPreview } from "@/components/NotificationBell";
 import { logout } from "@/lib/session-actions";
 
 const LINKS = [
@@ -17,6 +18,7 @@ export function AppNav({
   active,
   balance = 0,
   unread = 0,
+  notifications = [],
   userName,
   isAdmin = false,
   arena = false,
@@ -24,6 +26,7 @@ export function AppNav({
   active?: string;
   balance?: number;
   unread?: number;
+  notifications?: NotifPreview[];
   userName?: string;
   isAdmin?: boolean;
   /** Dark "live arena" treatment — used on the live bidding room so the
@@ -40,7 +43,6 @@ export function AppNav({
         admin: "border-white/15 text-[#C4D0E2] hover:bg-white/10",
         pillLabel: "text-[#6E7C92]",
         pill: "bg-white/[0.05] text-[#E4E9F1]",
-        soft: "bg-white/[0.06] text-[#C4D0E2]",
         avatar: "bg-[#E03B4B] text-white",
         logout: "text-[#8E9AAE] hover:bg-white/5",
         accent: "#E03B4B",
@@ -52,7 +54,6 @@ export function AppNav({
         admin: "border-navy/20 text-navy hover:bg-navy hover:text-white",
         pillLabel: "text-ink-soft",
         pill: "bg-sand",
-        soft: "bg-sand",
         avatar: "bg-navy text-white",
         logout: "text-ink-soft hover:bg-sand",
         accent: "#c8312c",
@@ -101,17 +102,7 @@ export function AppNav({
             <span className={t.pillLabel}>Үлдэгдэл: </span>
             <span className="tnum font-medium">{formatTugrug(balance)}</span>
           </span>
-          <Link
-            href="/notifications"
-            className={`relative grid size-9 place-items-center rounded-full ${t.soft}`}
-          >
-            <span aria-hidden>🔔</span>
-            {unread > 0 && (
-              <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-crimson text-[10px] font-semibold text-white">
-                {unread}
-              </span>
-            )}
-          </Link>
+          <NotificationBell items={notifications} unread={unread} arena={arena} />
           <Link
             href="/profile"
             className={`grid size-9 place-items-center rounded-full text-xs font-semibold ${t.avatar}`}

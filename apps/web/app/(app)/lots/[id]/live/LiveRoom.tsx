@@ -329,6 +329,12 @@ export function LiveRoom(p: LiveRoomProps) {
   const timeFrac = Math.max(0, Math.min(1, timeLeft / 60));
   const overReserve = Math.max(0, Math.round(displayPrice) - reserve);
 
+  // The hero number must stay inside its card even at billions. Monospace gives
+  // predictable width, so step the size down by digit count (commas included).
+  const priceStr = Math.round(displayPrice).toLocaleString("en-US");
+  const priceFont = priceStr.length <= 9 ? "clamp(30px,4.6vw,44px)" : priceStr.length <= 11 ? "clamp(25px,3.8vw,36px)" : "clamp(20px,3vw,29px)";
+  const tugrugFont = priceStr.length <= 9 ? "clamp(20px,3vw,28px)" : priceStr.length <= 11 ? "clamp(17px,2.6vw,24px)" : "clamp(15px,2.2vw,20px)";
+
   // banner — state-coloured, single light source
   const banner = youLead
     ? { bg: "linear-gradient(135deg,#0E2B1D,#0A1E15)", border: "rgba(39,199,121,.45)", glow: "rgba(39,199,121,.12)", icon: "✓", iconBg: A.success, iconFg: "#06180E", title: "Та тэргүүлж байна", sub: `Таны санал хамгийн өндөр. Барьцаа: ${formatTugrug(committed)}`, titleColor: A.successSoft, subColor: "#9FCFB6" }
@@ -503,11 +509,11 @@ export function LiveRoom(p: LiveRoomProps) {
                     </span>
                   )}
                 </div>
-                <div className="mt-2 flex items-baseline gap-1.5">
-                  <span className="tnum text-[clamp(36px,6.4vw,56px)] font-semibold leading-none tracking-tight">
-                    {Math.round(displayPrice).toLocaleString("en-US")}
+                <div className="mt-2 flex min-w-0 items-baseline gap-1">
+                  <span className="tnum whitespace-nowrap font-semibold leading-none tracking-tight" style={{ fontSize: priceFont }}>
+                    {priceStr}
                   </span>
-                  <span className="tnum text-[clamp(22px,4vw,34px)] font-medium" style={{ color: A.dim }}>₮</span>
+                  <span className="tnum font-medium" style={{ fontSize: tugrugFont, color: A.dim }}>₮</span>
                 </div>
                 <div className="mt-3.5 flex items-center gap-2 border-t pt-3 text-[13px]" style={{ borderColor: A.hair, color: A.body }}>
                   <span style={{ color: A.dim }}>Тэргүүлэгч</span>

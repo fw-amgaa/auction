@@ -29,11 +29,11 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
   const [draft, setDraft] = useState<Record<string, string>>(
     Object.fromEntries(user.editFields.map((f) => [f.key, f.value])),
   );
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; bad?: boolean } | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function flash(msg: string) {
-    setToast(msg);
+  function flash(msg: string, bad = false) {
+    setToast({ msg, bad });
     setTimeout(() => setToast(null), 3000);
   }
 
@@ -126,7 +126,11 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                   <button
                     onClick={() =>
                       startTransition(async () => {
-                        await updateUserInfo(user.id, user.accountType, draft);
+                        const res = await updateUserInfo(user.id, user.accountType, draft);
+                        if (!res.ok) {
+                          flash(res.error ?? "Хадгалахад алдаа гарлаа", true);
+                          return;
+                        }
                         setEditing(false);
                         flash("Мэдээлэл хадгалагдлаа");
                       })
@@ -230,7 +234,7 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                   </button>
                 )}
                 <button
-                  onClick={() => startTransition(async () => { await resetCredentials(user.id); flash("Сэргээх хүсэлт бүртгэгдлээ"); })}
+                  onClick={() => startTransition(async () => { await resetCredentials(user.id); flash("Нууц үг сэргээх холбоос илгээгдлээ"); })}
                   disabled={pending}
                   className="rounded-[9px] border border-line-cool bg-white px-3 py-2.5 text-left text-[13px] font-semibold text-navy"
                 >
@@ -255,8 +259,16 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
       </div>
 
       {toast && (
-        <div className="fixed right-5 top-5 z-[80] rounded-xl border border-[#C7E5D5] bg-[#E5F4EC] px-4 py-3 text-[13.5px] font-semibold text-[#197a50] shadow-lg">
-          ✅ {toast}
+        <div
+          className="fixed right-5 top-5 z-[80] rounded-xl border px-4 py-3 text-[13.5px] font-semibold shadow-lg"
+          style={
+            toast.bad
+              ? { borderColor: "#F2D6D4", background: "#FBEAE9", color: "#A02622" }
+              : { borderColor: "#C7E5D5", background: "#E5F4EC", color: "#197a50" }
+          }
+        >
+          {toast.bad ? "⚠ " : "✅ "}
+          {toast.msg}
         </div>
       )}
     </div>

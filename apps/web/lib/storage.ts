@@ -4,16 +4,28 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Object storage abstraction. Local disk in dev; S3 is wired in at deploy time
- * (ARCHITECTURE.md §10) by branching on S3_BUCKET. KYC docs are private — they
- * are only ever served back through an access-controlled route (Phase 2).
+ * Object storage abstraction. Uses S3 when S3_BUCKET is set (prod), else local
+ * disk (dev). Credentials in prod come from the EC2 instance IAM role (default
+ * AWS credential chain) — no static keys. KYC docs are private and only ever
+ * served back through access-controlled routes.
  */
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), ".uploads");
+const S3_REGION = process.env.S3_REGION ?? process.env.AWS_REGION;
+
+async function s3() {
+  const { S3Client } = await import("@aws-sdk/client-s3");
+  return new S3Client(S3_REGION ? { region: S3_REGION } : {});
+}
 
 export async function putObject(key: string, bytes: Buffer): Promise<string> {
-  if (process.env.S3_BUCKET) {
-    // TODO(deploy): S3 PutObject via @aws-sdk/client-s3
-    throw new Error("S3 storage not yet wired; unset S3_BUCKET for local disk.");
+  const bucket = process.env.S3_BUCKET;
+  if (bucket) {
+    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const client = await s3();
+    await client.send(
+      new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: contentTypeFor(key) }),
+    );
+    return key;
   }
   const dest = path.join(UPLOAD_DIR, key);
   await mkdir(path.dirname(dest), { recursive: true });
@@ -22,8 +34,13 @@ export async function putObject(key: string, bytes: Buffer): Promise<string> {
 }
 
 export async function getObject(key: string): Promise<Buffer> {
-  if (process.env.S3_BUCKET) {
-    throw new Error("S3 storage not yet wired; unset S3_BUCKET for local disk.");
+  const bucket = process.env.S3_BUCKET;
+  if (bucket) {
+    const { GetObjectCommand } = await import("@aws-sdk/client-s3");
+    const client = await s3();
+    const res = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    const bytes = await res.Body!.transformToByteArray();
+    return Buffer.from(bytes);
   }
   return readFile(path.join(UPLOAD_DIR, key));
 }

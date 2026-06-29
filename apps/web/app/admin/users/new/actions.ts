@@ -1,12 +1,15 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { db, schema } from "@auction/db";
 import { emailSchema } from "@auction/shared";
 
 import { writeAudit } from "@/lib/audit";
+import { INVITE_TTL_MS, issuePasswordToken } from "@/lib/auth-tokens";
+import { appUrl, sendEmail } from "@/lib/email";
+import { inviteEmail } from "@/lib/email-templates";
 import { notify } from "@/lib/notify";
 import { hashPassword } from "@/lib/password";
 import { requireAdmin } from "@/lib/session";
@@ -15,6 +18,8 @@ import { putObject } from "@/lib/storage";
 export interface CreateUserState {
   error?: string;
   fieldErrors?: Record<string, string>;
+  /** Set once the account is created so the form can navigate to the list. */
+  ok?: boolean;
 }
 
 const DOC_KEYS: Record<string, string[]> = {
@@ -83,7 +88,6 @@ export async function createUserAction(
       files.push({ docType: key, fileName: f.name, bytes: Buffer.from(await f.arrayBuffer()) });
     }
   }
-  if (files.length < docKeys.length) return { error: "Бүх бичиг баримтыг оруулна уу." };
 
   const preApprove = g("preApprove") === "true";
   const limit = Number.parseInt(g("limit").replace(/\D/g, "") || "0", 10);
@@ -153,15 +157,28 @@ export async function createUserAction(
     }
   });
 
-  if (preApprove) await notify(newUserId, "kyc_approved");
-  if (limit > 0) await notify(newUserId, "limit_issued", { amount: limit });
-  await writeAudit({
-    actorId: admin.id,
-    action: "user.create",
-    targetType: "user",
-    targetId: newUserId,
-    meta: { accountType, preApprove, limit, cred },
-  });
+  // The account is committed. Notifications and the audit log are best-effort:
+  // a failure here must not surface as a creation error or leave the admin
+  // stuck on the form thinking nothing happened.
+  try {
+    // Invite flow: the account has no password yet — email a set-password link.
+    if (cred === "invite") {
+      const token = await issuePasswordToken(email, INVITE_TTL_MS);
+      await sendEmail(inviteEmail(email, `${appUrl()}/set-password?token=${token}`));
+    }
+    if (preApprove) await notify(newUserId, "kyc_approved");
+    if (limit > 0) await notify(newUserId, "limit_issued", { amount: limit });
+    await writeAudit({
+      actorId: admin.id,
+      action: "user.create",
+      targetType: "user",
+      targetId: newUserId,
+      meta: { accountType, preApprove, limit, cred },
+    });
+  } catch (err) {
+    console.error("createUserAction: post-create side effect failed", err);
+  }
 
-  redirect("/admin/users");
+  revalidatePath("/admin/users");
+  return { ok: true };
 }

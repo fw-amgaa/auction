@@ -4,7 +4,28 @@ See ARCHITECTURE.md §11. This system is **seasonal**: live for ~2 months, idle 
 the year. The whole point is to pay almost nothing off-season.
 
 ## Box layout
-One EC2 (Graviton `t4g`) running `docker compose`: `caddy`, `web`, `bid`, `postgres`, `redis`.
+One EC2 (Graviton `t4g`) running `docker compose`: `caddy`, `web`, `bid`, `redis`.
+**Postgres is managed (RDS, Multi-AZ)** — the money data (balances/holds/bids) lives there for
+automated failover + point-in-time recovery, not on the box's disk. Redis stays on the box (it's
+pub/sub + live arbitration state, rehydrated from Postgres on restart via `engine.ts:ensureLot`).
+
+## First-time production deploy
+Config/secrets live in **AWS Secrets Manager** (`auction/prod`, region `ap-southeast-1`), pulled
+to a root `.env` on the box by `infra/secrets-to-env.sh` using the EC2 instance IAM role.
+
+```
+# 1) provision infra (IAM, security groups, RDS Multi-AZ, EC2 + Elastic IP).
+#    Writes the RDS endpoint back into the secret. Records IDs to infra/.aws-resources.
+bash infra/provision-aws.sh
+
+# 2) point your domain's DNS A record at the printed Elastic IP.
+
+# 3) sync code to the box + bootstrap (installs docker/node, migrate, seed, compose up).
+DOMAIN=auction.yourdomain.mn bash infra/deploy.sh
+```
+Redeploys after code changes: re-run step 3 (`DOMAIN=… bash infra/deploy.sh`).
+SES must be out of sandbox + the sender verified for real password emails (else they log to the
+container console — see `lib/email.ts`).
 
 ## Seasonal lifecycle
 1. **Off-season:** EC2 **STOPPED**. You pay only for the EBS volume (a few $/yr). No compute bill.

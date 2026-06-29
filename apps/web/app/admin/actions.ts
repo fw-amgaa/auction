@@ -4,8 +4,12 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db, schema } from "@auction/db";
+import { emailSchema } from "@auction/shared";
 
 import { writeAudit } from "@/lib/audit";
+import { issuePasswordToken, RESET_TTL_MS } from "@/lib/auth-tokens";
+import { appUrl, sendEmail } from "@/lib/email";
+import { resetEmail } from "@/lib/email-templates";
 import { notify } from "@/lib/notify";
 import { requireAdmin } from "@/lib/session";
 
@@ -51,8 +55,15 @@ export async function setUserDisabled(userId: string, disabled: boolean) {
 
 export async function resetCredentials(userId: string) {
   const admin = await requireAdmin();
-  // TODO(email): when SES is wired, generate a verification token + send invite.
-  // For now this records the intent in the audit log.
+  const [u] = await db
+    .select({ email: schema.users.email, disabled: schema.users.disabled })
+    .from(schema.users)
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+  if (u && !u.disabled) {
+    const token = await issuePasswordToken(u.email, RESET_TTL_MS);
+    await sendEmail(resetEmail(u.email, `${appUrl()}/set-password?token=${token}`));
+  }
   await writeAudit({
     actorId: admin.id,
     action: "user.reset_credentials",
@@ -61,8 +72,38 @@ export async function resetCredentials(userId: string) {
   });
 }
 
-export async function updateUserInfo(userId: string, accountType: string, fields: Record<string, string>) {
+export async function updateUserInfo(
+  userId: string,
+  accountType: string,
+  fields: Record<string, string>,
+): Promise<{ ok: boolean; error?: string }> {
   const admin = await requireAdmin();
+
+  // Optional email change — validate format + uniqueness before any writes.
+  const newEmail = (fields.email ?? "").trim().toLowerCase();
+  let emailChanged = false;
+  if (newEmail) {
+    if (!emailSchema.safeParse(newEmail).success) {
+      return { ok: false, error: "И-мэйл хаяг буруу байна." };
+    }
+    const [cur] = await db
+      .select({ email: schema.users.email })
+      .from(schema.users)
+      .where(eq(schema.users.id, userId))
+      .limit(1);
+    if (cur && cur.email !== newEmail) {
+      const [dup] = await db
+        .select({ id: schema.users.id })
+        .from(schema.users)
+        .where(eq(schema.users.email, newEmail))
+        .limit(1);
+      if (dup && dup.id !== userId) {
+        return { ok: false, error: "Энэ и-мэйл өөр хэрэглэгчид бүртгэлтэй байна." };
+      }
+      emailChanged = true;
+    }
+  }
+
   if (accountType === "legal_entity") {
     await db
       .update(schema.legalEntityProfiles)
@@ -88,6 +129,17 @@ export async function updateUserInfo(userId: string, accountType: string, fields
   if (fields.phone) {
     await db.update(schema.users).set({ phone: fields.phone }).where(eq(schema.users.id, userId));
   }
-  await writeAudit({ actorId: admin.id, action: "user.update", targetType: "user", targetId: userId });
+  if (emailChanged) {
+    // Changing the login email invalidates prior verification.
+    await db.update(schema.users).set({ email: newEmail, emailVerified: null }).where(eq(schema.users.id, userId));
+  }
+  await writeAudit({
+    actorId: admin.id,
+    action: "user.update",
+    targetType: "user",
+    targetId: userId,
+    meta: emailChanged ? { email: newEmail } : {},
+  });
   revalidatePath(`/admin/users/${userId}`);
+  return { ok: true };
 }
