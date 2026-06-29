@@ -1,5 +1,7 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -93,14 +95,16 @@ export async function createUserAction(
   const limit = Number.parseInt(g("limit").replace(/\D/g, "") || "0", 10);
   const passwordHash = cred === "temp" ? await hashPassword(tempPass) : null;
 
+  const name = accountType === "legal_entity" ? g("registeredName") : g("givenName");
+
   let newUserId = "";
   await db.transaction(async (tx) => {
     const [user] = await tx
       .insert(schema.users)
       .values({
         email,
+        name,
         phone: g("phone"),
-        passwordHash,
         accountType: accountType as "individual" | "legal_entity",
         role: "bidder",
         kyc: preApprove ? "approved" : "pending",
@@ -110,6 +114,18 @@ export async function createUserAction(
       })
       .returning({ id: schema.users.id });
     newUserId = user!.id;
+
+    // Temp-password flow: store the hash as a better-auth credential account.
+    // (Invite flow leaves the user password-less until they use the link.)
+    if (passwordHash) {
+      await tx.insert(schema.accounts).values({
+        id: randomUUID(),
+        accountId: newUserId,
+        providerId: "credential",
+        userId: newUserId,
+        password: passwordHash,
+      });
+    }
 
     if (accountType === "legal_entity") {
       await tx.insert(schema.legalEntityProfiles).values({

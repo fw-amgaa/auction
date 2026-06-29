@@ -1,5 +1,7 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { desc, eq } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
@@ -91,13 +93,19 @@ export async function registerAction(
       .orderBy(desc(schema.termsVersions.publishedAt))
       .limit(1);
 
+    // display name for the better-auth user record (used in session.user.name)
+    const name =
+      data.accountType === "individual"
+        ? `${data.surname} ${data.givenName}`.trim()
+        : data.registeredName;
+
     await db.transaction(async (tx) => {
       const [user] = await tx
         .insert(schema.users)
         .values({
           email: data.email,
+          name,
           phone: data.phone,
-          passwordHash,
           accountType: data.accountType,
           role: "bidder",
           kyc: "pending",
@@ -106,6 +114,16 @@ export async function registerAction(
         .returning({ id: schema.users.id });
 
       const userId = user!.id;
+
+      // better-auth credential account — holds the argon2 hash that
+      // auth.api.signInEmail verifies at login (providerId "credential").
+      await tx.insert(schema.accounts).values({
+        id: randomUUID(),
+        accountId: userId,
+        providerId: "credential",
+        userId,
+        password: passwordHash,
+      });
 
       if (data.accountType === "individual") {
         await tx.insert(schema.individualProfiles).values({

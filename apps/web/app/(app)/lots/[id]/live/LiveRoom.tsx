@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  ANTI_SNIPE_EXTENSION_SEC,
+  ANTI_SNIPE_WINDOW_SEC,
   type ClientMessage,
   formatTugrug,
   incrementForOption,
   liveBidAmount,
   type ServerMessage,
 } from "@auction/shared";
+
+import { Confetti } from "@/components/Confetti";
 
 export interface LiveRoomProps {
   lotId: string;
@@ -243,7 +247,7 @@ export function LiveRoom(p: LiveRoomProps) {
         setFeed((f) => [msg.feedItem, ...f].slice(0, 14));
         if (msg.extended) {
           setExtendFlash((n) => n + 1);
-          addToast("warn", "Хугацаа сунгагдлаа +30 сек");
+          addToast("warn", `Хугацаа сунгагдлаа +${ANTI_SNIPE_EXTENSION_SEC} сек`);
         }
         break;
       case "rejected":
@@ -326,6 +330,9 @@ export function LiveRoom(p: LiveRoomProps) {
   const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const ss = String(timeLeft % 60).padStart(2, "0");
   const timerColor = timeLeft > 30 ? A.success : timeLeft > 10 ? A.amber : A.danger;
+  // Final-seconds tension — tied to the anti-snipe window so the drama lines up
+  // with the moment a late bid can still extend the clock.
+  const critical = !ended && conn === "live" && timeLeft > 0 && timeLeft <= ANTI_SNIPE_WINDOW_SEC;
   const timeFrac = Math.max(0, Math.min(1, timeLeft / 60));
   const overReserve = Math.max(0, Math.round(displayPrice) - reserve);
 
@@ -529,20 +536,36 @@ export function LiveRoom(p: LiveRoomProps) {
                   <div className="flex items-center gap-1.5 text-[11.5px] font-semibold uppercase tracking-[.12em]" style={{ color: A.dim }}>
                     <IconClock /> Үлдсэн хугацаа
                   </div>
-                  {extendFlash > 0 && (
+                  {critical && (
+                    <span
+                      className="rounded-full border px-2 py-0.5 text-[11px] font-bold uppercase tracking-[.06em]"
+                      style={{ borderColor: "rgba(255,92,97,.5)", background: "rgba(255,92,97,.14)", color: A.accentSoft, animation: "livedot 1s infinite" }}
+                    >
+                      Дуусч байна!
+                    </span>
+                  )}
+                  {extendFlash > 0 && !critical && (
                     <span
                       key={extendFlash}
                       className="tnum rounded-full border px-2 py-0.5 text-[11px] font-bold"
                       style={{ borderColor: "rgba(240,180,64,.4)", background: "rgba(240,180,64,.12)", color: A.amber, animation: "badgeFloat 1.8s ease forwards" }}
                     >
-                      +30 сек
+                      +{ANTI_SNIPE_EXTENSION_SEC} сек
                     </span>
                   )}
                 </div>
                 <div
                   key={extendFlash}
                   className="tnum mt-2 text-[clamp(40px,7vw,58px)] font-semibold leading-none tracking-tight"
-                  style={{ color: timerColor, animation: extendFlash ? "extendPop .6s ease" : undefined }}
+                  style={{
+                    color: timerColor,
+                    animation: critical
+                      ? "heartbeat 1s ease-in-out infinite"
+                      : extendFlash
+                        ? "extendPop .6s ease"
+                        : undefined,
+                    textShadow: critical ? `0 0 24px ${A.danger}` : undefined,
+                  }}
                 >
                   {mm}:{ss}
                 </div>
@@ -684,6 +707,22 @@ export function LiveRoom(p: LiveRoomProps) {
           </aside>
         </div>
       </div>
+
+      {/* final-seconds red vignette — full-screen, non-blocking */}
+      {critical && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-[55]"
+          style={{
+            background:
+              "radial-gradient(120% 90% at 50% 50%, transparent 52%, rgba(224,59,75,.16) 80%, rgba(224,59,75,.4) 100%)",
+            animation: "vignettePulse 1s ease-in-out infinite",
+          }}
+        />
+      )}
+
+      {/* win celebration */}
+      {ended?.result === "won" && <Confetti />}
 
       {/* toasts */}
       <div className="fixed right-4 top-20 z-[60] flex w-[min(340px,calc(100vw-32px))] flex-col gap-2.5">

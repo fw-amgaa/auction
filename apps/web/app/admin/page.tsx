@@ -6,10 +6,15 @@ import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { LocalTime } from "@/components/LocalTime";
+import { requireAdmin } from "@/lib/session";
+import { mintTicket, wsUrl } from "@/lib/ws-ticket";
+
+import { AdminLiveBoard, type LiveBoardLot } from "./AdminLiveBoard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminHome() {
+  const admin = await requireAdmin();
   const [[liveN], [schedN], [pendingN], [usersN], [limitSum], liveLots, soonLots, recentAudit] =
     await Promise.all([
       db.select({ n: count() }).from(schema.lots).where(eq(schema.lots.status, "live")),
@@ -36,6 +41,16 @@ export default async function AdminHome() {
         .orderBy(desc(schema.auditLog.createdAt))
         .limit(6),
     ]);
+
+  const liveBoardLots: LiveBoardLot[] = liveLots.map(({ lot, category }) => ({
+    id: lot.id,
+    code: lot.code,
+    species: category.name,
+    reserve: lot.reserve,
+    currentPrice: lot.currentPrice,
+    endsAt: lot.endsAt?.getTime() ?? null,
+  }));
+  const ticket = mintTicket({ uid: admin.id, role: admin.role, kyc: admin.kyc, limit: admin.limit });
 
   const kpis: { label: string; value: string; href: string; tone: string }[] = [
     { label: "Шууд явагдаж буй лот", value: String(liveN?.n ?? 0), href: "/admin/lots", tone: "#C8312C" },
@@ -65,27 +80,15 @@ export default async function AdminHome() {
           ))}
         </div>
 
-        {/* live + starting-soon side by side */}
+        {/* live (real-time WS board) + starting-soon side by side */}
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          <LotTable
-            title="Шууд явагдаж буй дуудлага"
-            badge={<span className="flex items-center gap-1.5 text-[12px] font-semibold text-crimson"><span className="size-2 rounded-full bg-crimson" style={{ animation: "livedot 1.5s infinite" }} /> LIVE</span>}
-            cols={["Код", "Зүйл", "Одоогийн үнэ", "Дуусах"]}
-            rows={liveLots.map(({ lot, category }) => ({
-              href: `/lots/${lot.id}/live`,
-              code: lot.code,
-              species: category.name,
-              price: formatTugrug(lot.currentPrice ?? lot.reserve),
-              when: lot.endsAt?.toISOString() ?? null,
-            }))}
-            empty="Одоогоор шууд лот алга."
-          />
+          <AdminLiveBoard initial={liveBoardLots} ticket={ticket} wsBase={wsUrl()} />
           <LotTable
             title="Удахгүй эхлэх дуудлага"
             badge={<span className="flex items-center gap-1.5 text-[12px] font-semibold text-[#1B5FA8]"><span className="size-2 rounded-full bg-[#1B5FA8]" /> ТӨЛӨВЛӨСӨН</span>}
             cols={["Код", "Зүйл", "Босго үнэ", "Эхлэх"]}
             rows={soonLots.map(({ lot, category }) => ({
-              href: `/lots/${lot.id}`,
+              href: `/admin/lots/${lot.id}`,
               code: lot.code,
               species: category.name,
               price: formatTugrug(lot.reserve),

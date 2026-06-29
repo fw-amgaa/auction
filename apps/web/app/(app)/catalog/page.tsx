@@ -24,7 +24,7 @@ export default async function CatalogPage({
   const sp = await searchParams;
   const user = await getCurrentUser();
   const codes = user && user.role !== "admin" ? await getUserCodes(user.id) : [];
-  const viewer = user ? { role: user.role, codes } : null;
+  const viewer = user ? { id: user.id, role: user.role, codes } : null;
   const [{ lots, aimags }, categories] = await Promise.all([
     getCatalogLots(sp, viewer),
     getCategoryOptions(),

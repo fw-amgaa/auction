@@ -14,7 +14,12 @@
  *
  * Committed balances are stored at u:{userId}:committed (single-node Redis, so
  * the script may touch keys outside KEYS[]).
+ *
+ * Anti-snipe window/extension come from @auction/shared (single source of truth)
+ * and are interpolated into the script body below as millisecond literals.
  */
+import { ANTI_SNIPE_EXTENSION_SEC, ANTI_SNIPE_WINDOW_SEC } from "@auction/shared";
+
 export const BID_LUA = `
 local lotKey = KEYS[1]
 local userId = ARGV[1]
@@ -59,8 +64,8 @@ end
 redis.call('SET', ucKey, uc + amount)
 local seq = redis.call('HINCRBY', lotKey, 'seq', 1)
 local extended = 0
-if (endsAt - now) <= 15000 then
-  endsAt = endsAt + 30000
+if (endsAt - now) <= ${ANTI_SNIPE_WINDOW_SEC * 1000} then
+  endsAt = endsAt + ${ANTI_SNIPE_EXTENSION_SEC * 1000}
   extended = 1
 end
 redis.call('HSET', lotKey, 'price', amount, 'leader', userId, 'hasBids', '1', 'endsAt', endsAt)

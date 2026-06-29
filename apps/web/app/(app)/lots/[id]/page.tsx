@@ -50,6 +50,51 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
         ‹ Каталог руу буцах
       </Link>
 
+      {lot.status === "ended" && (
+        <div
+          className="mb-5 flex flex-wrap items-center gap-3 rounded-2xl border p-4"
+          style={
+            lot.iWon
+              ? { background: "linear-gradient(135deg,#FBF3DF,#FDF9EF)", borderColor: "#EAD9A8" }
+              : lot.winnerLabel
+                ? { background: "#F4F6F9", borderColor: "#E2E7EE" }
+                : { background: "#F5F2EB", borderColor: "#E6E1D6" }
+          }
+        >
+          <span
+            className="grid size-11 shrink-0 place-items-center rounded-xl text-[22px]"
+            style={
+              lot.iWon
+                ? { background: "#F6E3AE", color: "#A9760E" }
+                : { background: "#FFFFFF", color: "#5B6677" }
+            }
+          >
+            {lot.iWon ? "🏆" : lot.winnerLabel ? "🔨" : "—"}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div
+              className="text-[16px] font-bold"
+              style={{ color: lot.iWon ? "#A9760E" : "#14294A" }}
+            >
+              {lot.iWon
+                ? "Баяр хүргэе — та энэ лотыг хожлоо"
+                : lot.winnerLabel
+                  ? `${lot.winnerLabel} энэ лотыг хожлоо`
+                  : "Энэ лот дээр санал ирээгүй — дуусгавар болсон"}
+            </div>
+            <div className="mt-0.5 text-[13px] text-ink-soft">
+              Дуудлага худалдаа дууссан
+              {lot.winnerLabel && (
+                <>
+                  {" · "}Эцсийн үнэ{" "}
+                  <strong className="tnum text-navy">{formatTugrug(lot.finalPrice)}</strong>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-start gap-6">
         {/* left */}
         <div className="flex min-w-[300px] flex-1 basis-[540px] flex-col gap-[18px]">
@@ -152,6 +197,9 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
             status={lot.status}
             currentPrice={lot.currentPrice ?? lot.reserve}
             reserve={lot.reserve}
+            finalPrice={lot.finalPrice}
+            winnerLabel={lot.winnerLabel}
+            iWon={lot.iWon}
             bidders={lot.bidders}
             startsAt={lot.startsAt}
             endsAt={lot.endsAt}

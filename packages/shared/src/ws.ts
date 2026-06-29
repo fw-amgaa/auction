@@ -84,6 +84,8 @@ export const ServerMessage = z.discriminatedUnion("t", [
     lotId: z.string().uuid(),
     result: z.enum(["won", "lost", "ended"]),
     price: z.number().int(),
+    /** Winner label — real name for admin monitors, pseudonym/null otherwise. */
+    leaderLabel: z.string().nullable().optional(),
   }),
   z.object({ t: z.literal("pong") }),
 ]);

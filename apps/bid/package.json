@@ -13,7 +13,7 @@
   "dependencies": {
     "@auction/db": "workspace:*",
     "@auction/shared": "workspace:*",
-    "drizzle-orm": "^0.38.3",
+    "drizzle-orm": "^0.45.2",
     "ioredis": "^5.4.2",
     "pino": "^9.6.0",
     "ws": "^8.18.0"

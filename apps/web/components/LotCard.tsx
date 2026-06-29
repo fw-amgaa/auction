@@ -18,6 +18,10 @@ export interface LotCardData {
   startsAt: number | null;
   endsAt: number | null;
   image: string | null;
+  /** Ended lots only: "Та" / "Оролцогч #N" / null (no winner). */
+  winnerLabel: string | null;
+  /** Ended lots only: the viewer is the winner. */
+  iWon: boolean;
 }
 
 const STRIPES: Record<string, [string, string]> = {
@@ -79,10 +83,26 @@ export function LotCard({ lot }: { lot: LotCardData }) {
       ? { text: "Дэлгэрэнгүй", href: `/lots/${lot.id}`, bg: "#fff", fg: "#14294A", bd: "#CDD4DE" }
       : { text: "Үр дүн харах", href: `/lots/${lot.id}`, bg: "#F3F0E9", fg: "#5B6677", bd: "#E6E1D6" };
 
+  // Ended-lot outcome band (won / who won anonymously / no winner).
+  const ended = lot.status === "ended";
+  const result = !ended
+    ? null
+    : lot.iWon
+      ? { text: "Та хожлоо", icon: "🏆", bg: "#FBF3DF", bd: "#EAD9A8", fg: "#A9760E" }
+      : lot.winnerLabel
+        ? { text: `${lot.winnerLabel} хожлоо`, icon: "🔨", bg: "#F4F6F9", bd: "#E2E7EE", fg: "#14294A" }
+        : { text: "Дуусгавар болсон", icon: "—", bg: "#F5F2EB", bd: "#E6E1D6", fg: "#8A93A3" };
+
   return (
     <div
       className="flex flex-col overflow-hidden rounded-[14px] border border-line bg-white shadow-sm"
-      style={live ? { animation: "cardLiveRing 2s ease-in-out infinite" } : undefined}
+      style={
+        live
+          ? { animation: "cardLiveRing 2s ease-in-out infinite" }
+          : lot.iWon
+            ? { borderColor: "#EAD9A8", boxShadow: "0 1px 3px rgba(20,41,74,.08), 0 0 0 1px rgba(231,178,75,.45)" }
+            : undefined
+      }
     >
       <div
         className="relative flex h-[168px] items-end bg-cover bg-center p-3.5"
@@ -124,13 +144,24 @@ export function LotCard({ lot }: { lot: LotCardData }) {
             <div className="text-[11px] font-medium text-muted">{priceLabel}</div>
             <div className="tnum mt-px text-xl font-bold text-navy">{formatTugrug(priceVal)}</div>
           </div>
-          <div className="text-right">
-            <div className="text-[11px] font-medium text-muted">{cdLabel}</div>
-            <div className="tnum mt-0.5 text-sm font-semibold" style={{ color: cdColor }}>
-              {cdText}
+          {!ended && (
+            <div className="text-right">
+              <div className="text-[11px] font-medium text-muted">{cdLabel}</div>
+              <div className="tnum mt-0.5 text-sm font-semibold" style={{ color: cdColor }}>
+                {cdText}
+              </div>
             </div>
-          </div>
+          )}
         </div>
+        {result && (
+          <div
+            className="flex items-center gap-2 rounded-[9px] border px-3 py-2 text-[12.5px] font-semibold"
+            style={{ background: result.bg, borderColor: result.bd, color: result.fg }}
+          >
+            <span className="text-[13px] leading-none">{result.icon}</span>
+            <span className="truncate">{result.text}</span>
+          </div>
+        )}
         <Link
           href={cta.href}
           className="mt-auto rounded-[9px] border py-2.5 text-center text-[13.5px] font-semibold"

@@ -5,13 +5,15 @@
  *
  * Run: pnpm --filter @auction/db seed
  */
+import { randomUUID } from "node:crypto";
+
 import { hash } from "@node-rs/argon2";
 import { eq, isNotNull, notInArray, or } from "drizzle-orm";
 
 import { CATEGORIES, CATEGORY_CODES } from "@auction/shared";
 
 import { db } from "./client";
-import { bids, categories, limitLedger, lots, termsVersions, users } from "./schema";
+import { accounts, bids, categories, limitLedger, lots, termsVersions, users } from "./schema";
 
 const SPECIES = CATEGORY_CODES.map((code, i) => ({
   code,
@@ -61,14 +63,25 @@ async function main() {
     .where(eq(users.email, adminEmail))
     .limit(1);
   if (!existingAdmin) {
-    await db.insert(users).values({
-      email: adminEmail,
-      name: "Админ",
-      passwordHash: await hash(adminPassword),
-      role: "admin",
-      accountType: "individual",
-      kyc: "approved",
-      source: "admin",
+    const [admin] = await db
+      .insert(users)
+      .values({
+        email: adminEmail,
+        name: "Админ",
+        emailVerified: true,
+        role: "admin",
+        accountType: "individual",
+        kyc: "approved",
+        source: "admin",
+      })
+      .returning({ id: users.id });
+    // better-auth credential account holds the password hash
+    await db.insert(accounts).values({
+      id: randomUUID(),
+      accountId: admin!.id,
+      providerId: "credential",
+      userId: admin!.id,
+      password: await hash(adminPassword),
     });
     console.log(`  admin created: ${adminEmail} / ${adminPassword}`);
   } else {

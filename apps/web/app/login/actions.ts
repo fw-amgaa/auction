@@ -1,11 +1,14 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { AuthError } from "next-auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { APIError } from "better-auth/api";
 
 import { db, schema } from "@auction/db";
 
-import { signIn } from "@/auth";
+import { auth } from "@/lib/auth";
 
 export interface LoginState {
   error?: string;
@@ -13,6 +16,7 @@ export interface LoginState {
 
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
   // route admins to the admin console, everyone else to the catalog
   const [u] = await db
     .select({ role: schema.users.role })
@@ -22,16 +26,15 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   const redirectTo = u?.role === "admin" ? "/admin" : "/catalog";
 
   try {
-    await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirectTo,
-    });
-    return {};
+    // nextCookies() persists the session cookie set during this call
+    await auth.api.signInEmail({ body: { email, password }, headers: await headers() });
   } catch (e) {
-    if (e instanceof AuthError) {
+    if (e instanceof APIError) {
       return { error: "Нэвтрэх нэр эсвэл нууц үг буруу байна." };
     }
-    throw e; // re-throw NEXT_REDIRECT (successful sign-in) and anything else
+    throw e;
   }
+
+  // redirect throws NEXT_REDIRECT; keep it outside the try so it isn't swallowed
+  redirect(redirectTo);
 }

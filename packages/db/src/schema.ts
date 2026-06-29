@@ -81,12 +81,11 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    // auth identity
+    // auth identity (password hash lives in `accounts`, provider "credential")
     email: text("email").notNull(),
-    emailVerified: timestamp("email_verified", { withTimezone: true }),
+    emailVerified: boolean("email_verified").notNull().default(false),
     name: text("name"),
     image: text("image"),
-    passwordHash: text("password_hash"),
     phone: text("phone"),
     // domain
     role: userRole("role").notNull().default("bidder"),
@@ -364,36 +363,53 @@ export const userTermsAcceptance = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.termsVersionId] })],
 );
 
-/* ----------------------------- Auth.js tables ----------------------------- */
-/* Database sessions + OAuth/verification scaffolding for Auth.js v5. */
+/* ------------------------------ better-auth ------------------------------- */
+/* Tables owned by better-auth (drizzle adapter). Column/JS-key names MUST match
+ * better-auth's field names — the adapter introspects by the table's JS keys.
+ * `user` maps to the `users` table above (via modelName in lib/auth.ts). */
 
-export const accounts = pgTable(
-  "accounts",
-  {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").notNull(),
-    provider: text("provider").notNull(),
-    providerAccountId: text("provider_account_id").notNull(),
-    refresh_token: text("refresh_token"),
-    access_token: text("access_token"),
-    expires_at: integer("expires_at"),
-    token_type: text("token_type"),
-    scope: text("scope"),
-    id_token: text("id_token"),
-    session_state: text("session_state"),
-  },
-  (t) => [primaryKey({ columns: [t.provider, t.providerAccountId] })],
-);
-
-export const sessions = pgTable("sessions", {
-  sessionToken: text("session_token").primaryKey(),
+export const accounts = pgTable("accounts", {
+  id: text("id").primaryKey(),
+  // for credential logins: accountId === userId, providerId === "credential",
+  // password === the argon2 hash (see registerAction + lib/auth.ts hashers).
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  expires: timestamp("expires", { withTimezone: true }).notNull(),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+  scope: text("scope"),
+  password: text("password"),
+  ...timestamps,
 });
+
+export const sessions = pgTable("sessions", {
+  id: text("id").primaryKey(),
+  token: text("token").notNull().unique(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  ...timestamps,
+});
+
+export const verification = pgTable("verification", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  ...timestamps,
+});
+
+/* ------------------------- custom email-token flows ----------------------- */
+/* Single-use links for admin invites + password resets (lib/auth-tokens.ts).
+ * Separate from better-auth's `verification` table — keep this untouched. */
 
 export const verificationTokens = pgTable(
   "verification_tokens",

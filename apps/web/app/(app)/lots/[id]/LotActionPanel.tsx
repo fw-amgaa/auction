@@ -12,6 +12,12 @@ export interface PanelProps {
   status: "live" | "upcoming" | "ended";
   currentPrice: number;
   reserve: number;
+  /** Resolved price for ended lots (currentPrice or reserve). */
+  finalPrice: number;
+  /** Ended lots only: "Та" / "Оролцогч #N" / null (no winner). */
+  winnerLabel: string | null;
+  /** Ended lots only: the viewer won. */
+  iWon: boolean;
   bidders: number;
   startsAt: number | null;
   endsAt: number | null;
@@ -37,8 +43,12 @@ export function LotActionPanel(p: PanelProps) {
 
   const live = p.status === "live";
   const upcoming = p.status === "upcoming";
+  const ended = p.status === "ended";
   const target = live ? p.endsAt : upcoming ? p.startsAt : null;
   const countdown = now !== null && target ? fmt(target - now) : "—";
+
+  const priceLabel = live ? "Одоогийн үнэ" : ended ? "Эцсийн үнэ" : "Босго үнэ";
+  const priceVal = live ? p.currentPrice : ended ? p.finalPrice : p.reserve;
 
   const canBid = p.eligible.loggedIn && p.eligible.approved && p.eligible.available >= p.currentPrice;
 
@@ -63,11 +73,9 @@ export function LotActionPanel(p: PanelProps) {
         </div>
 
         <div className="mt-4">
-          <div className="text-[12px] font-medium text-muted">
-            {live ? "Одоогийн үнэ" : "Босго үнэ"}
-          </div>
+          <div className="text-[12px] font-medium text-muted">{priceLabel}</div>
           <div className="tnum mt-0.5 text-[34px] font-bold leading-none text-navy">
-            {formatTugrug(live ? p.currentPrice : p.reserve)}
+            {formatTugrug(priceVal)}
           </div>
           <div className="mt-1 text-[12.5px] text-ink-soft">
             Босго үнэ: <span className="tnum">{formatTugrug(p.reserve)}</span> · {p.bidders} оролцогч
@@ -96,9 +104,28 @@ export function LotActionPanel(p: PanelProps) {
           >
             Шууд танхимд орох →
           </Link>
+        ) : ended ? (
+          <div
+            className="mt-3.5 flex items-center justify-center gap-2 rounded-[11px] py-4 text-center text-[14px] font-bold"
+            style={
+              p.iWon
+                ? { background: "#FBF3DF", color: "#A9760E" }
+                : p.winnerLabel
+                  ? { background: "#EEF1F5", color: "#14294A" }
+                  : { background: "#F3F0E9", color: "#5B6677" }
+            }
+          >
+            {p.iWon ? (
+              <>🏆 Та хожлоо</>
+            ) : p.winnerLabel ? (
+              <>🔨 {p.winnerLabel} хожлоо</>
+            ) : (
+              <>Дуусгавар болсон</>
+            )}
+          </div>
         ) : (
           <div className="mt-3.5 rounded-[11px] bg-[#F3F0E9] py-4 text-center text-[14px] font-semibold text-ink-soft">
-            {upcoming ? "Удахгүй эхэлнэ" : "Дууссан"}
+            Удахгүй эхэлнэ
           </div>
         )}
         {live && (

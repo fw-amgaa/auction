@@ -1,15 +1,16 @@
 import "server-only";
 
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { db, schema } from "@auction/db";
 
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 
 /** The full, fresh user row for the logged-in user (or null). */
 export async function getCurrentUser() {
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) return null;
   const [u] = await db
     .select()

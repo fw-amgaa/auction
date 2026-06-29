@@ -71,10 +71,10 @@ export function incrementsForCode(code: string): readonly [number, number] {
 
 /**
  * Anti-snipe: if a bid lands within this many seconds of the end,
- * the auction is extended.
+ * the auction is extended by ANTI_SNIPE_EXTENSION_SEC.
  */
-export const ANTI_SNIPE_WINDOW_SEC = 15;
-export const ANTI_SNIPE_EXTENSION_SEC = 30;
+export const ANTI_SNIPE_WINDOW_SEC = 10;
+export const ANTI_SNIPE_EXTENSION_SEC = 10;
 
 /** Per-user bid rate limit (token bucket) on the live socket. */
 export const BID_RATE_PER_SEC = 5;

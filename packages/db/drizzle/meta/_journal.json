@@ -36,6 +36,13 @@
       "when": 1782723281422,
       "tag": "0004_perpetual_pepper_potts",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782737763125,
+      "tag": "0005_better_auth",
+      "breakpoints": true
     }
   ]
 }

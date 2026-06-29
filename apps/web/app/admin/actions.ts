@@ -156,7 +156,7 @@ export async function updateUserInfo(
   }
   if (emailChanged) {
     // Changing the login email invalidates prior verification.
-    await db.update(schema.users).set({ email: newEmail, emailVerified: null }).where(eq(schema.users.id, userId));
+    await db.update(schema.users).set({ email: newEmail, emailVerified: false }).where(eq(schema.users.id, userId));
   }
   await writeAudit({
     actorId: admin.id,

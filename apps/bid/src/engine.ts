@@ -142,7 +142,39 @@ export async function pseudonym(lotId: string, userId: string): Promise<string> 
   return `Оролцогч #${idx}`;
 }
 
-export async function recentFeed(lotId: string, viewerId: string): Promise<FeedItem[]> {
+/**
+ * Real participant identity — for ADMIN monitors only (never sent to bidders).
+ * Mirrors apps/web/lib/results.ts `bidderName`. Memoised per process; names are
+ * effectively static within a live session.
+ */
+const realNameCache = new Map<string, string>();
+export async function realLabel(userId: string): Promise<string> {
+  const cached = realNameCache.get(userId);
+  if (cached) return cached;
+  const [row] = await db
+    .select({
+      email: schema.users.email,
+      accountType: schema.users.accountType,
+      surname: schema.individualProfiles.surname,
+      givenName: schema.individualProfiles.givenName,
+      registeredName: schema.legalEntityProfiles.registeredName,
+    })
+    .from(schema.users)
+    .leftJoin(schema.individualProfiles, eq(schema.individualProfiles.userId, schema.users.id))
+    .leftJoin(schema.legalEntityProfiles, eq(schema.legalEntityProfiles.userId, schema.users.id))
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+  if (!row) return "—";
+  const label =
+    row.accountType === "legal_entity"
+      ? row.registeredName || row.email
+      : [row.surname, row.givenName].filter(Boolean).join(" ") || row.email;
+  realNameCache.set(userId, label);
+  return label;
+}
+
+/** Recent bid feed. When `real`, labels are true names (admin monitors only). */
+export async function recentFeed(lotId: string, viewerId: string, real = false): Promise<FeedItem[]> {
   const rows = await db
     .select()
     .from(schema.bids)
@@ -154,10 +186,10 @@ export async function recentFeed(lotId: string, viewerId: string): Promise<FeedI
     const mine = b.userId === viewerId;
     out.push({
       seq: b.seq,
-      label: mine ? "Та" : await pseudonym(lotId, b.userId),
+      label: real ? await realLabel(b.userId) : mine ? "Та" : await pseudonym(lotId, b.userId),
       amount: b.amount,
       ts: b.createdAt.getTime(),
-      mine,
+      mine: real ? false : mine,
     });
   }
   return out;

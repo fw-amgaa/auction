@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { CATEGORIES, type CategoryCode, formatTugrug } from "@auction/shared";
@@ -353,6 +354,13 @@ export function LotsManager({
                   </span>
                 </span>
                 <span className="flex justify-end gap-1.5">
+                  <Link
+                    href={`/admin/lots/${l.id}`}
+                    className="rounded-[7px] border border-line-cool bg-white px-2.5 py-1.5 text-[12px] font-semibold text-crimson hover:bg-[#FBEAE9]"
+                    style={l.phase === "live" ? { borderColor: "#E0908C" } : undefined}
+                  >
+                    {l.phase === "live" ? "Хянах" : "Дэлгэрэнгүй"}
+                  </Link>
                   <button
                     onClick={() => openEdit(l)}
                     className="rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy"

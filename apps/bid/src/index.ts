@@ -21,6 +21,7 @@ import {
   isEligible,
   placeBid,
   pseudonym,
+  realLabel,
   recentFeed,
 } from "./engine";
 import { log } from "./logger";
@@ -67,8 +68,11 @@ async function sendSnapshot(conn: Conn, lotId: string) {
   const h = await redis.hgetall(`lot:${lotId}`);
   if (!h.status) return;
   const leader = h.leader || "";
+  const admin = conn.role === "admin";
   const committed = await getCommitted(conn.userId);
-  const youLead = leader !== "" && leader === conn.userId;
+  const youLead = !admin && leader !== "" && leader === conn.userId;
+  const leaderLabel =
+    leader === "" ? null : admin ? await realLabel(leader) : youLead ? "Та" : await pseudonym(lotId, leader);
   send(conn.ws, {
     t: "snapshot",
     lotId,
@@ -76,14 +80,14 @@ async function sendSnapshot(conn: Conn, lotId: string) {
     reserve: Number(h.reserve),
     inc1: Number(h.inc1),
     inc2: Number(h.inc2),
-    leaderLabel: leader === "" ? null : youLead ? "Та" : await pseudonym(lotId, leader),
+    leaderLabel,
     youLead,
     hasBids: h.hasBids === "1",
     endsAt: Number(h.endsAt),
     seq: Number(h.seq),
     spectators: Number((await redis.get(`lot:${lotId}:spec`)) ?? "0"),
     status: h.status === "live" ? "live" : "ended",
-    feed: await recentFeed(lotId, conn.userId),
+    feed: await recentFeed(lotId, conn.userId, admin),
     available: conn.limit - committed,
     committed,
     limit: conn.limit,
@@ -139,11 +143,15 @@ async function handleEvent(ev: Event) {
   }
 
   if (ev.type === "bid") {
+    // Bidders see the anonymous pseudonym; admin monitors see the real name.
     const rivalLabel = await pseudonym(ev.lotId, ev.leaderUserId);
+    const realName = await realLabel(ev.leaderUserId);
     for (const ws of subscribers) {
       const conn = conns.get(ws);
       if (!conn) continue;
-      const mine = conn.userId === ev.leaderUserId;
+      const admin = conn.role === "admin";
+      const mine = !admin && conn.userId === ev.leaderUserId;
+      const label = admin ? realName : mine ? "Та" : rivalLabel;
       send(ws, {
         t: "bid",
         lotId: ev.lotId,
@@ -151,9 +159,9 @@ async function handleEvent(ev: Event) {
         seq: ev.seq,
         endsAt: ev.endsAt,
         extended: ev.extended,
-        leaderLabel: mine ? "Та" : rivalLabel,
+        leaderLabel: label,
         youLead: mine,
-        feedItem: { seq: ev.seq, label: mine ? "Та" : rivalLabel, amount: ev.price, ts: ev.ts, mine },
+        feedItem: { seq: ev.seq, label, amount: ev.price, ts: ev.ts, mine },
       });
       if (conn.userId === ev.releasedUser) {
         send(ws, { t: "outbid", lotId: ev.lotId, returned: ev.releasedAmount });
@@ -165,12 +173,16 @@ async function handleEvent(ev: Event) {
   }
 
   // closed
+  const winnerReal = ev.leaderUserId ? await realLabel(ev.leaderUserId) : null;
+  const winnerPseudo = ev.leaderUserId ? await pseudonym(ev.lotId, ev.leaderUserId) : null;
   for (const ws of subscribers) {
     const conn = conns.get(ws);
     if (!conn) continue;
-    const result = !ev.leaderUserId ? "ended" : conn.userId === ev.leaderUserId ? "won" : "lost";
-    send(ws, { t: "closed", lotId: ev.lotId, result, price: ev.price });
-    send(ws, await balanceMsg(conn));
+    const admin = conn.role === "admin";
+    const result = !ev.leaderUserId ? "ended" : !admin && conn.userId === ev.leaderUserId ? "won" : "lost";
+    const leaderLabel = admin ? winnerReal : conn.userId === ev.leaderUserId ? "Та" : winnerPseudo;
+    send(ws, { t: "closed", lotId: ev.lotId, result, price: ev.price, leaderLabel });
+    if (!admin) send(ws, await balanceMsg(conn));
   }
 }
 
@@ -191,7 +203,8 @@ const httpServer = createServer((req, res) => {
 httpServer.on("upgrade", (req, socket, head) => {
   const url = new URL(req.url ?? "", "http://localhost");
   const ticket = verifyTicket(url.searchParams.get("ticket") ?? "");
-  if (!ticket || ticket.kyc !== "approved") {
+  // Bidders must be KYC-approved; admins connect as read-only monitors regardless.
+  if (!ticket || (ticket.role !== "admin" && ticket.kyc !== "approved")) {
     socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
     socket.destroy();
     return;
@@ -233,9 +246,12 @@ wss.on("connection", (ws: WebSocket, ticket: NonNullable<ReturnType<typeof verif
   ws.on("close", () => {
     for (const lotId of conn.lots) {
       lotSubs.get(lotId)?.delete(ws);
-      void redis.decr(`lot:${lotId}:spec`).then(async (count) => {
-        await redis.publish(EVENTS, JSON.stringify({ type: "spectators", lotId, count: Math.max(0, count) }));
-      });
+      // Mirror subscribe: only bidders were counted, so only bidders decrement.
+      if (conn.role !== "admin") {
+        void redis.decr(`lot:${lotId}:spec`).then(async (count) => {
+          await redis.publish(EVENTS, JSON.stringify({ type: "spectators", lotId, count: Math.max(0, count) }));
+        });
+      }
     }
     conns.delete(ws);
   });
@@ -261,13 +277,23 @@ async function onMessage(conn: Conn, msg: ClientMessage) {
       lotSubs.set(msg.lotId, set);
     }
     set.add(conn.ws);
-    const count = await redis.incr(`lot:${msg.lotId}:spec`);
-    await sendSnapshot(conn, msg.lotId);
-    await redis.publish(EVENTS, JSON.stringify({ type: "spectators", lotId: msg.lotId, count }));
+    // Admin monitors observe silently — they must not inflate spectator counts.
+    if (conn.role === "admin") {
+      await sendSnapshot(conn, msg.lotId);
+    } else {
+      const count = await redis.incr(`lot:${msg.lotId}:spec`);
+      await sendSnapshot(conn, msg.lotId);
+      await redis.publish(EVENTS, JSON.stringify({ type: "spectators", lotId: msg.lotId, count }));
+    }
     return;
   }
 
   if (msg.t === "bid") {
+    // Admins are read-only monitors and never bid.
+    if (conn.role === "admin") {
+      send(conn.ws, { t: "rejected", lotId: msg.lotId, reason: "not_eligible" });
+      return;
+    }
     if (await rateLimited(conn.userId)) {
       send(conn.ws, { t: "rejected", lotId: msg.lotId, reason: "rate_limited" });
       return;
