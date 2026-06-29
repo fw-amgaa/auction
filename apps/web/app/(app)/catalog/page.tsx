@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/session";
 import { CatalogFilters } from "./CatalogFilters";
 
 const TOUR: TourStep[] = [
-  { sel: '[data-tour="species"]', title: "Амьтны төрлөөр сонгох", body: "Эндээс хүссэн амьтны төрлөө шүүж үзнэ — Угалз, Тэх, Чоно гэх мэт." },
+  { sel: '[data-tour="species"]', title: "Ангиллаар сонгох", body: "Эндээс ангиллаа шүүж үзнэ — Алтайн угалз, Алтайн тэх." },
   { sel: '[data-tour="lots"] a', title: "Лотын карт", body: "Төлөв, үнэ, үлдсэн хугацааг нэг харцаар. ШУУД лотууд улаанаар цохилно." },
   { sel: 'a[href="/balance"]', title: "Таны үлдэгдэл", body: "Санал өгөх лимит энд харагдана. Санал өгөхөд барьцаалагдаж, давуулбал буцна." },
   { sel: 'a[href="/notifications"]', title: "Мэдэгдэл", body: "Таныг давуулсан тэр даруйд бид мэдэгдэнэ. Уншаагүй мэдэгдэл улаанаар тоологдоно." },

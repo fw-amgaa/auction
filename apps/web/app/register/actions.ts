@@ -49,41 +49,48 @@ export async function registerAction(
   }
   const data = parsed.data;
 
-  // email uniqueness
-  const [existing] = await db
-    .select({ id: schema.users.id })
-    .from(schema.users)
-    .where(eq(schema.users.email, data.email))
-    .limit(1);
-  if (existing) {
-    return { error: "Энэ и-мэйл хаягаар бүртгэл аль хэдийн үүссэн байна.", fieldErrors: { email: "Бүртгэлтэй и-мэйл" } };
-  }
-
-  // read uploaded documents
-  const docKeys = docKeysFor(accountType);
-  const files: { docType: string; fileName: string; bytes: Buffer }[] = [];
-  for (const key of docKeys) {
-    const f = formData.get(key);
-    if (f instanceof File && f.size > 0) {
-      files.push({
-        docType: key,
-        fileName: f.name,
-        bytes: Buffer.from(await f.arrayBuffer()),
-      });
-    }
-  }
-  if (files.length < docKeys.length) {
-    return { error: "Бүх бичиг баримтыг оруулна уу." };
-  }
-
-  const passwordHash = await hashPassword(data.password);
-  const [latestTerms] = await db
-    .select()
-    .from(schema.termsVersions)
-    .orderBy(desc(schema.termsVersions.publishedAt))
-    .limit(1);
-
+  // Everything past validation touches the DB, object storage and native
+  // hashing — any of which can throw at runtime. Keep it all inside one
+  // try/catch so a failure returns a friendly message instead of bubbling up
+  // as an unhandled server-side exception (the blank "Application error" page).
   try {
+    // email uniqueness
+    const [existing] = await db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(eq(schema.users.email, data.email))
+      .limit(1);
+    if (existing) {
+      return {
+        error: "Энэ и-мэйл хаягаар бүртгэл аль хэдийн үүссэн байна.",
+        fieldErrors: { email: "Бүртгэлтэй и-мэйл" },
+      };
+    }
+
+    // read uploaded documents
+    const docKeys = docKeysFor(accountType);
+    const files: { docType: string; fileName: string; bytes: Buffer }[] = [];
+    for (const key of docKeys) {
+      const f = formData.get(key);
+      if (f instanceof File && f.size > 0) {
+        files.push({
+          docType: key,
+          fileName: f.name,
+          bytes: Buffer.from(await f.arrayBuffer()),
+        });
+      }
+    }
+    if (files.length < docKeys.length) {
+      return { error: "Бүх бичиг баримтыг оруулна уу." };
+    }
+
+    const passwordHash = await hashPassword(data.password);
+    const [latestTerms] = await db
+      .select()
+      .from(schema.termsVersions)
+      .orderBy(desc(schema.termsVersions.publishedAt))
+      .limit(1);
+
     await db.transaction(async (tx) => {
       const [user] = await tx
         .insert(schema.users)

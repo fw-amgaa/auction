@@ -5,6 +5,9 @@ import { asc, desc, eq, inArray } from "drizzle-orm";
 import { db, schema } from "@auction/db";
 import { CATEGORIES, type CategoryCode, CATEGORY_CODES } from "@auction/shared";
 
+/** Codes of the two valid categories — guards every lot/category selection. */
+const VALID_CATEGORY_CODES = new Set<string>(CATEGORY_CODES);
+
 export type LotStatus = (typeof schema.lots.status.enumValues)[number];
 /** Catalog display status (the design's three-way view). */
 export type DisplayStatus = "live" | "upcoming" | "ended";
@@ -87,7 +90,8 @@ export async function getCatalogLots(
     .innerJoin(schema.categories, eq(schema.lots.categoryId, schema.categories.id))
     .where(inArray(schema.lots.status, CATALOG_STATUSES));
 
-  let lots = rows.map(toCatalogLot);
+  // Only lots in the two valid categories are ever shown.
+  let lots = rows.map(toCatalogLot).filter((l) => VALID_CATEGORY_CODES.has(l.categoryCode));
 
   // Per-code eligibility: a bidder only ever sees lots whose code they hold.
   // Admins (and unscoped server calls passing no viewer) see everything.
@@ -176,7 +180,9 @@ export async function getAdminLots(): Promise<AdminLot[]> {
     .from(schema.lots)
     .innerJoin(schema.categories, eq(schema.lots.categoryId, schema.categories.id))
     .orderBy(desc(schema.lots.createdAt));
-  return rows.map(({ lot, category }) => ({
+  return rows
+    .filter(({ category }) => VALID_CATEGORY_CODES.has(category.code))
+    .map(({ lot, category }) => ({
     id: lot.id,
     code: lot.code,
     categoryId: lot.categoryId,
@@ -201,6 +207,9 @@ export async function getCategoryOptions() {
       defaultReserve: schema.categories.defaultReserve,
     })
     .from(schema.categories)
+    // Only the two valid categories may ever appear in a selection, regardless
+    // of any legacy rows still in the table.
+    .where(inArray(schema.categories.code, [...CATEGORY_CODES]))
     .orderBy(asc(schema.categories.sortOrder));
 }
 

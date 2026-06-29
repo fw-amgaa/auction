@@ -23,12 +23,6 @@ export interface LotCardData {
 const STRIPES: Record<string, [string, string]> = {
   ugalz: ["#2C4A6B", "#26405F"],
   tekh: ["#274463", "#1F3A56"],
-  yangir: ["#2B4A52", "#23404A"],
-  chono: ["#3A3F52", "#30354A"],
-  zagas: ["#1F4A56", "#193E4A"],
-  gakhai: ["#4A3A33", "#3E302A"],
-  shuvuu: ["#3F3552", "#352C4A"],
-  bulga: ["#4A3E2E", "#3E3326"],
 };
 
 function fmtDuration(ms: number): string {

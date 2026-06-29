@@ -79,11 +79,29 @@ export default function RegisterPage() {
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [terms, setTerms] = useState<{ version: string; body: string } | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
-  // when the server confirms creation, jump to the success step
+  // when the server confirms creation, jump to the success step + flash a toast
   useEffect(() => {
-    if (state.ok) setStep(6);
+    if (state.ok) {
+      setStep(6);
+      setShowToast(true);
+      const t = setTimeout(() => setShowToast(false), 8000);
+      return () => clearTimeout(t);
+    }
   }, [state.ok]);
+
+  function openTerms() {
+    setShowTerms(true);
+    if (!terms) {
+      fetch("/api/terms")
+        .then((r) => r.json())
+        .then((t) => setTerms({ version: t.version, body: t.body }))
+        .catch(() => setTerms({ version: TERMS_VERSION, body: "Үйлчилгээний нөхцөл ачаалахад алдаа гарлаа." }));
+    }
+  }
 
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: v }));
   const toggleCode = (code: string) =>
@@ -483,9 +501,16 @@ export default function RegisterPage() {
                 />
                 <span className="text-sm leading-relaxed text-ink-strong">
                   Би{" "}
-                  <Link href="/terms" className="font-semibold text-crimson">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openTerms();
+                    }}
+                    className="font-semibold text-crimson underline-offset-2 hover:underline"
+                  >
                     Үйлчилгээний нөхцөл ({TERMS_LABEL})
-                  </Link>{" "}
+                  </button>{" "}
                   болон дуудлага худалдааны журамтай танилцаж, хүлээн зөвшөөрч байна.
                 </span>
               </label>
@@ -546,6 +571,90 @@ export default function RegisterPage() {
           )}
         </div>
       </div>
+
+      {/* success toast — next-action guidance after self-registration */}
+      {showToast && (
+        <div className="fixed right-5 top-5 z-[90] w-[min(380px,calc(100vw-32px))] rounded-xl border border-[#C7E5D5] bg-[#E5F4EC] px-4 py-3.5 shadow-lg">
+          <div className="flex items-start gap-3">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-success text-sm font-bold text-white">
+              ✓
+            </span>
+            <div className="min-w-0">
+              <div className="text-[13.5px] font-bold text-[#197a50]">Хүсэлт амжилттай илгээгдлээ</div>
+              <div className="mt-0.5 text-[12.5px] leading-relaxed text-[#2C6B4A]">
+                Админ таны бичиг баримтыг шалгаж KYC баталгаажуулна. Баталгаажмагц и-мэйлээр
+                мэдэгдэх ба та <span className="font-semibold">Нэвтрэх</span> боломжтой болно.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowToast(false)}
+              aria-label="Хаах"
+              className="ml-auto shrink-0 text-[#197a50]/70 hover:text-[#197a50]"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Terms & Conditions dialog */}
+      {showTerms && (
+        <div
+          onClick={() => setShowTerms(false)}
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-navy-deep/70 p-5"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex max-h-[88vh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+          >
+            <div className="flex items-start justify-between border-b border-line px-6 py-4">
+              <div>
+                <h3 className="text-lg font-bold text-navy">Үйлчилгээний нөхцөл</h3>
+                <div className="mt-0.5 text-[12px] text-muted">
+                  Хувилбар {terms?.version ?? TERMS_VERSION}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTerms(false)}
+                aria-label="Хаах"
+                className="grid size-8 place-items-center rounded-lg border border-line text-ink-soft hover:bg-[#F3F5F8]"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-y-auto px-6 py-5">
+              {terms ? (
+                <article className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink-strong">
+                  {terms.body}
+                </article>
+              ) : (
+                <div className="py-8 text-center text-[13.5px] text-muted">Ачаалж байна…</div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2.5 border-t border-line px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setShowTerms(false)}
+                className="rounded-[10px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-sm font-semibold text-ink-soft"
+              >
+                Хаах
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAgreed(true);
+                  setShowTerms(false);
+                }}
+                className="rounded-[10px] bg-crimson px-5 py-2.5 text-sm font-bold text-white hover:bg-crimson-hover"
+              >
+                Зөвшөөрч байна
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
