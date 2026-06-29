@@ -10,7 +10,13 @@ import { CurrencyInput } from "@/components/CurrencyInput";
 import { LocalTime } from "@/components/LocalTime";
 import { localInputToIso, toLocalInput } from "@/lib/datetime";
 
-import { createLot, createLotsBulk, deleteLot, type LotInput, updateLot } from "./actions";
+import {
+  createLot,
+  createLotsBulk,
+  deleteLot,
+  type LotInput,
+  updateLot,
+} from "./actions";
 
 type LotStatus =
   | "draft"
@@ -105,7 +111,8 @@ export function LotsManager({
   const rows = lots.filter((l) => tab === "all" || l.phase === tab);
 
   const catById = (id: string) => categories.find((c) => c.id === id);
-  const reserveDigits = (v: string) => Number.parseInt(v.replace(/\D/g, "") || "0", 10);
+  const reserveDigits = (v: string) =>
+    Number.parseInt(v.replace(/\D/g, "") || "0", 10);
 
   const emptyForm = (bulk: boolean): FormState => {
     const cat = categories[0];
@@ -144,7 +151,9 @@ export function LotsManager({
       aimag: l.aimag ?? "",
       reserve: String(l.reserve),
       // the form only controls publish state: draft vs published(scheduled)
-      status: (l.status === "draft" ? "draft" : "scheduled") as LotInput["status"],
+      status: (l.status === "draft"
+        ? "draft"
+        : "scheduled") as LotInput["status"],
       startsAt: toInput(l.startsAt),
       endsAt: toInput(l.endsAt),
       description: l.description ?? "",
@@ -180,7 +189,10 @@ export function LotsManager({
     try {
       const fd = new FormData();
       for (const f of Array.from(files)) fd.append("files", f);
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: fd,
+      });
       const data = (await res.json()) as { keys: string[] };
       setForm((f) => (f ? { ...f, images: [...f.images, ...data.keys] } : f));
     } finally {
@@ -213,7 +225,9 @@ export function LotsManager({
         return;
       }
       const input: LotInput = { ...common, code: form.code };
-      const res = form.id ? await updateLot(form.id, input) : await createLot(input);
+      const res = form.id
+        ? await updateLot(form.id, input)
+        : await createLot(input);
       if (res.error) setError(res.error);
       else {
         setForm(null);
@@ -238,7 +252,9 @@ export function LotsManager({
   // — derived form helpers —
   const formCat = form ? catById(form.categoryId) : undefined;
   const formCatCode = (formCat?.code ?? "") as CategoryCode | "";
-  const formIncrements = formCatCode ? CATEGORIES[formCatCode].increments : null;
+  const formIncrements = formCatCode
+    ? CATEGORIES[formCatCode].increments
+    : null;
   const available = formCatCode ? (codeAvailability[formCatCode] ?? []) : [];
   // single-create code options: free codes, plus the current code when editing
   const singleCodeOptions = available
@@ -357,7 +373,11 @@ export function LotsManager({
                   <Link
                     href={`/admin/lots/${l.id}`}
                     className="shrink-0 whitespace-nowrap rounded-[7px] border border-line-cool bg-white px-2.5 py-1.5 text-[12px] font-semibold text-crimson hover:bg-[#FBEAE9]"
-                    style={l.phase === "live" ? { borderColor: "#E0908C" } : undefined}
+                    style={
+                      l.phase === "live"
+                        ? { borderColor: "#E0908C" }
+                        : undefined
+                    }
                   >
                     {l.phase === "live" ? "Хянах" : "Дэлгэрэнгүй"}
                   </Link>
@@ -398,7 +418,11 @@ export function LotsManager({
           >
             <div className="flex items-center justify-between border-b border-[#EBEEF3] px-[22px] py-[18px]">
               <span className="text-[17px] font-bold text-navy">
-                {form.bulk ? "Бөөнөөр лот үүсгэх" : form.id ? "Лот засах" : "Шинэ лот үүсгэх"}
+                {form.bulk
+                  ? "Бөөнөөр лот үүсгэх"
+                  : form.id
+                    ? "Лот засах"
+                    : "Шинэ лот үүсгэх"}
               </span>
               <button
                 onClick={() => setForm(null)}
@@ -426,7 +450,9 @@ export function LotsManager({
               {form.bulk ? (
                 <Field label="Кодууд (нэг буюу хэд хэдэн)" full>
                   {available.length === 0 ? (
-                    <div className="text-[12.5px] text-muted">Энэ ангилалд сул код алга.</div>
+                    <div className="text-[12.5px] text-muted">
+                      Энэ ангилалд сул код алга.
+                    </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {available.map((c) => {
@@ -460,7 +486,8 @@ export function LotsManager({
                     </div>
                   )}
                   <div className="mt-1.5 text-[11px] text-muted">
-                    Бүдгэрсэн код аль хэдийн ашиглагдсан. {form.codes.length} сонгосон.
+                    Бүдгэрсэн код аль хэдийн ашиглагдсан. {form.codes.length}{" "}
+                    сонгосон.
                   </div>
                 </Field>
               ) : (
@@ -499,7 +526,10 @@ export function LotsManager({
                 <select
                   value={form.status === "draft" ? "draft" : "scheduled"}
                   onChange={(e) =>
-                    setForm({ ...form, status: e.target.value as LotInput["status"] })
+                    setForm({
+                      ...form,
+                      status: e.target.value as LotInput["status"],
+                    })
                   }
                   className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm"
                 >
@@ -514,7 +544,9 @@ export function LotsManager({
                 <input
                   type="datetime-local"
                   value={form.startsAt}
-                  onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, startsAt: e.target.value })
+                  }
                   className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
                 />
               </Field>
@@ -529,7 +561,9 @@ export function LotsManager({
               <Field label="Тайлбар" full>
                 <textarea
                   value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
                   rows={2}
                   className="w-full resize-y rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 py-2 text-sm outline-none"
                 />
@@ -548,7 +582,10 @@ export function LotsManager({
                       />
                       <button
                         onClick={() =>
-                          setForm({ ...form, images: form.images.filter((k) => k !== key) })
+                          setForm({
+                            ...form,
+                            images: form.images.filter((k) => k !== key),
+                          })
                         }
                         className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-crimson text-[10px] text-white"
                       >
@@ -570,14 +607,20 @@ export function LotsManager({
               </Field>
 
               <div className="col-span-2 rounded-[10px] border border-[#EBEEF3] bg-[#F7F8FA] p-3.5">
-                <div className="text-[12px] font-bold text-navy">Үнийн алхам</div>
+                <div className="text-[12px] font-bold text-navy">
+                  Үнийн алхам
+                </div>
                 <div className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
                   {formIncrements ? (
                     <>
                       Энэ ангилалд санал бүр{" "}
-                      <strong className="tnum text-navy">{formatTugrug(formIncrements[0])}</strong>{" "}
+                      <strong className="tnum text-navy">
+                        {formatTugrug(formIncrements[0])}
+                      </strong>{" "}
                       эсвэл{" "}
-                      <strong className="tnum text-navy">{formatTugrug(formIncrements[1])}</strong>{" "}
+                      <strong className="tnum text-navy">
+                        {formatTugrug(formIncrements[1])}
+                      </strong>{" "}
                       нэмнэ.
                     </>
                   ) : (
@@ -600,7 +643,9 @@ export function LotsManager({
               </button>
               <button
                 onClick={save}
-                disabled={pending || (form.bulk ? form.codes.length === 0 : !form.code)}
+                disabled={
+                  pending || (form.bulk ? form.codes.length === 0 : !form.code)
+                }
                 className="rounded-[9px] bg-success px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
               >
                 {pending
