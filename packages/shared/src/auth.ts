@@ -4,6 +4,8 @@
  */
 import { z } from "zod";
 
+import { isValidLotCode } from "./constants";
+
 export const emailSchema = z.string().trim().toLowerCase().email("И-мэйл буруу байна");
 export const phoneSchema = z
   .string()
@@ -17,12 +19,19 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/** One or more lot codes the bidder is eligible for (≥1 from either list). */
+export const codesSchema = z
+  .array(z.string())
+  .min(1, "Дор хаяж нэг шифр сонгоно уу")
+  .refine((codes) => codes.every(isValidLotCode), "Буруу шифр сонгогдсон байна");
+
 const baseAccount = {
   email: emailSchema,
   phone: phoneSchema,
   password: passwordSchema,
   address: z.string().trim().min(1, "Заавал бөглөнө"),
   termsVersion: z.string().min(1),
+  codes: codesSchema,
 };
 
 export const individualRegisterSchema = z.object({

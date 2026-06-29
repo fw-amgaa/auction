@@ -4,10 +4,11 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db, schema } from "@auction/db";
-import { emailSchema } from "@auction/shared";
+import { emailSchema, isValidLotCode } from "@auction/shared";
 
 import { writeAudit } from "@/lib/audit";
 import { INVITE_TTL_MS, issuePasswordToken } from "@/lib/auth-tokens";
+import { docKeysFor } from "@/lib/docs";
 import { appUrl, sendEmail } from "@/lib/email";
 import { inviteEmail } from "@/lib/email-templates";
 import { notify } from "@/lib/notify";
@@ -21,11 +22,6 @@ export interface CreateUserState {
   /** Set once the account is created so the form can navigate to the list. */
   ok?: boolean;
 }
-
-const DOC_KEYS: Record<string, string[]> = {
-  individual: ["idFront", "idBack"],
-  legal_entity: ["cert", "poa"],
-};
 
 const REQUIRED: Record<string, string[]> = {
   individual: ["givenName", "registryNumber", "phone", "email", "address"],
@@ -51,6 +47,10 @@ export async function createUserAction(
   const cred = g("cred") || "invite";
   const tempPass = g("tempPass");
   if (cred === "temp" && tempPass.length < 6) fieldErrors.tempPass = "Дор хаяж 6 тэмдэгт";
+
+  const codes = formData.getAll("codes").map(String);
+  if (codes.length === 0) fieldErrors.codes = "Дор хаяж нэг шифр сонгоно уу";
+  else if (!codes.every(isValidLotCode)) fieldErrors.codes = "Буруу шифр сонгогдсон";
 
   if (Object.keys(fieldErrors).length > 0) {
     return { error: "Талбаруудыг шалгана уу.", fieldErrors };
@@ -80,7 +80,7 @@ export async function createUserAction(
   }
 
   // read docs
-  const docKeys = DOC_KEYS[accountType] ?? [];
+  const docKeys = docKeysFor(accountType);
   const files: { docType: string; fileName: string; bytes: Buffer }[] = [];
   for (const key of docKeys) {
     const f = formData.get(key);
@@ -144,6 +144,8 @@ export async function createUserAction(
         review: preApprove ? "approved" : "pending",
       });
     }
+
+    await tx.insert(schema.userCodes).values(codes.map((code) => ({ userId: newUserId, code })));
 
     if (limit > 0) {
       await tx.insert(schema.limitLedger).values({

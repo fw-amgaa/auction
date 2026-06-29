@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 
-import { formatTugrug } from "@auction/shared";
+import { CATEGORIES, CATEGORY_CODES, formatTugrug } from "@auction/shared";
 
 import { CurrencyInput } from "@/components/CurrencyInput";
+import { ACCOUNT_DOCS } from "@/lib/docs";
 
 import { createUserAction, type CreateUserState } from "./actions";
 
@@ -41,16 +42,7 @@ const LEGAL_FIELDS: FieldDef[] = [
   { key: "address", label: "Бүтэн хаяг", ph: "Аймаг/хот, дүүрэг, хороо, байр", full: true, required: true },
 ];
 
-const DOCS: Record<AccountType, { key: string; label: string }[]> = {
-  individual: [
-    { key: "idFront", label: "Иргэний үнэмлэхний урд тал" },
-    { key: "idBack", label: "Иргэний үнэмлэхний ар тал" },
-  ],
-  legal_entity: [
-    { key: "cert", label: "Улсын бүртгэлийн гэрчилгээ" },
-    { key: "poa", label: "Нотариатаар баталгаажсан итгэмжлэл" },
-  ],
-};
+const DOCS = ACCOUNT_DOCS;
 
 function fieldDefs(t: AccountType) {
   return t === "legal_entity" ? LEGAL_FIELDS : INDIVIDUAL_FIELDS;
@@ -68,6 +60,7 @@ export default function CreateUserPage() {
   const [type, setType] = useState<AccountType>("individual");
   const [values, setValues] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<Record<string, File>>({});
+  const [codes, setCodes] = useState<string[]>([]);
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [preApprove, setPreApprove] = useState(false);
   const [limit, setLimit] = useState("");
@@ -75,6 +68,8 @@ export default function CreateUserPage() {
   const [tempPass, setTempPass] = useState("");
 
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: v }));
+  const toggleCode = (code: string) =>
+    setCodes((cs) => (cs.includes(code) ? cs.filter((c) => c !== code) : [...cs, code]));
   const fe = state.fieldErrors ?? {};
   const limitN = Number.parseInt(limit.replace(/\D/g, "") || "0", 10);
 
@@ -86,6 +81,7 @@ export default function CreateUserPage() {
       const file = docs[d.key];
       if (file) fd.set(d.key, file);
     }
+    for (const c of codes) fd.append("codes", c);
     fd.set("preApprove", String(preApprove));
     fd.set("limit", String(limitN));
     fd.set("cred", cred);
@@ -253,6 +249,52 @@ export default function CreateUserPage() {
                 );
               })}
             </div>
+          </section>
+
+          {/* eligibility codes */}
+          <section className="rounded-2xl border border-line-cool bg-white p-5">
+            <div className="text-[13px] font-bold text-navy">
+              Шифр (эрх) <span className="text-crimson">*</span>
+            </div>
+            <div className="mb-4 text-xs text-muted">
+              Энэ хэрэглэгч аль лотод оролцох эрхтэйг сонгоно. Сонгосон шифрт тохирох лотыг л
+              харах, оролцох боломжтой. Дор хаяж нэг сонгоно.
+            </div>
+            <div className="flex flex-col gap-4">
+              {CATEGORY_CODES.map((cat) => (
+                <div key={cat}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[12.5px] font-semibold text-ink-strong">
+                      {CATEGORIES[cat].name}
+                    </span>
+                    <span className="text-[11px] text-muted">
+                      {codes.filter((c) => CATEGORIES[cat].codes.includes(c)).length} сонгосон
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {CATEGORIES[cat].codes.map((code) => {
+                      const on = codes.includes(code);
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => toggleCode(code)}
+                          className="tnum rounded-[9px] border-[1.5px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors"
+                          style={{
+                            background: on ? "#FBEFEE" : "#FFF",
+                            borderColor: on ? "#C8312C" : "#E1E5EC",
+                            color: on ? "#C8312C" : "#4A5260",
+                          }}
+                        >
+                          {code}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {fe.codes && <div className="mt-3 text-[11.5px] text-crimson">{fe.codes}</div>}
           </section>
 
           {/* admin options */}

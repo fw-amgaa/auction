@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { formatTugrug } from "@auction/shared";
+import { formatTugrug, incrementsForCode } from "@auction/shared";
 
 import { LocalTime } from "@/components/LocalTime";
+import { getUserCodes } from "@/lib/eligibility";
 import { getLotDetail } from "@/lib/lots";
 import { getCurrentUser } from "@/lib/session";
 
@@ -22,16 +23,24 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
   const lot = await getLotDetail(id, user?.id);
   if (!lot) notFound();
 
+  // Per-code eligibility: a logged-in bidder may only see lots whose code they
+  // hold. Admins (and logged-out public viewers) are not restricted here.
+  if (user && user.role !== "admin") {
+    const codes = await getUserCodes(user.id);
+    if (!codes.includes(lot.code)) notFound();
+  }
+
   const [sa, sb] = STRIPE[lot.categoryCode] ?? ["#2C4A6B", "#26405F"];
   const base = lot.currentPrice ?? lot.reserve;
-  const steps = [1, 2, 3, 4, 5].map((n) => ({ n, amount: base + n * lot.step }));
+  const [inc1, inc2] = incrementsForCode(lot.code);
+  const steps = [inc1, inc2].map((inc) => ({ inc, amount: base + inc }));
 
   const facts: [string, string][] = [
     ["Лотын код", `${lot.species}:${lot.code}`],
     ["Зүйл", lot.latin ?? lot.species],
     ["Аймаг / бүс", lot.aimag ?? "—"],
     ["Босго үнэ", formatTugrug(lot.reserve)],
-    ["Үнийн алхам", `${formatTugrug(lot.step)} (10%)`],
+    ["Үнийн алхам", `${formatTugrug(inc1)} / ${formatTugrug(inc2)}`],
     ["Төлөв", lot.status === "live" ? "Шууд явагдаж байна" : lot.status === "upcoming" ? "Удахгүй" : "Дууссан"],
   ];
 
@@ -85,18 +94,17 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
           <div className="rounded-[14px] border border-line bg-white p-[22px]">
             <h2 className="text-lg font-bold text-navy">Үнийн алхам хэрхэн ажилладаг вэ?</h2>
             <p className="mt-1 mb-4 text-[13.5px] leading-relaxed text-ink-soft">
-              Нэг алхам нь босго үнийн <strong className="text-navy">10%</strong> буюу{" "}
-              <strong className="tnum text-navy">{formatTugrug(lot.step)}</strong>. Нэг удаагийн саналд{" "}
-              <strong className="text-navy">+1-ээс +5</strong> хүртэл алхам нэмж болно (дээд тал нь босго үнийн 50%).
+              Энэ ангилалд санал бүр одоогийн үнэн дээр <strong className="tnum text-navy">{formatTugrug(inc1)}</strong>{" "}
+              эсвэл <strong className="tnum text-navy">{formatTugrug(inc2)}</strong> нэмнэ. Өөр алхам байхгүй.
             </p>
             <div className="flex flex-wrap gap-2.5">
               {steps.map((s) => (
                 <div
-                  key={s.n}
-                  className="min-w-[90px] flex-1 rounded-[10px] border border-line p-3 text-center"
-                  style={{ background: s.n === 1 ? "#FBEFEE" : "#FFF" }}
+                  key={s.inc}
+                  className="min-w-[120px] flex-1 rounded-[10px] border border-line p-3 text-center"
+                  style={{ background: s.inc === inc1 ? "#FBEFEE" : "#FFF" }}
                 >
-                  <div className="text-[11px] font-semibold text-muted">+{s.n} алхам</div>
+                  <div className="tnum text-[11px] font-semibold text-muted">+{formatTugrug(s.inc)}</div>
                   <div className="tnum mt-1 text-[13px] font-bold text-navy">{formatTugrug(s.amount)}</div>
                 </div>
               ))}

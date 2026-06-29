@@ -1,6 +1,8 @@
 import { GuidedTour, type TourStep } from "@/components/GuidedTour";
 import { LotCard } from "@/components/LotCard";
+import { getUserCodes } from "@/lib/eligibility";
 import { getCatalogLots, getCategoryOptions } from "@/lib/lots";
+import { getCurrentUser } from "@/lib/session";
 
 import { CatalogFilters } from "./CatalogFilters";
 
@@ -20,8 +22,11 @@ export default async function CatalogPage({
   searchParams: Promise<{ species?: string; status?: string; aimag?: string; q?: string; sort?: string }>;
 }) {
   const sp = await searchParams;
+  const user = await getCurrentUser();
+  const codes = user && user.role !== "admin" ? await getUserCodes(user.id) : [];
+  const viewer = user ? { role: user.role, codes } : null;
   const [{ lots, aimags }, categories] = await Promise.all([
-    getCatalogLots(sp),
+    getCatalogLots(sp, viewer),
     getCategoryOptions(),
   ]);
   const liveCount = lots.filter((l) => l.status === "live").length;

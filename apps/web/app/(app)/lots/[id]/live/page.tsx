@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { incrementsForCode } from "@auction/shared";
+
+import { getUserCodes } from "@/lib/eligibility";
 import { getLotDetail } from "@/lib/lots";
 import { requireUser } from "@/lib/session";
 import { mintTicket, wsUrl } from "@/lib/ws-ticket";
@@ -17,6 +20,12 @@ export default async function LiveRoomPage({ params }: { params: Promise<{ id: s
 
   // Only live lots are biddable; otherwise send to the detail page.
   if (lot.status !== "live") redirect(`/lots/${id}`);
+
+  // Per-code eligibility: a bidder may only enter the room for lots they hold.
+  if (user.role !== "admin") {
+    const codes = await getUserCodes(user.id);
+    if (!codes.includes(lot.code)) notFound();
+  }
 
   // KYC gate — rendered inside the dark arena shell, so it's themed to match.
   if (user.kyc !== "approved") {
@@ -47,6 +56,8 @@ export default async function LiveRoomPage({ params }: { params: Promise<{ id: s
     limit: user.limit,
   });
 
+  const [inc1, inc2] = incrementsForCode(lot.code);
+
   return (
     <LiveRoom
       lotId={lot.id}
@@ -55,6 +66,7 @@ export default async function LiveRoomPage({ params }: { params: Promise<{ id: s
       latin={lot.latin}
       aimag={lot.aimag}
       reserve={lot.reserve}
+      increments={[inc1, inc2]}
       title={lot.title}
       image={lot.image}
       ticket={ticket}

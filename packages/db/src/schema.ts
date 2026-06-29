@@ -107,6 +107,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   individualProfile: one(individualProfiles),
   legalEntityProfile: one(legalEntityProfiles),
   documents: many(kycDocuments),
+  codes: many(userCodes),
   bids: many(bids),
   ledger: many(limitLedger),
   notifications: many(notifications),
@@ -174,6 +175,28 @@ export const kycDocuments = pgTable(
   (t) => [index("kyc_documents_user_idx").on(t.userId)],
 );
 
+/* ------------------------------- user codes ------------------------------- */
+/**
+ * The lot codes a bidder is eligible for. A bidder may only see/bid lots whose
+ * code is in this set (per-code eligibility). Selected at registration; editable
+ * by an admin. Codes are validated against @auction/shared CATEGORIES.
+ */
+export const userCodes = pgTable(
+  "user_codes",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    code: text("code").notNull(), // U1 … U11 | T101 … T124
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.code] }), index("user_codes_user_idx").on(t.userId)],
+);
+
+export const userCodesRelations = relations(userCodes, ({ one }) => ({
+  user: one(users, { fields: [userCodes.userId], references: [users.id] }),
+}));
+
 /* ------------------------------- categories ------------------------------- */
 
 export const categories = pgTable(
@@ -209,7 +232,6 @@ export const lots = pgTable(
     description: text("description"),
     aimag: text("aimag"), // province/region the permit applies to
     reserve: bigint("reserve", { mode: "number" }).notNull(),
-    step: bigint("step", { mode: "number" }).notNull(), // denormalized = 10% reserve
     status: lotStatus("status").notNull().default("draft"),
     startsAt: timestamp("starts_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),

@@ -91,7 +91,7 @@ async function main() {
       if (stopping || pendingAt || leading || ws.readyState !== ws.OPEN) return;
       pendingAt = performance.now();
       sent++;
-      ws.send(JSON.stringify({ t: "bid", lotId: lot.id, nSteps: 1 }));
+      ws.send(JSON.stringify({ t: "bid", lotId: lot.id, option: 1 }));
     };
     const resolve = () => {
       if (pendingAt) { latencies.push(performance.now() - pendingAt); pendingAt = 0; }

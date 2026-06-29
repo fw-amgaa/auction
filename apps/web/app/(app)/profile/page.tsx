@@ -2,25 +2,18 @@ import { eq } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
 
+import { DOC_LABELS } from "@/lib/docs";
 import { requireUser } from "@/lib/session";
 
 import { type ProfileData, ProfileView } from "./ProfileView";
 
 export const dynamic = "force-dynamic";
 
-const DOC_LABELS: Record<string, string> = {
-  idFront: "Иргэний үнэмлэх (урд)",
-  idBack: "Иргэний үнэмлэх (ар)",
-  cert: "Улсын бүртгэлийн гэрчилгээ",
-  directorId: "Захирлын үнэмлэх",
-  poa: "Нотариатын итгэмжлэл",
-};
-
 export default async function ProfilePage() {
   const sessionUser = await requireUser();
   const user = await db.query.users.findFirst({
     where: eq(schema.users.id, sessionUser.id),
-    with: { individualProfile: true, legalEntityProfile: true, documents: true },
+    with: { individualProfile: true, legalEntityProfile: true, documents: true, codes: true },
   });
   if (!user) return null;
 
@@ -45,6 +38,9 @@ export default async function ProfilePage() {
         { label: "Регистр", value: ind?.registryNumber ?? "—" },
         { label: "И-мэйл", value: user.email },
       ];
+
+  const codes = user.codes.map((c) => c.code);
+  if (codes.length) lockedFields.push({ label: "Шифр", value: codes.join(", ") });
 
   const data: ProfileData = {
     name,

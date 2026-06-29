@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 
+import { CATEGORIES, CATEGORY_CODES } from "@auction/shared";
+
 import { Logo } from "@/components/Logo";
+import { ACCOUNT_DOCS } from "@/lib/docs";
 
 import { registerAction, type RegisterState } from "./actions";
 
@@ -43,22 +46,14 @@ const LEGAL_FIELDS: FieldDef[] = [
   { key: "passwordConfirm", label: "Нууц үг давтах", ph: "Дахин оруулна уу", type: "password" },
 ];
 
-const DOCS: Record<AccountType, { key: string; label: string }[]> = {
-  individual: [
-    { key: "idFront", label: "Иргэний үнэмлэхний урд тал" },
-    { key: "idBack", label: "Иргэний үнэмлэхний ар тал" },
-  ],
-  legal_entity: [
-    { key: "cert", label: "Улсын бүртгэлийн гэрчилгээ" },
-    { key: "directorId", label: "Захирлын иргэний үнэмлэх" },
-  ],
-};
+const DOCS = ACCOUNT_DOCS;
 
 const STEP_DEFS = [
   { n: 1, title: "Бүртгэлийн төрөл", hint: "Иргэн / Хуулийн этгээд" },
   { n: 2, title: "Хувийн мэдээлэл", hint: "Үндсэн талбарууд" },
   { n: 3, title: "Бичиг баримт", hint: "Баталгаажуулах файл" },
-  { n: 4, title: "Баталгаажуулалт", hint: "Нягтлаад илгээх" },
+  { n: 4, title: "Шифр сонгох", hint: "Угалз / Тэх" },
+  { n: 5, title: "Баталгаажуулалт", hint: "Нягтлаад илгээх" },
 ];
 
 function fieldDefs(type: AccountType) {
@@ -80,16 +75,19 @@ export default function RegisterPage() {
   const [type, setType] = useState<AccountType | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<Record<string, File>>({});
+  const [codes, setCodes] = useState<string[]>([]);
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [touched, setTouched] = useState(false);
 
   // when the server confirms creation, jump to the success step
   useEffect(() => {
-    if (state.ok) setStep(5);
+    if (state.ok) setStep(6);
   }, [state.ok]);
 
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: v }));
+  const toggleCode = (code: string) =>
+    setCodes((cs) => (cs.includes(code) ? cs.filter((c) => c !== code) : [...cs, code]));
 
   const detailsValid = (): boolean => {
     if (!type) return false;
@@ -97,6 +95,7 @@ export default function RegisterPage() {
   };
   const docsValid = (): boolean =>
     !!type && DOCS[type].every((d) => docs[d.key]);
+  const codesValid = (): boolean => codes.length > 0;
 
   function next() {
     if (step === 1 && !type) return;
@@ -107,8 +106,9 @@ export default function RegisterPage() {
       }
     }
     if (step === 3 && !docsValid()) return;
-    if (step === 4) {
-      if (!agreed || !type) return;
+    if (step === 4 && !codesValid()) return;
+    if (step === 5) {
+      if (!agreed || !type || !codesValid()) return;
       const fd = new FormData();
       fd.set("accountType", type);
       fd.set("termsVersion", TERMS_VERSION);
@@ -119,10 +119,11 @@ export default function RegisterPage() {
         const file = docs[d.key];
         if (file) fd.set(d.key, file);
       }
+      for (const c of codes) fd.append("codes", c);
       formAction(fd);
       return;
     }
-    setStep((s) => Math.min(5, s + 1));
+    setStep((s) => Math.min(6, s + 1));
     setTouched(false);
   }
 
@@ -132,10 +133,18 @@ export default function RegisterPage() {
     setDragKey(null);
   }
 
-  const stepCounter = `Алхам ${step} / 4`;
-  const nextText = step === 4 ? "Хүсэлт илгээх" : "Үргэлжлүүлэх";
+  const stepCounter = `Алхам ${step} / 5`;
+  const nextText = step === 5 ? "Хүсэлт илгээх" : "Үргэлжлүүлэх";
   const nextEnabled =
-    step === 1 ? !!type : step === 3 ? docsValid() : step === 4 ? agreed && !pending : true;
+    step === 1
+      ? !!type
+      : step === 3
+        ? docsValid()
+        : step === 4
+          ? codesValid()
+          : step === 5
+            ? agreed && codesValid() && !pending
+            : true;
 
   return (
     <div className="min-h-screen bg-sand text-ink-strong">
@@ -366,8 +375,54 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* STEP 4 */}
-          {step === 4 && type && (
+          {/* STEP 4 — code selection */}
+          {step === 4 && (
+            <div>
+              <h2 className="text-xl font-bold text-navy">Шифр сонгох</h2>
+              <p className="mt-1 mb-6 text-sm text-ink-soft">
+                Та аль ангиллын лотод оролцохоо сонгоно уу. Сонгосон шифрт тохирох лотыг л харах,
+                оролцох боломжтой. Дор хаяж нэг шифр сонгоно.
+              </p>
+              <div className="flex flex-col gap-5">
+                {CATEGORY_CODES.map((cat) => (
+                  <div key={cat}>
+                    <div className="mb-2.5 flex items-center justify-between">
+                      <span className="text-sm font-bold text-navy">{CATEGORIES[cat].name}</span>
+                      <span className="text-[11px] text-muted">
+                        {codes.filter((c) => CATEGORIES[cat].codes.includes(c)).length} сонгосон
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {CATEGORIES[cat].codes.map((code) => {
+                        const on = codes.includes(code);
+                        return (
+                          <button
+                            key={code}
+                            type="button"
+                            onClick={() => toggleCode(code)}
+                            className="tnum rounded-[9px] border-[1.5px] px-3 py-2 text-[13px] font-semibold transition-colors"
+                            style={{
+                              background: on ? "#FBEFEE" : "#FFF",
+                              borderColor: on ? "#C8312C" : "#E6E1D6",
+                              color: on ? "#C8312C" : "#4A5260",
+                            }}
+                          >
+                            {code}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {touched && !codesValid() && (
+                <div className="mt-4 text-[12px] text-crimson">Дор хаяж нэг шифр сонгоно уу.</div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 5 — review */}
+          {step === 5 && type && (
             <div>
               <h2 className="text-xl font-bold text-navy">Шалгаж баталгаажуулах</h2>
               <p className="mt-1 mb-5 text-sm text-ink-soft">
@@ -399,10 +454,16 @@ export default function RegisterPage() {
                       </span>
                     </div>
                   ))}
-                <div className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center justify-between border-b border-[#F3EFE5] px-4 py-2.5">
                   <span className="text-xs text-muted">Бичиг баримт</span>
                   <span className="text-sm font-semibold text-success">
                     ✓ {Object.keys(docs).length} файл орсон
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4 px-4 py-2.5">
+                  <span className="text-xs text-muted">Сонгосон шифр</span>
+                  <span className="tnum text-right text-sm font-medium text-navy">
+                    {codes.length ? codes.join(", ") : "—"}
                   </span>
                 </div>
               </div>
@@ -431,8 +492,8 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* STEP 5 success */}
-          {step === 5 && (
+          {/* STEP 6 success */}
+          {step === 6 && (
             <div className="px-2 py-5 text-center">
               <span className="mb-4 inline-grid size-[74px] place-items-center rounded-full bg-[#E5F4EC] text-3xl text-success">
                 ✓
@@ -454,7 +515,7 @@ export default function RegisterPage() {
           )}
 
           {/* nav */}
-          {step <= 4 && (
+          {step <= 5 && (
             <div className="mt-7 flex items-center justify-between border-t border-[#F0ECE2] pt-5">
               <button
                 type="button"
@@ -478,7 +539,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {state.error && step <= 4 && (
+          {state.error && step <= 5 && (
             <div className="mt-4 rounded-[9px] border border-[#F2D6D4] bg-[#FBEAE9] px-3 py-2.5 text-xs text-[#A02622]">
               {state.error}
             </div>

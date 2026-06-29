@@ -1,89 +1,68 @@
 /**
  * Bid math — the SINGLE definition of the auction's bidding rules.
- * Used by the browser for optimistic UI (enable/disable +1…+5 buttons) and by
- * the bid service as the authoritative check before the Redis Lua script runs.
+ * Used by the browser for optimistic UI (the two quick-bid buttons) and by the
+ * bid service as the authoritative check before the Redis Lua script runs.
  *
- * Rules (ARCHITECTURE.md §6, §13):
- *  - step = round(reserve * 10%)
- *  - opening bid (no bids yet) may equal the reserve exactly
- *  - each raise = currentPrice + N*step, with N ∈ [1,5]
+ * Rules:
+ *  - each category has TWO fixed ascending increments (constants.ts).
+ *  - a raise = currentPrice + chosen increment (option 1 or 2).
+ *  - the first bid opens at reserve + increment (no special "open at reserve").
+ *  - the displayed price before any bids is the reserve.
  */
 
-import { MAX_STEPS, MIN_STEPS, STEP_PCT } from "./constants";
-
-/** The bid step for a lot, derived from its reserve. */
-export function stepFor(reserve: number): number {
-  return Math.round(reserve * STEP_PCT);
+/** The increment for a given option (1 or 2). */
+export function incrementForOption(increments: readonly [number, number], option: 1 | 2): number {
+  return option === 1 ? increments[0] : increments[1];
 }
 
-/**
- * Resulting price for the live-room quick-bid button N (1..5).
- * Honors "first bid may equal the reserve": when there are no bids yet, button 1
- * opens AT the reserve, button 2 = reserve+step, … (the authoritative bid service
- * replicates this exact formula in Lua).
- */
+/** The price resulting from raising the current price by the chosen option. */
 export function liveBidAmount(
   price: number,
-  reserve: number,
-  step: number,
-  hasBids: boolean,
-  nSteps: number,
+  increments: readonly [number, number],
+  option: 1 | 2,
 ): number {
-  if (!hasBids) return reserve + (nSteps - 1) * step;
-  return price + nSteps * step;
+  return price + incrementForOption(increments, option);
 }
 
-/**
- * The price resulting from raising the current price by N steps.
- */
-export function priceForSteps(currentPrice: number, reserve: number, nSteps: number): number {
-  return currentPrice + nSteps * stepFor(reserve);
-}
-
-/**
- * The 1..5 quick-bid options for the live UI. When the lot has no bids yet,
- * the opening option (the reserve itself) is included as well.
- */
+/** One quick-bid option for the live UI. */
 export interface BidOption {
-  /** number of steps above current price; 0 means "open at reserve" */
-  nSteps: number;
+  /** which fixed increment: 1 or 2 */
+  option: 1 | 2;
+  /** the increment added on top of the current price */
+  increment: number;
+  /** the resulting bid amount */
   amount: number;
   /** whether the user can afford this given their available credit */
   affordable: boolean;
-  /** the special opening-at-reserve option */
-  opening: boolean;
 }
 
 export function bidOptions(params: {
-  reserve: number;
-  currentPrice: number;
-  hasBids: boolean;
+  price: number;
+  increments: readonly [number, number];
   available: number;
 }): BidOption[] {
-  const { reserve, currentPrice, hasBids, available } = params;
-  const opts: BidOption[] = [];
-
-  if (!hasBids) {
-    opts.push({ nSteps: 0, amount: reserve, affordable: reserve <= available, opening: true });
-  }
-  for (let n = MIN_STEPS; n <= MAX_STEPS; n++) {
-    const amount = priceForSteps(currentPrice, reserve, n);
-    opts.push({ nSteps: n, amount, affordable: amount <= available, opening: false });
-  }
-  return opts;
+  const { price, increments, available } = params;
+  return ([1, 2] as const).map((option) => {
+    const increment = incrementForOption(increments, option);
+    const amount = price + increment;
+    return { option, increment, amount, affordable: amount <= available };
+  });
 }
 
 export interface BidValidationInput {
-  reserve: number;
-  currentPrice: number;
-  hasBids: boolean;
+  /** the current price (reserve when there are no bids yet) */
+  price: number;
+  /** the lot's two fixed increments */
+  increments: readonly [number, number];
   /** the bidder's current committed total (sum of holds) */
   committed: number;
   /** the bidder's admin-issued credit limit */
   limit: number;
   /** is the bidder already the current leader? */
   isLeader: boolean;
-  nSteps: number;
+  /** which increment was chosen */
+  option: 1 | 2;
+  /** the amount the client computed (must match price + increment) */
   amount: number;
 }
 
@@ -93,25 +72,16 @@ export type BidValidationResult =
 
 /**
  * Pure, authoritative validation of a single bid. Mirrors the Redis Lua logic
- * (minus the live time/leader checks the server holds in Redis).
+ * (minus the live time/leader/eligibility checks the server holds elsewhere).
  */
 export function validateBid(input: BidValidationInput): BidValidationResult {
-  const { reserve, currentPrice, hasBids, committed, limit, isLeader, nSteps, amount } = input;
+  const { price, increments, committed, limit, isLeader, option, amount } = input;
 
   if (isLeader) return { ok: false, reason: "self" };
-
-  // Opening bid: may equal the reserve exactly.
-  if (!hasBids && nSteps === 0) {
-    if (amount !== reserve) return { ok: false, reason: "bad_increment" };
-  } else {
-    if (nSteps < MIN_STEPS || nSteps > MAX_STEPS) {
-      return { ok: false, reason: "bad_increment" };
-    }
-    if (amount !== priceForSteps(currentPrice, reserve, nSteps)) {
-      return { ok: false, reason: "bad_increment" };
-    }
+  if (option !== 1 && option !== 2) return { ok: false, reason: "bad_increment" };
+  if (amount !== price + incrementForOption(increments, option)) {
+    return { ok: false, reason: "bad_increment" };
   }
-
   if (committed + amount > limit) return { ok: false, reason: "insufficient" };
 
   return { ok: true, amount };

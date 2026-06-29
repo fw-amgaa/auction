@@ -1,28 +1,37 @@
 /**
- * Seed reference data: the 8 species categories (from the design's category
- * rail) and the initial Terms version. Reserves from the Khovd auction notice
- * where known; others left null until an admin sets them.
+ * Seed reference data: the two categories (Алтайн угалз, Алтайн тэх) and the
+ * initial Terms version + admin user. This is a RESET seed — it removes any
+ * stale lots and legacy categories and does NOT create demo lots.
  *
  * Run: pnpm --filter @auction/db seed
  */
 import { hash } from "@node-rs/argon2";
-import { eq } from "drizzle-orm";
+import { eq, isNotNull, notInArray, or } from "drizzle-orm";
+
+import { CATEGORIES, CATEGORY_CODES } from "@auction/shared";
 
 import { db } from "./client";
-import { categories, lots, termsVersions, users } from "./schema";
+import { bids, categories, limitLedger, lots, termsVersions, users } from "./schema";
 
-const SPECIES = [
-  { code: "tekh", name: "Тэх", latinName: "Capra sibirica", defaultReserve: 5_300_000, sortOrder: 1 },
-  { code: "chono", name: "Чоно", latinName: "Canis lupus", defaultReserve: null, sortOrder: 2 },
-  { code: "yangir", name: "Янгир", latinName: "Capra sibirica", defaultReserve: null, sortOrder: 3 },
-  { code: "zagas", name: "Загас", latinName: "Hucho taimen", defaultReserve: null, sortOrder: 4 },
-  { code: "ugalz", name: "Угалз", latinName: "Ovis ammon (argali)", defaultReserve: 22_200_000, sortOrder: 5 },
-  { code: "gakhai", name: "Гахай", latinName: "Sus scrofa", defaultReserve: null, sortOrder: 6 },
-  { code: "shuvuu", name: "Шувуу", latinName: "Falco cherrug", defaultReserve: null, sortOrder: 7 },
-  { code: "bulga", name: "Булга", latinName: "Martes zibellina", defaultReserve: null, sortOrder: 8 },
-];
+const SPECIES = CATEGORY_CODES.map((code, i) => ({
+  code,
+  name: CATEGORIES[code].name,
+  // a sensible default reserve used to prefill the lot form (admin can override)
+  defaultReserve: code === "ugalz" ? 22_200_000 : 5_300_000,
+  sortOrder: i + 1,
+}));
 
 async function main() {
+  console.log("Resetting lots + legacy categories…");
+  // FKs with no cascade reference lots/bids (limit_ledger.lot_id / .bid_id), so
+  // clear the lot-scoped ledger rows and bids before lots. Limit-grant ledger
+  // rows (no lot/bid) are kept so credit history survives the reset. Finally
+  // prune categories that are no longer part of the two-category scheme.
+  await db.delete(limitLedger).where(or(isNotNull(limitLedger.lotId), isNotNull(limitLedger.bidId)));
+  await db.delete(bids);
+  await db.delete(lots);
+  await db.delete(categories).where(notInArray(categories.code, [...CATEGORY_CODES]));
+
   console.log("Seeding categories…");
   for (const s of SPECIES) {
     await db
@@ -30,7 +39,7 @@ async function main() {
       .values(s)
       .onConflictDoUpdate({
         target: categories.code,
-        set: { name: s.name, latinName: s.latinName, defaultReserve: s.defaultReserve, sortOrder: s.sortOrder },
+        set: { name: s.name, defaultReserve: s.defaultReserve, sortOrder: s.sortOrder },
       });
   }
 
@@ -66,56 +75,7 @@ async function main() {
     console.log("  admin already exists, skipping");
   }
 
-  console.log("Seeding sample lots…");
-  const cats = await db.select().from(categories);
-  const byCode = new Map(cats.map((c) => [c.code, c.id]));
-  const now = Date.now();
-  const at = (ms: number) => new Date(now + ms);
-  const MIN = 60_000;
-  const HOUR = 60 * MIN;
-  const DAY = 24 * HOUR;
-
-  const SAMPLE_LOTS = [
-    { code: "U9", cat: "ugalz", aimag: "Баян-Өлгий", reserve: 22_200_000, status: "live" as const, starts: -10 * MIN, ends: 30 * MIN },
-    { code: "T101", cat: "tekh", aimag: "Ховд", reserve: 5_300_000, status: "live" as const, starts: -5 * MIN, ends: 45 * MIN },
-    { code: "U12", cat: "ugalz", aimag: "Завхан", reserve: 22_200_000, status: "scheduled" as const, starts: 1 * DAY, ends: 1 * DAY + HOUR },
-    { code: "Y2", cat: "yangir", aimag: "Говь-Алтай", reserve: 2_400_000, status: "scheduled" as const, starts: 2 * DAY, ends: 2 * DAY + HOUR },
-    { code: "T102", cat: "tekh", aimag: "Ховд", reserve: 5_300_000, status: "ended" as const, starts: -2 * DAY, ends: -1 * DAY },
-  ];
-
-  for (const l of SAMPLE_LOTS) {
-    const categoryId = byCode.get(l.cat);
-    if (!categoryId) continue;
-    const cat = cats.find((c) => c.code === l.cat)!;
-    const values = {
-      code: l.code,
-      categoryId,
-      title: cat.name,
-      aimag: l.aimag,
-      reserve: l.reserve,
-      step: Math.round(l.reserve * 0.1),
-      status: l.status,
-      startsAt: at(l.starts),
-      endsAt: at(l.ends),
-    };
-    await db
-      .insert(lots)
-      .values(values)
-      .onConflictDoUpdate({
-        target: lots.code,
-        // refresh the demo window + clear auction state so re-seeding gives a clean live lot
-        set: {
-          status: l.status,
-          startsAt: at(l.starts),
-          endsAt: at(l.ends),
-          currentPrice: null,
-          leaderUserId: null,
-          winnerUserId: null,
-        },
-      });
-  }
-
-  console.log("Seed complete.");
+  console.log("Seed complete (no demo lots).");
   process.exit(0);
 }
 

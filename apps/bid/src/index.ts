@@ -18,6 +18,7 @@ import {
   ensureUserCommitted,
   finalize,
   getCommitted,
+  isEligible,
   placeBid,
   pseudonym,
   recentFeed,
@@ -32,9 +33,22 @@ const EVENTS = "auction:events";
 interface Conn {
   ws: WebSocket;
   userId: string;
+  role: "bidder" | "admin";
   limit: number;
   lots: Set<string>;
+  /** per-lot eligibility cache (admins are always eligible) */
+  eligible: Map<string, boolean>;
   alive: boolean;
+}
+
+/** Resolve (and cache) whether this connection may see/bid the given lot. */
+async function checkEligible(conn: Conn, lotId: string): Promise<boolean> {
+  if (conn.role === "admin") return true;
+  const cached = conn.eligible.get(lotId);
+  if (cached !== undefined) return cached;
+  const ok = await isEligible(conn.userId, lotId);
+  conn.eligible.set(lotId, ok);
+  return ok;
 }
 
 const conns = new Map<WebSocket, Conn>();
@@ -60,7 +74,8 @@ async function sendSnapshot(conn: Conn, lotId: string) {
     lotId,
     price: Number(h.price),
     reserve: Number(h.reserve),
-    step: Number(h.step),
+    inc1: Number(h.inc1),
+    inc2: Number(h.inc2),
     leaderLabel: leader === "" ? null : youLead ? "Та" : await pseudonym(lotId, leader),
     youLead,
     hasBids: h.hasBids === "1",
@@ -187,7 +202,15 @@ httpServer.on("upgrade", (req, socket, head) => {
 });
 
 wss.on("connection", (ws: WebSocket, ticket: NonNullable<ReturnType<typeof verifyTicket>>) => {
-  const conn: Conn = { ws, userId: ticket.uid, limit: ticket.limit, lots: new Set(), alive: true };
+  const conn: Conn = {
+    ws,
+    userId: ticket.uid,
+    role: ticket.role,
+    limit: ticket.limit,
+    lots: new Set(),
+    eligible: new Map(),
+    alive: true,
+  };
   conns.set(ws, conn);
   void ensureUserCommitted(ticket.uid);
 
@@ -227,6 +250,10 @@ async function onMessage(conn: Conn, msg: ClientMessage) {
   if (msg.t === "subscribe") {
     const meta = await ensureLot(msg.lotId);
     if (!meta.exists) return;
+    if (!(await checkEligible(conn, msg.lotId))) {
+      send(conn.ws, { t: "rejected", lotId: msg.lotId, reason: "not_eligible" });
+      return;
+    }
     conn.lots.add(msg.lotId);
     let set = lotSubs.get(msg.lotId);
     if (!set) {
@@ -245,7 +272,11 @@ async function onMessage(conn: Conn, msg: ClientMessage) {
       send(conn.ws, { t: "rejected", lotId: msg.lotId, reason: "rate_limited" });
       return;
     }
-    const res = await placeBid(msg.lotId, conn.userId, msg.nSteps, conn.limit);
+    if (!(await checkEligible(conn, msg.lotId))) {
+      send(conn.ws, { t: "rejected", lotId: msg.lotId, reason: "not_eligible" });
+      return;
+    }
+    const res = await placeBid(msg.lotId, conn.userId, msg.option, conn.limit);
     if (!res.ok) {
       send(conn.ws, { t: "rejected", lotId: msg.lotId, reason: res.reason as never });
       return;

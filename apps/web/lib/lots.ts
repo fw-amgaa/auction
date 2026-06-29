@@ -3,6 +3,7 @@ import "server-only";
 import { asc, desc, eq, inArray } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
+import { CATEGORIES, type CategoryCode, CATEGORY_CODES } from "@auction/shared";
 
 export type LotStatus = (typeof schema.lots.status.enumValues)[number];
 /** Catalog display status (the design's three-way view). */
@@ -36,7 +37,6 @@ export interface CatalogLot {
   latin: string | null;
   aimag: string | null;
   reserve: number;
-  step: number;
   currentPrice: number | null;
   status: DisplayStatus;
   startsAt: number | null;
@@ -60,7 +60,6 @@ function toCatalogLot({ lot, category }: LotJoin): CatalogLot {
     latin: category.latinName,
     aimag: lot.aimag,
     reserve: lot.reserve,
-    step: lot.step,
     currentPrice: lot.currentPrice,
     status: displayStatus(lot.status, lot.startsAt, lot.endsAt),
     startsAt: lot.startsAt?.getTime() ?? null,
@@ -69,13 +68,19 @@ function toCatalogLot({ lot, category }: LotJoin): CatalogLot {
   };
 }
 
-export async function getCatalogLots(filters: {
-  species?: string;
-  status?: string;
-  aimag?: string;
-  q?: string;
-  sort?: string;
-}): Promise<{ lots: CatalogLot[]; aimags: string[] }> {
+/** The viewer a catalog request is scoped to (per-code eligibility). */
+export type CatalogViewer = { role: "bidder" | "admin"; codes: string[] } | null;
+
+export async function getCatalogLots(
+  filters: {
+    species?: string;
+    status?: string;
+    aimag?: string;
+    q?: string;
+    sort?: string;
+  },
+  viewer: CatalogViewer = null,
+): Promise<{ lots: CatalogLot[]; aimags: string[] }> {
   const rows = await db
     .select({ lot: schema.lots, category: schema.categories })
     .from(schema.lots)
@@ -83,6 +88,13 @@ export async function getCatalogLots(filters: {
     .where(inArray(schema.lots.status, CATALOG_STATUSES));
 
   let lots = rows.map(toCatalogLot);
+
+  // Per-code eligibility: a bidder only ever sees lots whose code they hold.
+  // Admins (and unscoped server calls passing no viewer) see everything.
+  if (viewer && viewer.role !== "admin") {
+    const codes = new Set(viewer.codes);
+    lots = lots.filter((l) => codes.has(l.code));
+  }
   const aimags = [...new Set(lots.map((l) => l.aimag).filter(Boolean) as string[])].sort();
 
   const q = (filters.q ?? "").trim().toLowerCase();
@@ -150,7 +162,6 @@ export interface AdminLot {
   species: string;
   aimag: string | null;
   reserve: number;
-  step: number;
   status: LotStatus; // raw lifecycle (draft / published-scheduled / …)
   phase: Phase; // computed phase for display
   startsAt: Date | null;
@@ -172,7 +183,6 @@ export async function getAdminLots(): Promise<AdminLot[]> {
     species: category.name,
     aimag: lot.aimag,
     reserve: lot.reserve,
-    step: lot.step,
     status: lot.status,
     phase: lotPhase(lot.status, lot.startsAt, lot.endsAt),
     startsAt: lot.startsAt,
@@ -184,7 +194,31 @@ export async function getAdminLots(): Promise<AdminLot[]> {
 
 export async function getCategoryOptions() {
   return db
-    .select({ id: schema.categories.id, code: schema.categories.code, name: schema.categories.name })
+    .select({
+      id: schema.categories.id,
+      code: schema.categories.code,
+      name: schema.categories.name,
+      defaultReserve: schema.categories.defaultReserve,
+    })
     .from(schema.categories)
     .orderBy(asc(schema.categories.sortOrder));
+}
+
+export interface CodeAvailability {
+  /** category code → { code, taken } for every code in that category */
+  [category: string]: { code: string; taken: boolean }[];
+}
+
+/**
+ * Per-category lot codes with a flag for codes already used by a lot, so the
+ * admin lot form can offer only free codes (single + bulk create).
+ */
+export async function getCodeAvailability(): Promise<CodeAvailability> {
+  const rows = await db.select({ code: schema.lots.code }).from(schema.lots);
+  const taken = new Set(rows.map((r) => r.code));
+  const out: CodeAvailability = {};
+  for (const cat of CATEGORY_CODES as CategoryCode[]) {
+    out[cat] = CATEGORIES[cat].codes.map((code) => ({ code, taken: taken.has(code) }));
+  }
+  return out;
 }

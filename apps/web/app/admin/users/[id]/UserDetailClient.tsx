@@ -3,9 +3,15 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
-import { formatTugrug } from "@auction/shared";
+import { CATEGORIES, CATEGORY_CODES, formatTugrug } from "@auction/shared";
 
-import { approveKyc, resetCredentials, setUserDisabled, updateUserInfo } from "@/app/admin/actions";
+import {
+  approveKyc,
+  resetCredentials,
+  setUserDisabled,
+  updateUserCodes,
+  updateUserInfo,
+} from "@/app/admin/actions";
 import { KycBadge } from "@/components/KycBadge";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -21,6 +27,7 @@ export interface DetailUser {
   disabled: boolean;
   editFields: { key: string; label: string; value: string; full?: boolean }[];
   docs: { id: string; label: string; kind: string }[];
+  codes: string[];
   activity: { icon: string; label: string; date: string; amount: string; positive: boolean }[];
 }
 
@@ -30,7 +37,12 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
     Object.fromEntries(user.editFields.map((f) => [f.key, f.value])),
   );
   const [toast, setToast] = useState<{ msg: string; bad?: boolean } | null>(null);
+  const [editingCodes, setEditingCodes] = useState(false);
+  const [codeDraft, setCodeDraft] = useState<string[]>(user.codes);
   const [pending, startTransition] = useTransition();
+
+  const toggleCode = (code: string) =>
+    setCodeDraft((cs) => (cs.includes(code) ? cs.filter((c) => c !== code) : [...cs, code]));
 
   function flash(msg: string, bad = false) {
     setToast({ msg, bad });
@@ -176,6 +188,105 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                 ))}
                 {user.docs.length === 0 && <div className="text-[13px] text-muted">Баримт алга.</div>}
               </div>
+            </div>
+
+            {/* eligibility codes */}
+            <div className="rounded-2xl border border-line-cool bg-white p-5">
+              <div className="mb-3.5 flex items-center justify-between">
+                <div className="text-[13px] font-bold text-navy">
+                  Шифр (эрх){" "}
+                  <span className="font-normal text-muted">· оролцох эрхтэй лотын ангилал</span>
+                </div>
+                <button
+                  onClick={() => {
+                    if (editingCodes) setCodeDraft(user.codes);
+                    setEditingCodes((v) => !v);
+                  }}
+                  className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold"
+                  style={{
+                    color: editingCodes ? "#C8312C" : "#14294A",
+                    background: editingCodes ? "#FBEFEE" : "#F3F5F8",
+                    borderColor: editingCodes ? "#E8B7B4" : "#E1E5EC",
+                  }}
+                >
+                  {editingCodes ? "Засаж байна" : "Засах"}
+                </button>
+              </div>
+
+              {editingCodes ? (
+                <>
+                  <div className="flex flex-col gap-4">
+                    {CATEGORY_CODES.map((cat) => (
+                      <div key={cat}>
+                        <div className="mb-2 text-[12.5px] font-semibold text-ink-strong">
+                          {CATEGORIES[cat].name}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {CATEGORIES[cat].codes.map((code) => {
+                            const on = codeDraft.includes(code);
+                            return (
+                              <button
+                                key={code}
+                                type="button"
+                                onClick={() => toggleCode(code)}
+                                className="tnum rounded-[9px] border-[1.5px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors"
+                                style={{
+                                  background: on ? "#FBEFEE" : "#FFF",
+                                  borderColor: on ? "#C8312C" : "#E1E5EC",
+                                  color: on ? "#C8312C" : "#4A5260",
+                                }}
+                              >
+                                {code}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex gap-2.5">
+                    <button
+                      onClick={() =>
+                        startTransition(async () => {
+                          const res = await updateUserCodes(user.id, codeDraft);
+                          if (!res.ok) {
+                            flash(res.error ?? "Хадгалахад алдаа гарлаа", true);
+                            return;
+                          }
+                          setEditingCodes(false);
+                          flash("Шифр шинэчлэгдлээ");
+                        })
+                      }
+                      disabled={pending}
+                      className="rounded-[9px] bg-success px-5 py-2.5 text-[13.5px] font-bold text-white"
+                    >
+                      Хадгалах
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCodeDraft(user.codes);
+                        setEditingCodes(false);
+                      }}
+                      className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft"
+                    >
+                      Болих
+                    </button>
+                  </div>
+                </>
+              ) : user.codes.length === 0 ? (
+                <div className="text-[13px] text-muted">Шифр сонгоогүй байна.</div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {user.codes.map((code) => (
+                    <span
+                      key={code}
+                      className="tnum rounded-[9px] border border-line-cool bg-[#F3F5F8] px-3 py-1.5 text-[12.5px] font-semibold text-navy"
+                    >
+                      {code}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* activity */}

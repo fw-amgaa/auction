@@ -4,6 +4,8 @@ import { eq, ne } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
 
+import { DOC_LABELS } from "./docs";
+
 export type KycStatus = "pending" | "approved" | "rejected";
 export type AccountType = "individual" | "legal_entity";
 
@@ -22,15 +24,8 @@ export interface AdminUserView {
   createdAt: Date;
   fields: { k: string; v: string }[];
   docs: { id: string; label: string; kind: string }[];
+  codes: string[];
 }
-
-const DOC_LABELS: Record<string, string> = {
-  idFront: "Үнэмлэх (урд)",
-  idBack: "Үнэмлэх (ар)",
-  cert: "Улсын бүртгэлийн гэрчилгээ",
-  directorId: "Захирлын үнэмлэх",
-  poa: "Нотариатын итгэмжлэл",
-};
 
 function docKind(fileName: string | null): string {
   return fileName && fileName.toLowerCase().endsWith(".pdf") ? "PDF" : "ЗУРАГ";
@@ -40,6 +35,7 @@ type UserRow = typeof schema.users.$inferSelect & {
   individualProfile: typeof schema.individualProfiles.$inferSelect | null;
   legalEntityProfile: typeof schema.legalEntityProfiles.$inferSelect | null;
   documents: (typeof schema.kycDocuments.$inferSelect)[];
+  codes: (typeof schema.userCodes.$inferSelect)[];
 };
 
 function toView(u: UserRow): AdminUserView {
@@ -90,13 +86,14 @@ function toView(u: UserRow): AdminUserView {
       label: DOC_LABELS[d.docType] ?? d.docType,
       kind: docKind(d.fileName),
     })),
+    codes: u.codes.map((c) => c.code),
   };
 }
 
 export async function getApplicants(): Promise<AdminUserView[]> {
   const rows = await db.query.users.findMany({
     where: ne(schema.users.role, "admin"),
-    with: { individualProfile: true, legalEntityProfile: true, documents: true },
+    with: { individualProfile: true, legalEntityProfile: true, documents: true, codes: true },
     orderBy: (u, { desc }) => [desc(u.createdAt)],
   });
   return rows.map(toView);
@@ -105,7 +102,7 @@ export async function getApplicants(): Promise<AdminUserView[]> {
 export async function getUserView(id: string): Promise<AdminUserView | null> {
   const row = await db.query.users.findFirst({
     where: eq(schema.users.id, id),
-    with: { individualProfile: true, legalEntityProfile: true, documents: true },
+    with: { individualProfile: true, legalEntityProfile: true, documents: true, codes: true },
   });
   return row ? toView(row) : null;
 }

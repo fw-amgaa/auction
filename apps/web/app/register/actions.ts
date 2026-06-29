@@ -5,6 +5,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@auction/db";
 import { registerSchema } from "@auction/shared";
 
+import { docKeysFor } from "@/lib/docs";
 import { hashPassword } from "@/lib/password";
 import { putObject } from "@/lib/storage";
 
@@ -13,11 +14,6 @@ export interface RegisterState {
   error?: string;
   fieldErrors?: Record<string, string>;
 }
-
-const DOC_KEYS: Record<string, string[]> = {
-  individual: ["idFront", "idBack"],
-  legal_entity: ["cert", "directorId"],
-};
 
 export async function registerAction(
   _prev: RegisterState,
@@ -41,7 +37,8 @@ export async function registerAction(
     ].map((k) => [k, formData.get(k) ?? undefined]),
   );
 
-  const parsed = registerSchema.safeParse(raw);
+  const codes = formData.getAll("codes").map(String);
+  const parsed = registerSchema.safeParse({ ...raw, codes });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
     for (const issue of parsed.error.issues) {
@@ -63,7 +60,7 @@ export async function registerAction(
   }
 
   // read uploaded documents
-  const docKeys = DOC_KEYS[accountType] ?? [];
+  const docKeys = docKeysFor(accountType);
   const files: { docType: string; fileName: string; bytes: Buffer }[] = [];
   for (const key of docKeys) {
     const f = formData.get(key);
@@ -133,6 +130,8 @@ export async function registerAction(
           fileName: file.fileName,
         });
       }
+
+      await tx.insert(schema.userCodes).values(data.codes.map((code) => ({ userId, code })));
 
       if (latestTerms) {
         await tx.insert(schema.userTermsAcceptance).values({

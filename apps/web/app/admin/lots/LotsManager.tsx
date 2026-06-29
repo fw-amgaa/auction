@@ -2,14 +2,14 @@
 
 import { useState, useTransition } from "react";
 
-import { formatTugrug } from "@auction/shared";
+import { CATEGORIES, type CategoryCode, formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { LocalTime } from "@/components/LocalTime";
 import { localInputToIso, toLocalInput } from "@/lib/datetime";
 
-import { createLot, deleteLot, type LotInput, updateLot } from "./actions";
+import { createLot, createLotsBulk, deleteLot, type LotInput, updateLot } from "./actions";
 
 type LotStatus =
   | "draft"
@@ -28,7 +28,6 @@ export interface ManagedLot {
   species: string;
   aimag: string | null;
   reserve: number;
-  step: number;
   status: LotStatus;
   phase: Phase;
   startsAt: string | null;
@@ -39,8 +38,13 @@ export interface ManagedLot {
 
 interface CategoryOpt {
   id: string;
+  code: string;
   name: string;
+  defaultReserve: number | null;
 }
+
+/** category code → its codes with a taken flag */
+type CodeAvailability = Record<string, { code: string; taken: boolean }[]>;
 
 const PHASE_META: Record<Phase, { label: string; bg: string; fg: string }> = {
   live: { label: "ШУУД", bg: "#FBEAE9", fg: "#C8312C" },
@@ -65,8 +69,10 @@ const toInput = (d: string | null): string => toLocalInput(d);
 
 interface FormState {
   id: string | null;
+  bulk: boolean;
   categoryId: string;
-  code: string;
+  code: string; // single create/edit
+  codes: string[]; // bulk create
   aimag: string;
   reserve: string;
   status: LotInput["status"];
@@ -76,25 +82,14 @@ interface FormState {
   images: string[];
 }
 
-const emptyForm = (categoryId: string): FormState => ({
-  id: null,
-  categoryId,
-  code: "",
-  aimag: "",
-  reserve: "",
-  status: "draft",
-  startsAt: "",
-  endsAt: "",
-  description: "",
-  images: [],
-});
-
 export function LotsManager({
   lots,
   categories,
+  codeAvailability,
 }: {
   lots: ManagedLot[];
   categories: CategoryOpt[];
+  codeAvailability: CodeAvailability;
 }) {
   const [tab, setTab] = useState("all");
   const [form, setForm] = useState<FormState | null>(null);
@@ -108,22 +103,47 @@ export function LotsManager({
     if (k !== "all") counts[k] = lots.filter((l) => l.phase === k).length;
   const rows = lots.filter((l) => tab === "all" || l.phase === tab);
 
+  const catById = (id: string) => categories.find((c) => c.id === id);
+  const reserveDigits = (v: string) => Number.parseInt(v.replace(/\D/g, "") || "0", 10);
+
+  const emptyForm = (bulk: boolean): FormState => {
+    const cat = categories[0];
+    return {
+      id: null,
+      bulk,
+      categoryId: cat?.id ?? "",
+      code: "",
+      codes: [],
+      aimag: "",
+      reserve: cat?.defaultReserve ? String(cat.defaultReserve) : "",
+      status: "draft",
+      startsAt: "",
+      endsAt: "",
+      description: "",
+      images: [],
+    };
+  };
+
   function openCreate() {
     setError(null);
-    setForm(emptyForm(categories[0]?.id ?? ""));
+    setForm(emptyForm(false));
+  }
+  function openBulk() {
+    setError(null);
+    setForm(emptyForm(true));
   }
   function openEdit(l: ManagedLot) {
     setError(null);
     setForm({
       id: l.id,
+      bulk: false,
       categoryId: l.categoryId,
       code: l.code,
+      codes: [],
       aimag: l.aimag ?? "",
       reserve: String(l.reserve),
       // the form only controls publish state: draft vs published(scheduled)
-      status: (l.status === "draft"
-        ? "draft"
-        : "scheduled") as LotInput["status"],
+      status: (l.status === "draft" ? "draft" : "scheduled") as LotInput["status"],
       startsAt: toInput(l.startsAt),
       endsAt: toInput(l.endsAt),
       description: l.description ?? "",
@@ -135,16 +155,31 @@ export function LotsManager({
     setTimeout(() => setToast(null), 3000);
   }
 
+  /** When the category changes, prefill reserve and clear code selection. */
+  function changeCategory(categoryId: string) {
+    if (!form) return;
+    const cat = catById(categoryId);
+    setForm({
+      ...form,
+      categoryId,
+      code: "",
+      codes: [],
+      reserve:
+        form.reserve && reserveDigits(form.reserve) > 0
+          ? form.reserve
+          : cat?.defaultReserve
+            ? String(cat.defaultReserve)
+            : "",
+    });
+  }
+
   async function uploadImages(files: FileList | null) {
     if (!files || files.length === 0 || !form) return;
     setUploading(true);
     try {
       const fd = new FormData();
       for (const f of Array.from(files)) fd.append("files", f);
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: fd,
-      });
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       const data = (await res.json()) as { keys: string[] };
       setForm((f) => (f ? { ...f, images: [...f.images, ...data.keys] } : f));
     } finally {
@@ -154,21 +189,30 @@ export function LotsManager({
 
   function save() {
     if (!form) return;
-    const input: LotInput = {
+    const reserve = reserveDigits(form.reserve);
+    const common = {
       categoryId: form.categoryId,
-      code: form.code,
       aimag: form.aimag,
-      reserve: Number.parseInt(form.reserve.replace(/\D/g, "") || "0", 10),
+      reserve,
       status: form.status,
       startsAt: form.startsAt ? localInputToIso(form.startsAt) : null,
       endsAt: form.endsAt ? localInputToIso(form.endsAt) : null,
       description: form.description,
       images: form.images,
     };
+
     startTransition(async () => {
-      const res = form.id
-        ? await updateLot(form.id, input)
-        : await createLot(input);
+      if (form.bulk) {
+        const res = await createLotsBulk({ ...common, codes: form.codes });
+        if (res.error) setError(res.error);
+        else {
+          setForm(null);
+          flash(`${res.created ?? 0} лот үүсгэлээ`);
+        }
+        return;
+      }
+      const input: LotInput = { ...common, code: form.code };
+      const res = form.id ? await updateLot(form.id, input) : await createLot(input);
       if (res.error) setError(res.error);
       else {
         setForm(null);
@@ -190,13 +234,25 @@ export function LotsManager({
     });
   }
 
-  const reserveN = form
-    ? Number.parseInt(form.reserve.replace(/\D/g, "") || "0", 10)
-    : 0;
+  // — derived form helpers —
+  const formCat = form ? catById(form.categoryId) : undefined;
+  const formCatCode = (formCat?.code ?? "") as CategoryCode | "";
+  const formIncrements = formCatCode ? CATEGORIES[formCatCode].increments : null;
+  const available = formCatCode ? (codeAvailability[formCatCode] ?? []) : [];
+  // single-create code options: free codes, plus the current code when editing
+  const singleCodeOptions = available
+    .filter((c) => !c.taken || c.code === form?.code)
+    .map((c) => c.code);
 
   return (
     <div>
       <AdminTopbar title="Лот удирдлага">
+        <button
+          onClick={openBulk}
+          className="rounded-[9px] border border-line-cool bg-white px-4 py-2.5 text-[13.5px] font-bold text-navy hover:bg-[#F3F5F8]"
+        >
+          Бөөнөөр үүсгэх
+        </button>
         <button
           onClick={openCreate}
           className="rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover"
@@ -333,7 +389,7 @@ export function LotsManager({
           >
             <div className="flex items-center justify-between border-b border-[#EBEEF3] px-[22px] py-[18px]">
               <span className="text-[17px] font-bold text-navy">
-                {form.id ? "Лот засах" : "Шинэ лот үүсгэх"}
+                {form.bulk ? "Бөөнөөр лот үүсгэх" : form.id ? "Лот засах" : "Шинэ лот үүсгэх"}
               </span>
               <button
                 onClick={() => setForm(null)}
@@ -343,12 +399,10 @@ export function LotsManager({
               </button>
             </div>
             <div className="grid grid-cols-2 gap-[15px] p-[22px]">
-              <Field label="Зүйл" full>
+              <Field label="Ангилал" full>
                 <select
                   value={form.categoryId}
-                  onChange={(e) =>
-                    setForm({ ...form, categoryId: e.target.value })
-                  }
+                  onChange={(e) => changeCategory(e.target.value)}
                   className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm"
                 >
                   {categories.map((c) => (
@@ -358,14 +412,65 @@ export function LotsManager({
                   ))}
                 </select>
               </Field>
-              <Field label="Лотын код">
-                <input
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value })}
-                  placeholder="U13"
-                  className="tnum h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
-                />
-              </Field>
+
+              {/* code — single: dropdown of free codes; bulk: checkbox grid */}
+              {form.bulk ? (
+                <Field label="Кодууд (нэг буюу хэд хэдэн)" full>
+                  {available.length === 0 ? (
+                    <div className="text-[12.5px] text-muted">Энэ ангилалд сул код алга.</div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {available.map((c) => {
+                        const on = form.codes.includes(c.code);
+                        const disabled = c.taken;
+                        return (
+                          <button
+                            key={c.code}
+                            type="button"
+                            disabled={disabled}
+                            onClick={() =>
+                              setForm({
+                                ...form,
+                                codes: on
+                                  ? form.codes.filter((x) => x !== c.code)
+                                  : [...form.codes, c.code],
+                              })
+                            }
+                            className="tnum rounded-[9px] border-[1.5px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45"
+                            style={{
+                              background: on ? "#FBEFEE" : "#FFF",
+                              borderColor: on ? "#C8312C" : "#E1E5EC",
+                              color: on ? "#C8312C" : "#4A5260",
+                            }}
+                          >
+                            {c.code}
+                            {disabled ? " ·" : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="mt-1.5 text-[11px] text-muted">
+                    Бүдгэрсэн код аль хэдийн ашиглагдсан. {form.codes.length} сонгосон.
+                  </div>
+                </Field>
+              ) : (
+                <Field label="Лотын код">
+                  <select
+                    value={form.code}
+                    onChange={(e) => setForm({ ...form, code: e.target.value })}
+                    className="tnum h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm"
+                  >
+                    <option value="">— код сонгох —</option>
+                    {singleCodeOptions.map((code) => (
+                      <option key={code} value={code}>
+                        {code}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+
               <Field label="Аймаг">
                 <input
                   value={form.aimag}
@@ -385,10 +490,7 @@ export function LotsManager({
                 <select
                   value={form.status === "draft" ? "draft" : "scheduled"}
                   onChange={(e) =>
-                    setForm({
-                      ...form,
-                      status: e.target.value as LotInput["status"],
-                    })
+                    setForm({ ...form, status: e.target.value as LotInput["status"] })
                   }
                   className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm"
                 >
@@ -403,9 +505,7 @@ export function LotsManager({
                 <input
                   type="datetime-local"
                   value={form.startsAt}
-                  onChange={(e) =>
-                    setForm({ ...form, startsAt: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
                   className="h-11 w-full rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 text-sm outline-none"
                 />
               </Field>
@@ -420,9 +520,7 @@ export function LotsManager({
               <Field label="Тайлбар" full>
                 <textarea
                   value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={2}
                   className="w-full resize-y rounded-[9px] border border-line-cool bg-[#FAF8F4] px-3 py-2 text-sm outline-none"
                 />
@@ -441,10 +539,7 @@ export function LotsManager({
                       />
                       <button
                         onClick={() =>
-                          setForm({
-                            ...form,
-                            images: form.images.filter((k) => k !== key),
-                          })
+                          setForm({ ...form, images: form.images.filter((k) => k !== key) })
                         }
                         className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-crimson text-[10px] text-white"
                       >
@@ -466,19 +561,19 @@ export function LotsManager({
               </Field>
 
               <div className="col-span-2 rounded-[10px] border border-[#EBEEF3] bg-[#F7F8FA] p-3.5">
-                <div className="text-[12px] font-bold text-navy">
-                  Үнийн алхмын зурвас
-                </div>
+                <div className="text-[12px] font-bold text-navy">Үнийн алхам</div>
                 <div className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">
-                  Алхам = босго үнийн 10% ={" "}
-                  <strong className="tnum text-navy">
-                    {reserveN ? formatTugrug(Math.round(reserveN * 0.1)) : "—"}
-                  </strong>
-                  . Нэг саналд +1…+5 алхам (дээд тал нь 50%,{" "}
-                  <strong className="tnum text-navy">
-                    {reserveN ? formatTugrug(Math.round(reserveN * 0.5)) : "—"}
-                  </strong>
-                  ).
+                  {formIncrements ? (
+                    <>
+                      Энэ ангилалд санал бүр{" "}
+                      <strong className="tnum text-navy">{formatTugrug(formIncrements[0])}</strong>{" "}
+                      эсвэл{" "}
+                      <strong className="tnum text-navy">{formatTugrug(formIncrements[1])}</strong>{" "}
+                      нэмнэ.
+                    </>
+                  ) : (
+                    "Ангилал сонгоно уу."
+                  )}
                 </div>
               </div>
               {error && (
@@ -496,10 +591,16 @@ export function LotsManager({
               </button>
               <button
                 onClick={save}
-                disabled={pending}
+                disabled={pending || (form.bulk ? form.codes.length === 0 : !form.code)}
                 className="rounded-[9px] bg-success px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
               >
-                {pending ? "Хадгалж байна…" : form.id ? "Хадгалах" : "Үүсгэх"}
+                {pending
+                  ? "Хадгалж байна…"
+                  : form.bulk
+                    ? `${form.codes.length || ""} лот үүсгэх`
+                    : form.id
+                      ? "Хадгалах"
+                      : "Үүсгэх"}
               </button>
             </div>
           </div>

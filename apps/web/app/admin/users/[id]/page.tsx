@@ -82,6 +82,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     disabled: view.disabled,
     editFields,
     docs: view.docs,
+    codes: view.codes,
     activity,
   };
 

@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db, schema } from "@auction/db";
-import { emailSchema } from "@auction/shared";
+import { emailSchema, isValidLotCode } from "@auction/shared";
 
 import { writeAudit } from "@/lib/audit";
 import { issuePasswordToken, RESET_TTL_MS } from "@/lib/auth-tokens";
@@ -70,6 +70,31 @@ export async function resetCredentials(userId: string) {
     targetType: "user",
     targetId: userId,
   });
+}
+
+/** Replace a bidder's eligibility codes (per-code lot access). */
+export async function updateUserCodes(
+  userId: string,
+  codes: string[],
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = await requireAdmin();
+  const clean = [...new Set(codes)];
+  if (clean.length === 0) return { ok: false, error: "Дор хаяж нэг шифр сонгоно уу." };
+  if (!clean.every(isValidLotCode)) return { ok: false, error: "Буруу шифр сонгогдсон байна." };
+
+  await db.transaction(async (tx) => {
+    await tx.delete(schema.userCodes).where(eq(schema.userCodes.userId, userId));
+    await tx.insert(schema.userCodes).values(clean.map((code) => ({ userId, code })));
+  });
+  await writeAudit({
+    actorId: admin.id,
+    action: "user.update_codes",
+    targetType: "user",
+    targetId: userId,
+    meta: { codes: clean },
+  });
+  revalidatePath(`/admin/users/${userId}`);
+  return { ok: true };
 }
 
 export async function updateUserInfo(

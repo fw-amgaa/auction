@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type ClientMessage,
   formatTugrug,
+  incrementForOption,
   liveBidAmount,
   type ServerMessage,
 } from "@auction/shared";
@@ -17,6 +18,8 @@ export interface LiveRoomProps {
   latin: string | null;
   aimag: string | null;
   reserve: number;
+  /** the two fixed ascending bid increments for this lot's category */
+  increments: [number, number];
   title: string;
   image: string | null;
   ticket: string;
@@ -76,8 +79,8 @@ const TOAST_PALETTE: Record<
 };
 
 const SHORTCUTS: [string, string][] = [
-  ["1 – 5", "+N алхмаар санал нэмэх"],
-  ["Enter / Space", "Хамгийн бага санал (+1)"],
+  ["1 / 2", "Сонгосон тогтмол дүнгээр санал нэмэх"],
+  ["Enter / Space", "Эхний дүнгээр санал нэмэх"],
   ["Esc", "Цонх хаах"],
   ["W", "Ажиглах"],
   ["?", "Энэ товчлолын цонх"],
@@ -125,9 +128,8 @@ export function LiveRoom(p: LiveRoomProps) {
   const [conn, setConn] = useState<"connecting" | "live" | "reconnecting">("connecting");
   const [price, setPrice] = useState(p.reserve);
   const [displayPrice, setDisplayPrice] = useState(p.reserve);
-  const [step, setStep] = useState(Math.round(p.reserve * 0.1));
+  const [increments, setIncrements] = useState<[number, number]>(p.increments);
   const [reserve] = useState(p.reserve);
-  const [hasBids, setHasBids] = useState(false);
   const [leaderLabel, setLeaderLabel] = useState<string | null>(null);
   const [youLead, setYouLead] = useState(false);
   const [everBid, setEverBid] = useState(false);
@@ -221,8 +223,7 @@ export function LiveRoom(p: LiveRoomProps) {
       case "snapshot":
         setPrice(msg.price);
         setDisplayPrice(msg.price);
-        setStep(msg.step);
-        setHasBids(msg.hasBids);
+        setIncrements([msg.inc1, msg.inc2]);
         setLeaderLabel(msg.leaderLabel);
         setYouLead(msg.youLead);
         setEndsAt(msg.endsAt);
@@ -236,7 +237,6 @@ export function LiveRoom(p: LiveRoomProps) {
       case "bid":
         animatePrice(price, msg.price);
         setPrice(msg.price);
-        setHasBids(true);
         setLeaderLabel(msg.leaderLabel);
         setYouLead(msg.youLead);
         setEndsAt(msg.endsAt);
@@ -275,22 +275,22 @@ export function LiveRoom(p: LiveRoomProps) {
   }, []);
 
   const placeBid = useCallback(
-    (n: number) => {
+    (option: 1 | 2) => {
       const ws = wsRef.current;
       if (!ws || ws.readyState !== ws.OPEN || ended) return;
       if (youLead) {
         addToast("info", "Та аль хэдийн тэргүүлж байна");
         return;
       }
-      const amount = liveBidAmount(price, reserve, step, hasBids, n);
+      const amount = liveBidAmount(price, increments, option);
       if (amount > available) {
         addToast("danger", "Үлдэгдэл хүрэлцэхгүй");
         return;
       }
       setEverBid(true);
-      ws.send(JSON.stringify({ t: "bid", lotId: p.lotId, nSteps: n } satisfies ClientMessage));
+      ws.send(JSON.stringify({ t: "bid", lotId: p.lotId, option } satisfies ClientMessage));
     },
-    [price, reserve, step, hasBids, available, youLead, ended, addToast, p.lotId],
+    [price, increments, available, youLead, ended, addToast, p.lotId],
   );
 
   // keyboard shortcuts
@@ -308,9 +308,9 @@ export function LiveRoom(p: LiveRoomProps) {
         return;
       }
       if (showShortcuts) return;
-      if (e.key >= "1" && e.key <= "5") {
+      if (e.key === "1" || e.key === "2") {
         e.preventDefault();
-        placeBid(Number.parseInt(e.key, 10));
+        placeBid(Number.parseInt(e.key, 10) as 1 | 2);
       } else if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         placeBid(1);
@@ -342,11 +342,12 @@ export function LiveRoom(p: LiveRoomProps) {
       ? { bg: "linear-gradient(135deg,#2A0E14,#1C0A0F)", border: "rgba(255,92,97,.5)", glow: "rgba(224,59,75,.14)", icon: "!", iconBg: A.accent, iconFg: "#2A0708", title: "Таны саналыг давсан", sub: "Барьцаалсан мөнгө буцаагдлаа. Дахин үнэ нэмэх үү?", titleColor: A.accentSoft, subColor: "#E0A6A9" }
       : { bg: "linear-gradient(135deg,#101521,#0C0F18)", border: A.hairStrong, glow: "transparent", icon: "›", iconBg: "#1B2332", iconFg: "#8AA0C0", title: "Та оролцоонд ороогүй байна", sub: "Доорх товчоор үнэ нэмж оролцоно уу.", titleColor: A.fg, subColor: A.dim };
 
-  const buttons = [1, 2, 3, 4, 5].map((n) => {
-    const amount = liveBidAmount(price, reserve, step, hasBids, n);
+  const buttons = ([1, 2] as const).map((option) => {
+    const increment = incrementForOption(increments, option);
+    const amount = liveBidAmount(price, increments, option);
     const disabled = youLead || !!ended || conn !== "live" || amount > available;
-    const primary = n === 1 && !disabled;
-    return { n, amount, disabled, primary };
+    const primary = option === 1 && !disabled;
+    return { option, increment, amount, disabled, primary };
   });
 
   const connColor = conn === "live" ? A.success : A.amber;
@@ -562,7 +563,7 @@ export function LiveRoom(p: LiveRoomProps) {
               <div className="mb-3.5 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: A.body }}>
                   <IconBolt style={{ color: A.accent }} />
-                  Үнэ нэмэх <span className="font-normal" style={{ color: A.faint }}>· алхам = босгын 10%</span>
+                  Үнэ нэмэх <span className="font-normal" style={{ color: A.faint }}>· тогтмол хоёр дүн</span>
                 </div>
                 <div className="text-[11.5px]" style={{ color: A.faint }}>
                   {youLead ? "Та тэргүүлж байна" : "Нэг товшилт = нэг санал"}
@@ -571,10 +572,10 @@ export function LiveRoom(p: LiveRoomProps) {
               <div className="flex flex-wrap gap-2.5">
                 {buttons.map((b) => (
                   <button
-                    key={b.n}
-                    onClick={() => placeBid(b.n)}
+                    key={b.option}
+                    onClick={() => placeBid(b.option)}
                     disabled={b.disabled}
-                    className="group relative min-w-[92px] flex-1 rounded-[15px] border px-2.5 pb-3 pt-4 text-center transition-all duration-200 enabled:hover:-translate-y-0.5 enabled:active:translate-y-0 enabled:active:scale-[.985]"
+                    className="group relative min-w-[150px] flex-1 rounded-[15px] border px-3 pb-3.5 pt-4 text-center transition-all duration-200 enabled:hover:-translate-y-0.5 enabled:active:translate-y-0 enabled:active:scale-[.985]"
                     style={{
                       background: b.disabled ? "rgba(255,255,255,.02)" : b.primary ? A.accent : "#171D29",
                       color: b.disabled ? A.faint : "#fff",
@@ -591,13 +592,12 @@ export function LiveRoom(p: LiveRoomProps) {
                       className="tnum absolute right-2 top-2 rounded px-1 text-[10px] leading-[15px]"
                       style={{ border: `1px solid ${b.primary ? "rgba(255,255,255,.35)" : A.hairStrong}`, color: b.disabled ? A.faint : b.primary ? "rgba(255,255,255,.85)" : A.body }}
                     >
-                      {b.n}
+                      {b.option}
                     </span>
-                    <div className="text-[24px] font-bold leading-none tracking-tight">+{b.n}</div>
-                    <div className="tnum mt-1.5 text-[11px]" style={{ color: b.disabled ? A.faint : b.primary ? "rgba(255,255,255,.8)" : A.dim }}>
-                      +{(b.amount - price).toLocaleString("en-US")}
+                    <div className="tnum text-[22px] font-bold leading-none tracking-tight">
+                      +{b.increment.toLocaleString("en-US")}
                     </div>
-                    <div className="tnum mt-0.5 text-[13px] font-semibold">{formatTugrug(b.amount)}</div>
+                    <div className="tnum mt-1.5 text-[12px] font-semibold">= {formatTugrug(b.amount)}</div>
                   </button>
                 ))}
               </div>
@@ -622,7 +622,7 @@ export function LiveRoom(p: LiveRoomProps) {
               </div>
               <div className="arena-panel flex flex-1 basis-[240px] items-center gap-3 rounded-[16px] px-5 py-4">
                 <div className="flex gap-1.5">
-                  <span className="tnum rounded-md border px-2 py-1 text-[12px]" style={{ borderColor: A.hairStrong, color: A.body }}>1–5</span>
+                  <span className="tnum rounded-md border px-2 py-1 text-[12px]" style={{ borderColor: A.hairStrong, color: A.body }}>1/2</span>
                   <span className="tnum rounded-md border px-2 py-1 text-[12px]" style={{ borderColor: A.hairStrong, color: A.body }}>Enter</span>
                 </div>
                 <div className="text-[12px] leading-snug" style={{ color: A.dim }}>

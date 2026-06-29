@@ -9,7 +9,11 @@ import { z } from "zod";
 
 export const ClientMessage = z.discriminatedUnion("t", [
   z.object({ t: z.literal("subscribe"), lotId: z.string().uuid() }),
-  z.object({ t: z.literal("bid"), lotId: z.string().uuid(), nSteps: z.number().int().min(1).max(5) }),
+  z.object({
+    t: z.literal("bid"),
+    lotId: z.string().uuid(),
+    option: z.union([z.literal(1), z.literal(2)]),
+  }),
   z.object({ t: z.literal("ping") }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
@@ -41,7 +45,8 @@ export const ServerMessage = z.discriminatedUnion("t", [
     lotId: z.string().uuid(),
     price: z.number().int(),
     reserve: z.number().int(),
-    step: z.number().int(),
+    inc1: z.number().int(),
+    inc2: z.number().int(),
     leaderLabel: z.string().nullable(),
     youLead: z.boolean(),
     hasBids: z.boolean(),

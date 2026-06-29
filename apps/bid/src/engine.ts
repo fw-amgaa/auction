@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
-import type { FeedItem } from "@auction/shared";
+import { type FeedItem, incrementsForCode } from "@auction/shared";
 
 import { BID_LUA } from "./lua";
 import { log } from "./logger";
@@ -16,7 +16,8 @@ export type LiveStatus = "scheduled" | "live" | "ended";
 
 export interface LotMeta {
   reserve: number;
-  step: number;
+  inc1: number;
+  inc2: number;
   status: LiveStatus;
   exists: boolean;
 }
@@ -46,7 +47,8 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
     }
     return {
       reserve: Number(existing.reserve),
-      step: Number(existing.step),
+      inc1: Number(existing.inc1),
+      inc2: Number(existing.inc2),
       status: existing.status as LiveStatus,
       exists: true,
     };
@@ -57,8 +59,9 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
     .innerJoin(schema.categories, eq(schema.lots.categoryId, schema.categories.id))
     .where(eq(schema.lots.id, lotId))
     .limit(1);
-  if (!row) return { reserve: 0, step: 0, status: "ended", exists: false };
+  if (!row) return { reserve: 0, inc1: 0, inc2: 0, status: "ended", exists: false };
   const lot = row.lot;
+  const [inc1, inc2] = incrementsForCode(lot.code);
 
   const startsAt = lot.startsAt?.getTime() ?? 0;
   const endsAt = lot.endsAt?.getTime() ?? Date.now() + 60_000;
@@ -76,7 +79,8 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
   await redis.hset(key, {
     price: String(price),
     leader: lot.leaderUserId ?? "",
-    step: String(lot.step),
+    inc1: String(inc1),
+    inc2: String(inc2),
     reserve: String(lot.reserve),
     startsAt: String(startsAt),
     endsAt: String(endsAt),
@@ -87,7 +91,7 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
     species: row.cat.name,
   });
   if (status === "live") await redis.sadd(LIVE_SET, lotId);
-  return { reserve: lot.reserve, step: lot.step, status, exists: true };
+  return { reserve: lot.reserve, inc1, inc2, status, exists: true };
 }
 
 /** Initialise a user's committed total in Redis from durable winning bids (once). */
@@ -110,6 +114,22 @@ export async function ensureUserCommitted(userId: string): Promise<void> {
 
 export async function getCommitted(userId: string): Promise<number> {
   return Number((await redis.get(committedKey(userId))) ?? "0");
+}
+
+/**
+ * Per-code eligibility: a bidder may only see/bid lots whose code is in their
+ * registered set. The lot's code is kept in the Redis hash (populated by
+ * ensureLot); admins are gated separately at the call site.
+ */
+export async function isEligible(userId: string, lotId: string): Promise<boolean> {
+  const code = await redis.hget(lotKey(lotId), "code");
+  if (!code) return false;
+  const [row] = await db
+    .select({ code: schema.userCodes.code })
+    .from(schema.userCodes)
+    .where(and(eq(schema.userCodes.userId, userId), eq(schema.userCodes.code, code)))
+    .limit(1);
+  return !!row;
 }
 
 export async function pseudonym(lotId: string, userId: string): Promise<string> {
@@ -159,11 +179,11 @@ export interface BidResult {
 export async function placeBid(
   lotId: string,
   userId: string,
-  nSteps: number,
+  option: 1 | 2,
   limit: number,
 ): Promise<BidResult> {
   const now = Date.now();
-  const res = (await redis.eval(BID_LUA, 1, lotKey(lotId), userId, String(nSteps), String(now), String(limit))) as [
+  const res = (await redis.eval(BID_LUA, 1, lotKey(lotId), userId, String(option), String(now), String(limit))) as [
     number,
     ...unknown[],
   ];
