@@ -27,16 +27,16 @@ ALTER TABLE "sessions" ADD COLUMN "ip_address" text;--> statement-breakpoint
 ALTER TABLE "sessions" ADD COLUMN "user_agent" text;--> statement-breakpoint
 ALTER TABLE "sessions" ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
 ALTER TABLE "sessions" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
-INSERT INTO "accounts" ("id", "account_id", "provider_id", "user_id", "password", "created_at", "updated_at")
-SELECT gen_random_uuid()::text, "id"::text, 'credential', "id", "password_hash", now(), now()
-FROM "users"
-WHERE "password_hash" IS NOT NULL;--> statement-breakpoint
 ALTER TABLE "accounts" DROP COLUMN "type";--> statement-breakpoint
 ALTER TABLE "accounts" DROP COLUMN "provider";--> statement-breakpoint
 ALTER TABLE "accounts" DROP COLUMN "provider_account_id";--> statement-breakpoint
 ALTER TABLE "accounts" DROP COLUMN "expires_at";--> statement-breakpoint
 ALTER TABLE "accounts" DROP COLUMN "token_type";--> statement-breakpoint
 ALTER TABLE "accounts" DROP COLUMN "session_state";--> statement-breakpoint
+INSERT INTO "accounts" ("id", "account_id", "provider_id", "user_id", "password", "created_at", "updated_at")
+SELECT gen_random_uuid()::text, "id"::text, 'credential', "id", "password_hash", now(), now()
+FROM "users"
+WHERE "password_hash" IS NOT NULL;--> statement-breakpoint
 ALTER TABLE "sessions" DROP COLUMN "session_token";--> statement-breakpoint
 ALTER TABLE "sessions" DROP COLUMN "expires";--> statement-breakpoint
 ALTER TABLE "users" DROP COLUMN "password_hash";--> statement-breakpoint
