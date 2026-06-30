@@ -14,6 +14,15 @@ export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 
+/**
+ * actorId/targetId are matched against uuid columns; a non-UUID value (a tampered
+ * `?actor=` param, or a non-UUID audit target like the category code recorded by
+ * lot.create_bulk) makes Postgres throw `invalid input syntax for type uuid`.
+ * Guard every value before it reaches a uuid comparison.
+ */
+const isUuid = (s: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
 interface SP {
   actor?: string;
   action?: string;
@@ -29,7 +38,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
 
   // ── build filter conditions ──────────────────────────────────────────────
   const conds = [];
-  if (sp.actor && sp.actor !== "all") conds.push(eq(schema.auditLog.actorId, sp.actor));
+  if (sp.actor && sp.actor !== "all" && isUuid(sp.actor)) conds.push(eq(schema.auditLog.actorId, sp.actor));
   if (sp.action && sp.action !== "all") conds.push(eq(schema.auditLog.action, sp.action));
   if (sp.from) {
     const d = new Date(sp.from);
@@ -66,12 +75,12 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
   const pageRows = rows.slice(0, PAGE_SIZE);
 
   // ── resolve target labels (users → name/email, lots → code/title) in batch ─
-  const userIds = [
-    ...new Set(pageRows.filter((r) => r.targetType === "user" && r.targetId).map((r) => r.targetId!)),
-  ];
-  const lotIds = [
-    ...new Set(pageRows.filter((r) => r.targetType === "lot" && r.targetId).map((r) => r.targetId!)),
-  ];
+  // Only resolve genuine UUID targets (see isUuid note above); non-UUID targets
+  // fall back to the raw `type:id` display.
+  const targetIds = (type: string) =>
+    [...new Set(pageRows.filter((r) => r.targetType === type && r.targetId).map((r) => r.targetId!))].filter(isUuid);
+  const userIds = targetIds("user");
+  const lotIds = targetIds("lot");
   const labelMap = new Map<string, string>();
   if (userIds.length) {
     const us = await db
