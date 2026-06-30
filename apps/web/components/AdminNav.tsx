@@ -3,17 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import type { Permission } from "@auction/shared";
+
 import { Logo } from "@/components/Logo";
 import { logout } from "@/lib/session-actions";
 
-const LINKS: { href: string; label: string; icon: string[]; exact?: boolean; badge?: boolean }[] = [
-  { href: "/admin", label: "Шууд хяналт", icon: ["M3 3v18h18", "M7 14l3-4 3 3 4-6"], exact: true },
-  { href: "/admin/kyc", label: "KYC хүсэлт", icon: ["M16 11a4 4 0 1 0-8 0", "M4 21a8 8 0 0 1 16 0", "M17 8l1.5 1.5L21 6"], badge: true },
-  { href: "/admin/users", label: "Хэрэглэгчид", icon: ["M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"] },
-  { href: "/admin/limits", label: "Лимит удирдлага", icon: ["M12 2v20", "M5 7h14", "M5 12h14", "M5 17h14"] },
-  { href: "/admin/lots", label: "Лот удирдлага", icon: ["M3 7l9-4 9 4-9 4-9-4z", "M3 12l9 4 9-4", "M3 17l9 4 9-4"] },
-  { href: "/admin/results", label: "Үр дүн / экспорт", icon: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6", "M9 13l2 2 4-4"] },
-  { href: "/admin/audit", label: "Аудит лог", icon: ["M12 8v4l3 2", "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"] },
+const LINKS: {
+  href: string;
+  label: string;
+  icon: string[];
+  perm: Permission;
+  exact?: boolean;
+  badge?: boolean;
+}[] = [
+  { href: "/admin", label: "Шууд хяналт", perm: "live.view", icon: ["M3 3v18h18", "M7 14l3-4 3 3 4-6"], exact: true },
+  { href: "/admin/kyc", label: "KYC хүсэлт", perm: "kyc.review", icon: ["M16 11a4 4 0 1 0-8 0", "M4 21a8 8 0 0 1 16 0", "M17 8l1.5 1.5L21 6"], badge: true },
+  { href: "/admin/users", label: "Хэрэглэгчид", perm: "users.view", icon: ["M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"] },
+  { href: "/admin/limits", label: "Лимит удирдлага", perm: "limits.adjust", icon: ["M12 2v20", "M5 7h14", "M5 12h14", "M5 17h14"] },
+  { href: "/admin/lots", label: "Лот удирдлага", perm: "lots.view", icon: ["M3 7l9-4 9 4-9 4-9-4z", "M3 12l9 4 9-4", "M3 17l9 4 9-4"] },
+  { href: "/admin/results", label: "Үр дүн / экспорт", perm: "results.view", icon: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6", "M9 13l2 2 4-4"] },
+  { href: "/admin/audit", label: "Аудит лог", perm: "audit.view", icon: ["M12 8v4l3 2", "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"] },
+  { href: "/admin/admins", label: "Админ эрх", perm: "admins.manage", icon: ["M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z", "M9 12l2 2 4-4"] },
 ];
 
 function Icon({ d }: { d: string[] }) {
@@ -26,8 +36,18 @@ function Icon({ d }: { d: string[] }) {
   );
 }
 
-export function AdminNav({ adminName, pendingKyc = 0 }: { adminName: string; pendingKyc?: number }) {
+export function AdminNav({
+  adminName,
+  pendingKyc = 0,
+  permissions,
+}: {
+  adminName: string;
+  pendingKyc?: number;
+  permissions: Permission[];
+}) {
   const pathname = usePathname();
+  const granted = new Set<string>(permissions);
+  const links = LINKS.filter((l) => granted.has(l.perm));
   const initials =
     adminName.split(/\s+/).map((p) => p.replace(".", "")[0] ?? "").join("").slice(0, 2).toUpperCase() || "А";
 
@@ -43,7 +63,7 @@ export function AdminNav({ adminName, pendingKyc = 0 }: { adminName: string; pen
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 p-3">
-        {LINKS.map((l) => {
+        {links.map((l) => {
           const active = l.exact ? pathname === l.href : pathname.startsWith(l.href);
           return (
             <Link

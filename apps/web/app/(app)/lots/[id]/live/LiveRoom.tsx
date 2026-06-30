@@ -6,9 +6,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ANTI_SNIPE_EXTENSION_SEC,
   ANTI_SNIPE_WINDOW_SEC,
+  type BidOptionId,
   type ClientMessage,
+  FINAL_STRETCH_SEC,
   formatTugrug,
   incrementForOption,
+  isFastOption,
   liveBidAmount,
   type ServerMessage,
 } from "@auction/shared";
@@ -70,6 +73,7 @@ const REASON_TEXT: Record<string, string> = {
   insufficient: "Үлдэгдэл хүрэлцэхгүй",
   not_eligible: "Оролцох эрхгүй",
   rate_limited: "Хэт олон санал — түр хүлээнэ үү",
+  locked: "Энэ товч сүүлийн 3 минутад нээгдэнэ",
 };
 
 const TOAST_PALETTE: Record<
@@ -83,7 +87,8 @@ const TOAST_PALETTE: Record<
 };
 
 const SHORTCUTS: [string, string][] = [
-  ["1 / 2", "Сонгосон тогтмол дүнгээр санал нэмэх"],
+  ["1 / 2", "Үндсэн дүнгээр санал нэмэх"],
+  ["3 / 4", "Хурдан (×2) дүн — зөвхөн сүүлийн 3 минутад"],
   ["Enter / Space", "Эхний дүнгээр санал нэмэх"],
   ["Esc", "Цонх хаах"],
   ["W", "Ажиглах"],
@@ -279,9 +284,18 @@ export function LiveRoom(p: LiveRoomProps) {
   }, []);
 
   const placeBid = useCallback(
-    (option: 1 | 2) => {
+    (option: BidOptionId) => {
       const ws = wsRef.current;
       if (!ws || ws.readyState !== ws.OPEN || ended) return;
+      // Fast (×2) options unlock only in the final stretch. Compute from the live
+      // clock (not render state) so the guard matches the server's own check.
+      if (isFastOption(option)) {
+        const secsLeft = Math.floor((endsAt - Date.now()) / 1000);
+        if (secsLeft > FINAL_STRETCH_SEC) {
+          addToast("info", "Хурдан дүн сүүлийн 3 минутад нээгдэнэ");
+          return;
+        }
+      }
       if (youLead) {
         addToast("info", "Та аль хэдийн тэргүүлж байна");
         return;
@@ -294,7 +308,7 @@ export function LiveRoom(p: LiveRoomProps) {
       setEverBid(true);
       ws.send(JSON.stringify({ t: "bid", lotId: p.lotId, option } satisfies ClientMessage));
     },
-    [price, increments, available, youLead, ended, addToast, p.lotId],
+    [price, increments, available, youLead, ended, endsAt, addToast, p.lotId],
   );
 
   // keyboard shortcuts
@@ -312,9 +326,9 @@ export function LiveRoom(p: LiveRoomProps) {
         return;
       }
       if (showShortcuts) return;
-      if (e.key === "1" || e.key === "2") {
+      if (e.key === "1" || e.key === "2" || e.key === "3" || e.key === "4") {
         e.preventDefault();
-        placeBid(Number.parseInt(e.key, 10) as 1 | 2);
+        placeBid(Number.parseInt(e.key, 10) as BidOptionId);
       } else if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         placeBid(1);
@@ -333,6 +347,8 @@ export function LiveRoom(p: LiveRoomProps) {
   // Final-seconds tension — tied to the anti-snipe window so the drama lines up
   // with the moment a late bid can still extend the clock.
   const critical = !ended && conn === "live" && timeLeft > 0 && timeLeft <= ANTI_SNIPE_WINDOW_SEC;
+  // Final stretch — the last FINAL_STRETCH_SEC, where the ×2 "fast" options unlock.
+  const finalStretch = !ended && conn === "live" && timeLeft > 0 && timeLeft <= FINAL_STRETCH_SEC;
   const timeFrac = Math.max(0, Math.min(1, timeLeft / 60));
   const overReserve = Math.max(0, Math.round(displayPrice) - reserve);
 
@@ -349,14 +365,24 @@ export function LiveRoom(p: LiveRoomProps) {
       ? { bg: "linear-gradient(135deg,#2A0E14,#1C0A0F)", border: "rgba(255,92,97,.5)", glow: "rgba(224,59,75,.14)", icon: "!", iconBg: A.accent, iconFg: "#2A0708", title: "Таны саналыг давсан", sub: "Барьцаалсан мөнгө буцаагдлаа. Дахин үнэ нэмэх үү?", titleColor: A.accentSoft, subColor: "#E0A6A9" }
       : { bg: "linear-gradient(135deg,#101521,#0C0F18)", border: A.hairStrong, glow: "transparent", icon: "›", iconBg: "#1B2332", iconFg: "#8AA0C0", title: "Та оролцоонд ороогүй байна", sub: "Доорх товчоор үнэ нэмж оролцоно уу.", titleColor: A.fg, subColor: A.dim };
 
-  // Both options are equally valid bids (just different fixed increments), so
-  // they share one neutral treatment rather than a primary/secondary split.
-  // They stay distinguishable by amount and the 1/2 badge.
-  const buttons = ([1, 2] as const).map((option) => {
+  // The two MAIN options are equally valid bids (just different fixed
+  // increments), so they share one neutral treatment. They stay distinguishable
+  // by amount and the 1/2 badge.
+  const mainButtons = ([1, 2] as const).map((option) => {
     const increment = incrementForOption(increments, option);
     const amount = liveBidAmount(price, increments, option);
     const disabled = youLead || !!ended || conn !== "live" || amount > available;
     return { option, increment, amount, disabled };
+  });
+  // The two FAST (×2) options unlock only in the final stretch. Before then they
+  // render compact + greyed (locked); inside the window they expand and take a
+  // gold accent to flag the faster step.
+  const fastButtons = ([3, 4] as const).map((option) => {
+    const increment = incrementForOption(increments, option);
+    const amount = liveBidAmount(price, increments, option);
+    const locked = !finalStretch;
+    const disabled = locked || youLead || !!ended || conn !== "live" || amount > available;
+    return { option, increment, amount, disabled, locked };
   });
 
   const connColor = conn === "live" ? A.success : A.amber;
@@ -588,14 +614,19 @@ export function LiveRoom(p: LiveRoomProps) {
               <div className="mb-3.5 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: A.body }}>
                   <IconBolt style={{ color: A.accent }} />
-                  Үнэ нэмэх <span className="font-normal" style={{ color: A.faint }}>· тогтмол хоёр дүн</span>
+                  Үнэ нэмэх{" "}
+                  <span className="font-normal" style={{ color: A.faint }}>
+                    · {finalStretch ? "дөрвөн дүн" : "үндсэн хоёр дүн"}
+                  </span>
                 </div>
                 <div className="text-[11.5px]" style={{ color: A.faint }}>
                   {youLead ? "Та тэргүүлж байна" : "Нэг товшилт = нэг санал"}
                 </div>
               </div>
+
+              {/* main increments (always available) */}
               <div className="flex flex-wrap gap-2.5">
-                {buttons.map((b) => (
+                {mainButtons.map((b) => (
                   <button
                     key={b.option}
                     onClick={() => placeBid(b.option)}
@@ -619,6 +650,68 @@ export function LiveRoom(p: LiveRoomProps) {
                       +{b.increment.toLocaleString("en-US")}
                     </div>
                     <div className="tnum mt-1.5 text-[12px] font-semibold">= {formatTugrug(b.amount)}</div>
+                  </button>
+                ))}
+              </div>
+
+              {/* divider / fast-row label */}
+              <div className="mt-3 flex items-center gap-2.5">
+                <div className="h-px flex-1" style={{ background: A.hair }} />
+                <span
+                  className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[.08em]"
+                  style={{ color: finalStretch ? A.goldSoft : A.faint }}
+                >
+                  {finalStretch ? (
+                    <>
+                      <IconBolt /> Хурдан ×2 дүн нээгдлээ
+                    </>
+                  ) : (
+                    <>
+                      <IconClock /> Хурдан ×2 — сүүлийн 3 минутад
+                    </>
+                  )}
+                </span>
+                <div className="h-px flex-1" style={{ background: A.hair }} />
+              </div>
+
+              {/* fast (×2) increments — unlock in the final stretch */}
+              <div className="mt-2.5 flex flex-wrap gap-2.5">
+                {fastButtons.map((b) => (
+                  <button
+                    key={b.option}
+                    onClick={() => placeBid(b.option)}
+                    disabled={b.disabled}
+                    title={b.locked ? "Сүүлийн 3 минутад нээгдэнэ" : undefined}
+                    className="group relative min-w-[150px] flex-1 rounded-[15px] border text-center transition-all duration-200 enabled:hover:-translate-y-0.5 enabled:active:translate-y-0 enabled:active:scale-[.985]"
+                    style={{
+                      padding: b.locked ? "9px 12px" : "16px 12px 14px",
+                      background: b.locked ? "rgba(255,255,255,.015)" : "rgba(231,178,75,.10)",
+                      color: b.disabled ? A.faint : A.goldSoft,
+                      borderColor: b.locked ? A.hair : "rgba(231,178,75,.45)",
+                      boxShadow: b.disabled ? "none" : "inset 0 1px 0 0 rgba(255,255,255,.06)",
+                      cursor: b.disabled ? "not-allowed" : "pointer",
+                      opacity: b.locked ? 0.62 : 1,
+                    }}
+                  >
+                    <span
+                      className="tnum absolute right-2 top-2 rounded px-1 text-[10px] leading-[15px]"
+                      style={{ border: `1px solid ${A.hairStrong}`, color: b.disabled ? A.faint : A.goldSoft }}
+                    >
+                      {b.option}
+                    </span>
+                    <div
+                      className="tnum font-bold leading-none tracking-tight"
+                      style={{ fontSize: b.locked ? "15px" : "22px" }}
+                    >
+                      +{b.increment.toLocaleString("en-US")}
+                    </div>
+                    {b.locked ? (
+                      <div className="mt-0.5 text-[10px]" style={{ color: A.faint }}>
+                        ×2 хурдан · түгжээтэй
+                      </div>
+                    ) : (
+                      <div className="tnum mt-1.5 text-[12px] font-semibold">= {formatTugrug(b.amount)}</div>
+                    )}
                   </button>
                 ))}
               </div>

@@ -6,7 +6,7 @@ import { formatTugrug } from "@auction/shared";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { LocalTime } from "@/components/LocalTime";
 import { getAdminLotDetail } from "@/lib/lots";
-import { requireAdmin } from "@/lib/session";
+import { requirePageAccess } from "@/lib/session";
 import { mintTicket, wsUrl } from "@/lib/ws-ticket";
 
 import { AdminLotMonitor } from "./AdminLotMonitor";
@@ -31,7 +31,7 @@ const PAYMENT: Record<string, { label: string; bg: string; fg: string }> = {
 
 export default async function AdminLotDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const admin = await requireAdmin();
+  const { user: admin } = await requirePageAccess("lots.view");
   const lot = await getAdminLotDetail(id);
   if (!lot) notFound();
 

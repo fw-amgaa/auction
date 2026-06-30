@@ -46,7 +46,13 @@ export async function sendEmail(mail: Mail): Promise<void> {
       );
       return;
     } catch (err) {
-      console.error("[email] SES send failed — falling back to console log:", err);
+      // Loud, structured log so a prod misconfig (unverified sender, wrong
+      // region, sandbox) is diagnosable from the container logs rather than
+      // silently swallowed. FROM/region are config, not secrets.
+      console.error(
+        `[email] SES send FAILED — to=${mail.to} from=${FROM} region=${REGION ?? "(default)"} subject="${mail.subject}":`,
+        err,
+      );
     }
   }
 

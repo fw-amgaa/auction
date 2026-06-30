@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, getPermissions } from "@/lib/session";
 import { getResults } from "@/lib/results";
 
 function csvCell(v: string | number | null): string {
@@ -9,6 +9,8 @@ function csvCell(v: string | number | null): string {
 export async function GET() {
   const user = await getCurrentUser();
   if (!user || user.role !== "admin") return new Response("Forbidden", { status: 403 });
+  const perms = await getPermissions(user.id);
+  if (!perms.includes("results.export")) return new Response("Forbidden", { status: 403 });
 
   const { rows } = await getResults();
   const header = ["Код", "Зүйл", "Аймаг", "Хожсон оролцогч", "Хожсон үнэ", "Төлбөр", "Эрх олгосон"];

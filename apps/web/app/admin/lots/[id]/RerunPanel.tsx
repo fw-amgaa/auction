@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { formatTugrug } from "@auction/shared";
 
+import { usePermissions } from "@/components/admin/Permissions";
 import { localInputToIso, toLocalInput } from "@/lib/datetime";
 
 import { rerunLot } from "../actions";
@@ -33,12 +34,17 @@ export function RerunPanel({
   const [done, setDone] = useState(false);
   const [pending, startTransition] = useTransition();
 
+  const { can } = usePermissions();
+
   // Sensible defaults in the admin's own timezone (start in 10 min, run 1 hour).
   useEffect(() => {
     const now = Date.now();
     setStartsAt(toLocalInput(new Date(now + 10 * 60_000)));
     setEndsAt(toLocalInput(new Date(now + 70 * 60_000)));
   }, []);
+
+  // Re-running a lot is a distinct permission; hide the whole control without it.
+  if (!can("lots.rerun")) return null;
 
   function submit() {
     setError(null);

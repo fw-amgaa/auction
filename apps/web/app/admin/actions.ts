@@ -11,10 +11,10 @@ import { issuePasswordToken, RESET_TTL_MS } from "@/lib/auth-tokens";
 import { appUrl, sendEmail } from "@/lib/email";
 import { resetEmail } from "@/lib/email-templates";
 import { notify } from "@/lib/notify";
-import { requireAdmin } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 
 export async function approveKyc(userId: string) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("kyc.review");
   await db.update(schema.users).set({ kyc: "approved" }).where(eq(schema.users.id, userId));
   await notify(userId, "kyc_approved");
   await writeAudit({ actorId: admin.id, action: "kyc.approve", targetType: "user", targetId: userId });
@@ -24,7 +24,7 @@ export async function approveKyc(userId: string) {
 }
 
 export async function rejectKyc(userId: string, reason: string) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("kyc.review");
   if (!reason.trim()) return;
   await db.update(schema.users).set({ kyc: "rejected" }).where(eq(schema.users.id, userId));
   await notify(userId, "kyc_rejected", { reason });
@@ -41,7 +41,7 @@ export async function rejectKyc(userId: string, reason: string) {
 }
 
 export async function setUserDisabled(userId: string, disabled: boolean) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("users.suspend");
   await db.update(schema.users).set({ disabled }).where(eq(schema.users.id, userId));
   await writeAudit({
     actorId: admin.id,
@@ -54,7 +54,7 @@ export async function setUserDisabled(userId: string, disabled: boolean) {
 }
 
 export async function resetCredentials(userId: string) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("users.reset_credentials");
   const [u] = await db
     .select({ email: schema.users.email, disabled: schema.users.disabled })
     .from(schema.users)
@@ -77,7 +77,7 @@ export async function updateUserCodes(
   userId: string,
   codes: string[],
 ): Promise<{ ok: boolean; error?: string }> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("users.edit");
   const clean = [...new Set(codes)];
   if (clean.length === 0) return { ok: false, error: "Дор хаяж нэг шифр сонгоно уу." };
   if (!clean.every(isValidLotCode)) return { ok: false, error: "Буруу шифр сонгогдсон байна." };
@@ -102,7 +102,7 @@ export async function updateUserInfo(
   accountType: string,
   fields: Record<string, string>,
 ): Promise<{ ok: boolean; error?: string }> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("users.edit");
 
   // Optional email change — validate format + uniqueness before any writes.
   const newEmail = (fields.email ?? "").trim().toLowerCase();

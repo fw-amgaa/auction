@@ -15,6 +15,7 @@ import {
 import { DocThumb } from "@/components/DocThumb";
 import { KycBadge } from "@/components/KycBadge";
 import { LocalTime } from "@/components/LocalTime";
+import { usePermissions } from "@/components/admin/Permissions";
 
 export interface DetailUser {
   id: string;
@@ -41,6 +42,7 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
   const [editingCodes, setEditingCodes] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string[]>(user.codes);
   const [pending, startTransition] = useTransition();
+  const { can } = usePermissions();
 
   const toggleCode = (code: string) =>
     setCodeDraft((cs) => (cs.includes(code) ? cs.filter((c) => c !== code) : [...cs, code]));
@@ -103,20 +105,22 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
             <div className="rounded-2xl border border-line-cool bg-white p-5">
               <div className="mb-3.5 flex items-center justify-between">
                 <div className="text-[13px] font-bold text-navy">Мэдээлэл</div>
-                <button
-                  onClick={() => {
-                    if (editing) setDraft(Object.fromEntries(user.editFields.map((f) => [f.key, f.value])));
-                    setEditing((v) => !v);
-                  }}
-                  className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold"
-                  style={{
-                    color: editing ? "#C8312C" : "#14294A",
-                    background: editing ? "#FBEFEE" : "#F3F5F8",
-                    borderColor: editing ? "#E8B7B4" : "#E1E5EC",
-                  }}
-                >
-                  {editing ? "Засаж байна" : "Засах"}
-                </button>
+                {can("users.edit") && (
+                  <button
+                    onClick={() => {
+                      if (editing) setDraft(Object.fromEntries(user.editFields.map((f) => [f.key, f.value])));
+                      setEditing((v) => !v);
+                    }}
+                    className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold"
+                    style={{
+                      color: editing ? "#C8312C" : "#14294A",
+                      background: editing ? "#FBEFEE" : "#F3F5F8",
+                      borderColor: editing ? "#E8B7B4" : "#E1E5EC",
+                    }}
+                  >
+                    {editing ? "Засаж байна" : "Засах"}
+                  </button>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3.5">
                 {user.editFields.map((f) => (
@@ -190,20 +194,22 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                   Шифр (эрх){" "}
                   <span className="font-normal text-muted">· оролцох эрхтэй лотын ангилал</span>
                 </div>
-                <button
-                  onClick={() => {
-                    if (editingCodes) setCodeDraft(user.codes);
-                    setEditingCodes((v) => !v);
-                  }}
-                  className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold"
-                  style={{
-                    color: editingCodes ? "#C8312C" : "#14294A",
-                    background: editingCodes ? "#FBEFEE" : "#F3F5F8",
-                    borderColor: editingCodes ? "#E8B7B4" : "#E1E5EC",
-                  }}
-                >
-                  {editingCodes ? "Засаж байна" : "Засах"}
-                </button>
+                {can("users.edit") && (
+                  <button
+                    onClick={() => {
+                      if (editingCodes) setCodeDraft(user.codes);
+                      setEditingCodes((v) => !v);
+                    }}
+                    className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold"
+                    style={{
+                      color: editingCodes ? "#C8312C" : "#14294A",
+                      background: editingCodes ? "#FBEFEE" : "#F3F5F8",
+                      borderColor: editingCodes ? "#E8B7B4" : "#E1E5EC",
+                    }}
+                  >
+                    {editingCodes ? "Засаж байна" : "Засах"}
+                  </button>
+                )}
               </div>
 
               {editingCodes ? (
@@ -317,47 +323,55 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
               <div className="mt-3 text-[11.5px] text-[#9DB0CC]">
                 Барьцаанд: <span className="tnum text-white">{formatTugrug(user.committed)}</span>
               </div>
-              <Link
-                href="/admin/limits"
-                className="mt-3.5 block rounded-[9px] border border-white/15 bg-white/[0.08] py-2.5 text-center text-[13px] font-semibold text-white"
-              >
-                Лимит тохируулах
-              </Link>
+              {can("limits.adjust") && (
+                <Link
+                  href="/admin/limits"
+                  className="mt-3.5 block rounded-[9px] border border-white/15 bg-white/[0.08] py-2.5 text-center text-[13px] font-semibold text-white"
+                >
+                  Лимит тохируулах
+                </Link>
+              )}
             </div>
 
-            <div className="rounded-2xl border border-line-cool bg-white p-4">
-              <div className="mb-3 text-[12.5px] font-bold text-navy">Үйлдэл</div>
-              <div className="flex flex-col gap-2">
-                {user.kyc === "pending" && (
-                  <button
-                    onClick={() => startTransition(async () => { await approveKyc(user.id); flash("KYC баталгаажлаа"); })}
-                    disabled={pending}
-                    className="rounded-[9px] border border-[#C7E5D5] bg-[#E5F4EC] px-3 py-2.5 text-left text-[13px] font-semibold text-[#197a50]"
-                  >
-                    ✓ KYC баталгаажуулах
-                  </button>
-                )}
-                <button
-                  onClick={() => startTransition(async () => { await resetCredentials(user.id); flash("Нууц үг сэргээх холбоос илгээгдлээ"); })}
-                  disabled={pending}
-                  className="rounded-[9px] border border-line-cool bg-white px-3 py-2.5 text-left text-[13px] font-semibold text-navy"
-                >
-                  ⟲ Нууц үг сэргээх холбоос илгээх
-                </button>
-                <button
-                  onClick={() =>
-                    startTransition(async () => {
-                      await setUserDisabled(user.id, !user.disabled);
-                      flash(user.disabled ? "Бүртгэл сэргээгдлээ" : "Бүртгэл түр хаагдлаа");
-                    })
-                  }
-                  disabled={pending}
-                  className="rounded-[9px] border border-[#E0908C] bg-white px-3 py-2.5 text-left text-[13px] font-semibold text-crimson"
-                >
-                  {user.disabled ? "↺ Бүртгэл сэргээх" : "⊘ Бүртгэл түр хаах"}
-                </button>
+            {(can("kyc.review") || can("users.reset_credentials") || can("users.suspend")) && (
+              <div className="rounded-2xl border border-line-cool bg-white p-4">
+                <div className="mb-3 text-[12.5px] font-bold text-navy">Үйлдэл</div>
+                <div className="flex flex-col gap-2">
+                  {user.kyc === "pending" && can("kyc.review") && (
+                    <button
+                      onClick={() => startTransition(async () => { await approveKyc(user.id); flash("KYC баталгаажлаа"); })}
+                      disabled={pending}
+                      className="rounded-[9px] border border-[#C7E5D5] bg-[#E5F4EC] px-3 py-2.5 text-left text-[13px] font-semibold text-[#197a50]"
+                    >
+                      ✓ KYC баталгаажуулах
+                    </button>
+                  )}
+                  {can("users.reset_credentials") && (
+                    <button
+                      onClick={() => startTransition(async () => { await resetCredentials(user.id); flash("Нууц үг сэргээх холбоос илгээгдлээ"); })}
+                      disabled={pending}
+                      className="rounded-[9px] border border-line-cool bg-white px-3 py-2.5 text-left text-[13px] font-semibold text-navy"
+                    >
+                      ⟲ Нууц үг сэргээх холбоос илгээх
+                    </button>
+                  )}
+                  {can("users.suspend") && (
+                    <button
+                      onClick={() =>
+                        startTransition(async () => {
+                          await setUserDisabled(user.id, !user.disabled);
+                          flash(user.disabled ? "Бүртгэл сэргээгдлээ" : "Бүртгэл түр хаагдлаа");
+                        })
+                      }
+                      disabled={pending}
+                      className="rounded-[9px] border border-[#E0908C] bg-white px-3 py-2.5 text-left text-[13px] font-semibold text-crimson"
+                    >
+                      {user.disabled ? "↺ Бүртгэл сэргээх" : "⊘ Бүртгэл түр хаах"}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

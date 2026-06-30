@@ -15,7 +15,7 @@ import { appUrl, sendEmail } from "@/lib/email";
 import { inviteEmail } from "@/lib/email-templates";
 import { notify } from "@/lib/notify";
 import { hashPassword } from "@/lib/password";
-import { requireAdmin } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 import { putObject } from "@/lib/storage";
 
 export interface CreateUserState {
@@ -34,7 +34,7 @@ export async function createUserAction(
   _prev: CreateUserState,
   formData: FormData,
 ): Promise<CreateUserState> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("users.create");
   const accountType = String(formData.get("accountType") ?? "individual");
   const g = (k: string) => String(formData.get(k) ?? "").trim();
 

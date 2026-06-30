@@ -1,10 +1,12 @@
 import { getLimitsOverview } from "@/lib/limits";
+import { requirePageAccess } from "@/lib/session";
 
 import { LimitsManager, type LimitRow } from "./LimitsManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLimitsPage() {
+  await requirePageAccess("limits.adjust");
   const users = await getLimitsOverview();
   const rows: LimitRow[] = users.map((u) => ({
     id: u.id,

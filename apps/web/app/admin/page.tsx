@@ -6,7 +6,7 @@ import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { LocalTime } from "@/components/LocalTime";
-import { requireAdmin } from "@/lib/session";
+import { requirePageAccess } from "@/lib/session";
 import { mintTicket, wsUrl } from "@/lib/ws-ticket";
 
 import { AdminLiveBoard, type LiveBoardLot } from "./AdminLiveBoard";
@@ -14,7 +14,7 @@ import { AdminLiveBoard, type LiveBoardLot } from "./AdminLiveBoard";
 export const dynamic = "force-dynamic";
 
 export default async function AdminHome() {
-  const admin = await requireAdmin();
+  const { user: admin } = await requirePageAccess("live.view");
   const [[liveN], [schedN], [pendingN], [usersN], [limitSum], liveLots, soonLots, recentAudit] =
     await Promise.all([
       db.select({ n: count() }).from(schema.lots).where(eq(schema.lots.status, "live")),

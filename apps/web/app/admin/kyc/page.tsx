@@ -1,5 +1,6 @@
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { getApplicants } from "@/lib/admin";
+import { requirePageAccess } from "@/lib/session";
 import { timeAgo } from "@/lib/time";
 
 import { type Applicant, KycReview } from "./KycReview";
@@ -7,6 +8,7 @@ import { type Applicant, KycReview } from "./KycReview";
 export const dynamic = "force-dynamic";
 
 export default async function AdminKycPage() {
+  await requirePageAccess("kyc.review");
   const all = await getApplicants();
   const applicants: Applicant[] = all.map((u) => ({
     id: u.id,

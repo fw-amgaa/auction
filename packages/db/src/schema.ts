@@ -107,6 +107,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   legalEntityProfile: one(legalEntityProfiles),
   documents: many(kycDocuments),
   codes: many(userCodes),
+  permissions: many(userPermissions),
   bids: many(bids),
   ledger: many(limitLedger),
   notifications: many(notifications),
@@ -194,6 +195,32 @@ export const userCodes = pgTable(
 
 export const userCodesRelations = relations(userCodes, ({ one }) => ({
   user: one(users, { fields: [userCodes.userId], references: [users.id] }),
+}));
+
+/* --------------------------- admin permissions ---------------------------- */
+/**
+ * Per-user admin permissions. There are no roles — a permission is granted
+ * directly to a dashboard/staff user (role = "admin"); bidders hold none. Each
+ * permission gates one admin action/section and is validated against
+ * @auction/shared PERMISSIONS. Mirrors the user_codes pattern.
+ */
+export const userPermissions = pgTable(
+  "user_permissions",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    permission: text("permission").notNull(), // e.g. "lots.create" (see @auction/shared)
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.permission] }),
+    index("user_permissions_user_idx").on(t.userId),
+  ],
+);
+
+export const userPermissionsRelations = relations(userPermissions, ({ one }) => ({
+  user: one(users, { fields: [userPermissions.userId], references: [users.id] }),
 }));
 
 /* ------------------------------- categories ------------------------------- */

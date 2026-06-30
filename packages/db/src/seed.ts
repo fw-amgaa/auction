@@ -10,10 +10,19 @@ import { randomUUID } from "node:crypto";
 import { hash } from "@node-rs/argon2";
 import { eq, isNotNull, notInArray, or } from "drizzle-orm";
 
-import { CATEGORIES, CATEGORY_CODES } from "@auction/shared";
+import { ALL_PERMISSIONS, CATEGORIES, CATEGORY_CODES } from "@auction/shared";
 
 import { db } from "./client";
-import { accounts, bids, categories, limitLedger, lots, termsVersions, users } from "./schema";
+import {
+  accounts,
+  bids,
+  categories,
+  limitLedger,
+  lots,
+  termsVersions,
+  userPermissions,
+  users,
+} from "./schema";
 
 const SPECIES = CATEGORY_CODES.map((code, i) => ({
   code,
@@ -86,6 +95,22 @@ async function main() {
     console.log(`  admin created: ${adminEmail} / ${adminPassword}`);
   } else {
     console.log("  admin already exists, skipping");
+  }
+
+  // Dashboard access is gated by per-user permissions (no roles), so the admin
+  // must hold every permission. Idempotent — safe to re-run.
+  console.log("Granting admin permissions…");
+  const [adminRow] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, adminEmail))
+    .limit(1);
+  if (adminRow) {
+    await db
+      .insert(userPermissions)
+      .values(ALL_PERMISSIONS.map((permission) => ({ userId: adminRow.id, permission })))
+      .onConflictDoNothing();
+    console.log(`  granted ${ALL_PERMISSIONS.length} permissions to ${adminEmail}`);
   }
 
   console.log("Seed complete (no demo lots).");

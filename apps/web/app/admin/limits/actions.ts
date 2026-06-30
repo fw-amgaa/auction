@@ -7,7 +7,7 @@ import { db, schema } from "@auction/db";
 
 import { writeAudit } from "@/lib/audit";
 import { notify } from "@/lib/notify";
-import { requireAdmin } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 
 export type LimitAction = "raise" | "lower" | "refund";
 
@@ -21,7 +21,7 @@ export async function adjustLimit(
   amount: number,
   note: string,
 ): Promise<AdjustResult> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("limits.adjust");
   if (!amount || amount <= 0) return { error: "Дүн оруулна уу." };
 
   const [u] = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1);

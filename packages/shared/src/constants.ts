@@ -76,6 +76,14 @@ export function incrementsForCode(code: string): readonly [number, number] {
 export const ANTI_SNIPE_WINDOW_SEC = 10;
 export const ANTI_SNIPE_EXTENSION_SEC = 10;
 
+/**
+ * Final stretch: inside this many seconds of the end, two extra "fast" bid
+ * options unlock — double the category's two increments (options 3 & 4). Before
+ * the window they are locked; the bid service enforces this against its own
+ * clock so the gate can't be spoofed by the client.
+ */
+export const FINAL_STRETCH_SEC = 180; // last 3 minutes
+
 /** Per-user bid rate limit (token bucket) on the live socket. */
 export const BID_RATE_PER_SEC = 5;
 

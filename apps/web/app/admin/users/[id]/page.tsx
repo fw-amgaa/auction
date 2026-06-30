@@ -5,6 +5,7 @@ import { db, schema } from "@auction/db";
 import { formatTugrug } from "@auction/shared";
 
 import { getUserView } from "@/lib/admin";
+import { requirePageAccess } from "@/lib/session";
 
 import { type DetailUser, UserDetailClient } from "./UserDetailClient";
 
@@ -21,6 +22,7 @@ const LEDGER_META: Record<string, { icon: string; label: string; positive: boole
 };
 
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await requirePageAccess("users.view");
   const { id } = await params;
   const view = await getUserView(id);
   if (!view) notFound();

@@ -5,6 +5,7 @@ import { formatTugrug } from "@auction/shared";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { KycBadge } from "@/components/KycBadge";
 import { getApplicants } from "@/lib/admin";
+import { requirePageAccess } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export default async function AdminUsersPage({
 }: {
   searchParams: Promise<{ q?: string; type?: string; kyc?: string; sort?: string }>;
 }) {
+  await requirePageAccess("users.view");
   const sp = await searchParams;
   const all = await getApplicants();
 

@@ -6,12 +6,12 @@ import { formatTugrug } from "@auction/shared";
 
 import { LocalTime } from "@/components/LocalTime";
 import { PrintButton } from "@/components/PrintButton";
-import { requireAdmin } from "@/lib/session";
+import { requirePageAccess } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function PermitPage({ params }: { params: Promise<{ lotId: string }> }) {
-  await requireAdmin();
+  await requirePageAccess("results.view");
   const { lotId } = await params;
   const [row] = await db
     .select({ lot: schema.lots, category: schema.categories })

@@ -1,10 +1,12 @@
 import { getAdminLots, getCategoryOptions, getCodeAvailability } from "@/lib/lots";
+import { requirePageAccess } from "@/lib/session";
 
 import { LotsManager, type ManagedLot } from "./LotsManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLotsPage() {
+  await requirePageAccess("lots.view");
   const [lots, categories, codeAvailability] = await Promise.all([
     getAdminLots(),
     getCategoryOptions(),

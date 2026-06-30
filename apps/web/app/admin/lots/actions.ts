@@ -8,7 +8,7 @@ import { categoryForCode, CATEGORIES, type CategoryCode } from "@auction/shared"
 
 import { writeAudit } from "@/lib/audit";
 import { lotPhase } from "@/lib/lots";
-import { requireAdmin } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 
 export interface LotInput {
   categoryId: string;
@@ -67,7 +67,7 @@ function validate(input: LotInput): string | null {
 }
 
 export async function createLot(input: LotInput): Promise<LotActionState> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("lots.create");
   const err = validate(input);
   if (err) return { error: err };
 
@@ -107,7 +107,7 @@ export async function createLot(input: LotInput): Promise<LotActionState> {
 
 /** Create several lots at once — one per selected code, sharing the schedule. */
 export async function createLotsBulk(input: BulkLotInput): Promise<LotActionState> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("lots.create");
   if (!input.categoryId) return { error: "Ангилал сонгоно уу." };
   if (!input.codes || input.codes.length === 0) return { error: "Дор хаяж нэг код сонгоно уу." };
   if (!input.reserve || input.reserve <= 0) return { error: "Босго үнэ оруулна уу." };
@@ -153,7 +153,7 @@ export async function createLotsBulk(input: BulkLotInput): Promise<LotActionStat
 }
 
 export async function updateLot(id: string, input: LotInput): Promise<LotActionState> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("lots.edit");
   const err = validate(input);
   if (err) return { error: err };
 
@@ -192,7 +192,7 @@ export async function updateLot(id: string, input: LotInput): Promise<LotActionS
 }
 
 export async function cancelLot(id: string): Promise<void> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("lots.cancel");
   await db.update(schema.lots).set({ status: "cancelled" }).where(eq(schema.lots.id, id));
   await writeAudit({ actorId: admin.id, action: "lot.cancel", targetType: "lot", targetId: id });
   revalidatePath("/admin/lots");
@@ -217,7 +217,7 @@ export interface RerunInput {
  * old workaround — never worked because `status` stayed "ended".
  */
 export async function rerunLot(id: string, input: RerunInput): Promise<LotActionState> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("lots.rerun");
 
   const startsAt = parseDate(input.startsAt);
   const endsAt = parseDate(input.endsAt);
@@ -306,7 +306,7 @@ export async function rerunLot(id: string, input: RerunInput): Promise<LotAction
 
 /** Permanently delete a lot (and its bids, via cascade). */
 export async function deleteLot(id: string): Promise<LotActionState> {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("lots.delete");
   const [lot] = await db.select({ code: schema.lots.code }).from(schema.lots).where(eq(schema.lots.id, id)).limit(1);
   await db.delete(schema.lots).where(eq(schema.lots.id, id));
   await writeAudit({ actorId: admin.id, action: "lot.delete", targetType: "lot", targetId: id, meta: { code: lot?.code } });

@@ -8,6 +8,7 @@ import { CATEGORIES, type CategoryCode, formatTugrug } from "@auction/shared";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { LocalTime } from "@/components/LocalTime";
+import { usePermissions } from "@/components/admin/Permissions";
 import { localInputToIso, toLocalInput } from "@/lib/datetime";
 
 import {
@@ -104,6 +105,7 @@ export function LotsManager({
   const [toast, setToast] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [pending, startTransition] = useTransition();
+  const { can } = usePermissions();
 
   const counts: Record<string, number> = { all: lots.length };
   for (const [k] of TABS)
@@ -264,18 +266,22 @@ export function LotsManager({
   return (
     <div>
       <AdminTopbar title="Лот удирдлага">
-        <button
-          onClick={openBulk}
-          className="rounded-[9px] border border-line-cool bg-white px-4 py-2.5 text-[13.5px] font-bold text-navy hover:bg-[#F3F5F8]"
-        >
-          Бөөнөөр үүсгэх
-        </button>
-        <button
-          onClick={openCreate}
-          className="rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover"
-        >
-          + Шинэ лот
-        </button>
+        {can("lots.create") && (
+          <>
+            <button
+              onClick={openBulk}
+              className="rounded-[9px] border border-line-cool bg-white px-4 py-2.5 text-[13.5px] font-bold text-navy hover:bg-[#F3F5F8]"
+            >
+              Бөөнөөр үүсгэх
+            </button>
+            <button
+              onClick={openCreate}
+              className="rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover"
+            >
+              + Шинэ лот
+            </button>
+          </>
+        )}
       </AdminTopbar>
 
       <div className="p-6">
@@ -381,20 +387,24 @@ export function LotsManager({
                   >
                     {l.phase === "live" ? "Хянах" : "Дэлгэрэнгүй"}
                   </Link>
-                  <button
-                    onClick={() => openEdit(l)}
-                    className="shrink-0 whitespace-nowrap rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy hover:bg-[#E9EDF2]"
-                  >
-                    Засах
-                  </button>
-                  <button
-                    onClick={() => remove(l)}
-                    title="Устгах"
-                    aria-label="Лот устгах"
-                    className="grid size-[30px] shrink-0 place-items-center rounded-[7px] border border-[#E0908C] bg-white text-[12px] leading-none text-crimson hover:bg-[#FBEAE9]"
-                  >
-                    🗑
-                  </button>
+                  {can("lots.edit") && (
+                    <button
+                      onClick={() => openEdit(l)}
+                      className="shrink-0 whitespace-nowrap rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy hover:bg-[#E9EDF2]"
+                    >
+                      Засах
+                    </button>
+                  )}
+                  {can("lots.delete") && (
+                    <button
+                      onClick={() => remove(l)}
+                      title="Устгах"
+                      aria-label="Лот устгах"
+                      className="grid size-[30px] shrink-0 place-items-center rounded-[7px] border border-[#E0908C] bg-white text-[12px] leading-none text-crimson hover:bg-[#FBEAE9]"
+                    >
+                      🗑
+                    </button>
+                  )}
                 </span>
               </div>
             );

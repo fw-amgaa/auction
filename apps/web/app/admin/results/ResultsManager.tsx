@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
+import { usePermissions } from "@/components/admin/Permissions";
 
 import { defaultWinner, generatePermit, markPaid } from "./actions";
 import type { Payment, ResultRow } from "@/lib/results";
@@ -35,6 +36,7 @@ export function ResultsManager({
   const [tab, setTab] = useState("all");
   const [toast, setToast] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const { can } = usePermissions();
   const visible = rows.filter((r) => tab === "all" || r.payment === tab);
 
   function flash(m: string) {
@@ -57,9 +59,11 @@ export function ResultsManager({
   return (
     <div>
       <AdminTopbar title="Үр дүн ба экспорт">
-        <a href="/api/admin/results/export" className="rounded-[9px] border border-[#CDD4DE] bg-white px-3.5 py-2 text-[13px] font-semibold text-navy hover:border-navy">
-          ⤓ CSV татах
-        </a>
+        {can("results.export") && (
+          <a href="/api/admin/results/export" className="rounded-[9px] border border-[#CDD4DE] bg-white px-3.5 py-2 text-[13px] font-semibold text-navy hover:border-navy">
+            ⤓ CSV татах
+          </a>
+        )}
       </AdminTopbar>
 
       <div className="p-6">
@@ -114,11 +118,15 @@ export function ResultsManager({
                 <span className="flex items-center justify-end gap-1.5">
                   {r.winnerUserId && r.payment === "pending" && (
                     <>
-                      <button onClick={() => run(() => markPaid(r.lotId), "Төлбөр бүртгэгдлээ")} disabled={pending} className="rounded-[7px] bg-success px-2.5 py-1.5 text-[12px] font-semibold text-white">Төлсөн</button>
-                      <button onClick={() => { if (confirm("Хожигчийг төлбөргүй гэж дефолт болгож, дараагийн оролцогчид санал болгох уу?")) run(() => defaultWinner(r.lotId), "Дараагийн оролцогчид шилжүүлэв"); }} disabled={pending} className="rounded-[7px] border border-[#E0908C] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-crimson">Дефолт</button>
+                      {can("results.mark_paid") && (
+                        <button onClick={() => run(() => markPaid(r.lotId), "Төлбөр бүртгэгдлээ")} disabled={pending} className="rounded-[7px] bg-success px-2.5 py-1.5 text-[12px] font-semibold text-white">Төлсөн</button>
+                      )}
+                      {can("results.default") && (
+                        <button onClick={() => { if (confirm("Хожигчийг төлбөргүй гэж дефолт болгож, дараагийн оролцогчид санал болгох уу?")) run(() => defaultWinner(r.lotId), "Дараагийн оролцогчид шилжүүлэв"); }} disabled={pending} className="rounded-[7px] border border-[#E0908C] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-crimson">Дефолт</button>
+                      )}
                     </>
                   )}
-                  {r.payment === "paid" && !r.permitIssued && (
+                  {r.payment === "paid" && !r.permitIssued && can("results.permit") && (
                     <button onClick={() => run(() => generatePermit(r.lotId), "Агнуурын эрх олгогдлоо")} disabled={pending} className="rounded-[7px] bg-success px-2.5 py-1.5 text-[12px] font-semibold text-white">📜 Эрх үүсгэх</button>
                   )}
                   {r.permitIssued && (

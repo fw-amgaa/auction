@@ -3,22 +3,26 @@
  * concurrent bids on a hot lot serialize for free.
  *
  * KEYS[1] = lot hash key  (lot:{id})
- * ARGV    = userId, option(1|2), now(ms), limit
+ * ARGV    = userId, option(1|2|3|4), now(ms), limit
  * Returns reject: {0, reason}
  *         accept: {1, amount, seq, endsAt, extended(0|1), releasedUser, releasedAmount}
  *
- * Bidding model: two fixed ascending increments per lot (inc1 / inc2). A raise
- * adds the chosen increment to the current price; the first bid opens at
- * reserve + increment (price is initialised to the reserve when there are no
- * bids yet, so amount = price + inc handles every case uniformly).
+ * Bidding model: two fixed ascending increments per lot (inc1 / inc2). The two
+ * MAIN options raise by those increments (1 / 2). In the FINAL STRETCH (last
+ * FINAL_STRETCH_SEC) two extra "fast" options unlock that raise by DOUBLE each
+ * increment (3 = inc1×2, 4 = inc2×2). The window is checked here against the
+ * server clock so it can't be spoofed. A raise adds the chosen increment to the
+ * current price; the first bid opens at reserve + increment (price is
+ * initialised to the reserve when there are no bids yet, so amount = price + inc
+ * handles every case uniformly).
  *
  * Committed balances are stored at u:{userId}:committed (single-node Redis, so
  * the script may touch keys outside KEYS[]).
  *
- * Anti-snipe window/extension come from @auction/shared (single source of truth)
- * and are interpolated into the script body below as millisecond literals.
+ * Anti-snipe + final-stretch windows come from @auction/shared (single source of
+ * truth) and are interpolated into the script body below as millisecond literals.
  */
-import { ANTI_SNIPE_EXTENSION_SEC, ANTI_SNIPE_WINDOW_SEC } from "@auction/shared";
+import { ANTI_SNIPE_EXTENSION_SEC, ANTI_SNIPE_WINDOW_SEC, FINAL_STRETCH_SEC } from "@auction/shared";
 
 export const BID_LUA = `
 local lotKey = KEYS[1]
@@ -39,10 +43,18 @@ local status = h[6]
 if status ~= 'live' then return {0,'closed'} end
 if now > endsAt then return {0,'closed'} end
 if leader == userId then return {0,'self'} end
-if option ~= 1 and option ~= 2 then return {0,'bad_increment'} end
+if option ~= 1 and option ~= 2 and option ~= 3 and option ~= 4 then return {0,'bad_increment'} end
+
+-- fast (double) options unlock only inside the final stretch
+if (option == 3 or option == 4) and (endsAt - now) > ${FINAL_STRETCH_SEC * 1000} then
+  return {0,'locked'}
+end
 
 local inc
-if option == 1 then inc = inc1 else inc = inc2 end
+if option == 1 then inc = inc1
+elseif option == 2 then inc = inc2
+elseif option == 3 then inc = inc1 * 2
+else inc = inc2 * 2 end
 local amount = price + inc
 
 local ucKey = 'u:'..userId..':committed'

@@ -12,7 +12,8 @@ export const ClientMessage = z.discriminatedUnion("t", [
   z.object({
     t: z.literal("bid"),
     lotId: z.string().uuid(),
-    option: z.union([z.literal(1), z.literal(2)]),
+    // 1/2 = main increments; 3/4 = "fast" double increments (final stretch only)
+    option: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
   }),
   z.object({ t: z.literal("ping") }),
 ]);
@@ -27,6 +28,7 @@ export const BidRejectReasonSchema = z.enum([
   "insufficient",
   "not_eligible",
   "rate_limited",
+  "locked", // fast (double) option used before the final stretch
 ]);
 export type BidRejectReason = z.infer<typeof BidRejectReasonSchema>;
 

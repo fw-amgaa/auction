@@ -7,17 +7,17 @@ import { db, schema } from "@auction/db";
 
 import { writeAudit } from "@/lib/audit";
 import { notify } from "@/lib/notify";
-import { requireAdmin } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 
 export async function markPaid(lotId: string) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("results.mark_paid");
   await db.update(schema.lots).set({ payment: "paid", status: "settled" }).where(eq(schema.lots.id, lotId));
   await writeAudit({ actorId: admin.id, action: "result.mark_paid", targetType: "lot", targetId: lotId });
   revalidatePath("/admin/results");
 }
 
 export async function generatePermit(lotId: string) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("results.permit");
   await db.update(schema.lots).set({ permitIssuedAt: new Date() }).where(eq(schema.lots.id, lotId));
   await writeAudit({ actorId: admin.id, action: "result.permit_issued", targetType: "lot", targetId: lotId });
   revalidatePath("/admin/results");
@@ -29,7 +29,7 @@ export async function generatePermit(lotId: string) {
  * promotes the runner-up at their highest bid, resets payment to pending.
  */
 export async function defaultWinner(lotId: string) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("results.default");
   const [lot] = await db.select().from(schema.lots).where(eq(schema.lots.id, lotId)).limit(1);
   if (!lot || !lot.winnerUserId) return;
 

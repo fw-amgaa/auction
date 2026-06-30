@@ -243,7 +243,7 @@ export interface BidResult {
 export async function placeBid(
   lotId: string,
   userId: string,
-  option: 1 | 2,
+  option: 1 | 2 | 3 | 4,
   limit: number,
 ): Promise<BidResult> {
   const now = Date.now();
