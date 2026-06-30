@@ -349,12 +349,14 @@ export function LiveRoom(p: LiveRoomProps) {
       ? { bg: "linear-gradient(135deg,#2A0E14,#1C0A0F)", border: "rgba(255,92,97,.5)", glow: "rgba(224,59,75,.14)", icon: "!", iconBg: A.accent, iconFg: "#2A0708", title: "Таны саналыг давсан", sub: "Барьцаалсан мөнгө буцаагдлаа. Дахин үнэ нэмэх үү?", titleColor: A.accentSoft, subColor: "#E0A6A9" }
       : { bg: "linear-gradient(135deg,#101521,#0C0F18)", border: A.hairStrong, glow: "transparent", icon: "›", iconBg: "#1B2332", iconFg: "#8AA0C0", title: "Та оролцоонд ороогүй байна", sub: "Доорх товчоор үнэ нэмж оролцоно уу.", titleColor: A.fg, subColor: A.dim };
 
+  // Both options are equally valid bids (just different fixed increments), so
+  // they share one neutral treatment rather than a primary/secondary split.
+  // They stay distinguishable by amount and the 1/2 badge.
   const buttons = ([1, 2] as const).map((option) => {
     const increment = incrementForOption(increments, option);
     const amount = liveBidAmount(price, increments, option);
     const disabled = youLead || !!ended || conn !== "live" || amount > available;
-    const primary = option === 1 && !disabled;
-    return { option, increment, amount, disabled, primary };
+    return { option, increment, amount, disabled };
   });
 
   const connColor = conn === "live" ? A.success : A.amber;
@@ -600,20 +602,16 @@ export function LiveRoom(p: LiveRoomProps) {
                     disabled={b.disabled}
                     className="group relative min-w-[150px] flex-1 rounded-[15px] border px-3 pb-3.5 pt-4 text-center transition-all duration-200 enabled:hover:-translate-y-0.5 enabled:active:translate-y-0 enabled:active:scale-[.985]"
                     style={{
-                      background: b.disabled ? "rgba(255,255,255,.02)" : b.primary ? A.accent : "#171D29",
+                      background: b.disabled ? "rgba(255,255,255,.02)" : "#171D29",
                       color: b.disabled ? A.faint : "#fff",
-                      borderColor: b.disabled ? A.hair : b.primary ? A.accentHover : A.hairStrong,
-                      boxShadow: b.primary
-                        ? `0 14px 30px -14px rgba(224,59,75,.7), inset 0 1px 0 0 rgba(255,255,255,.18)`
-                        : b.disabled
-                          ? "none"
-                          : "inset 0 1px 0 0 rgba(255,255,255,.05)",
+                      borderColor: b.disabled ? A.hair : A.hairStrong,
+                      boxShadow: b.disabled ? "none" : "inset 0 1px 0 0 rgba(255,255,255,.05)",
                       cursor: b.disabled ? "not-allowed" : "pointer",
                     }}
                   >
                     <span
                       className="tnum absolute right-2 top-2 rounded px-1 text-[10px] leading-[15px]"
-                      style={{ border: `1px solid ${b.primary ? "rgba(255,255,255,.35)" : A.hairStrong}`, color: b.disabled ? A.faint : b.primary ? "rgba(255,255,255,.85)" : A.body }}
+                      style={{ border: `1px solid ${A.hairStrong}`, color: b.disabled ? A.faint : A.body }}
                     >
                       {b.option}
                     </span>
@@ -780,7 +778,7 @@ export function LiveRoom(p: LiveRoomProps) {
                 ? `Та энэ эрхийг ${formatTugrug(ended.price)}-өөр хожлоо. Барьцаалсан мөнгө худалдан авалтад зарцуулагдана.`
                 : ended.result === "lost"
                   ? `Эцсийн үнэ ${formatTugrug(ended.price)}. Таны барьцаа бүрэн буцаагдсан.`
-                  : "Энэ лот дээр санал ирээгүй тул дуусгавар боллоо."}
+                  : "Энэ удаад ялагч тодроогүй — лот дүрмийн дагуу дахин зарлагдана. Барьцаа байршуулсан бол буцаагдсан."}
             </div>
             <Link
               href={`/lots/${p.lotId}`}

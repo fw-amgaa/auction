@@ -61,7 +61,8 @@ export function RerunPanel({
     <div className="rounded-2xl border border-line-cool bg-white p-5">
       <h3 className="mb-1 text-sm font-bold text-navy">Дахин дуудлага (re-run)</h3>
       <p className="text-[12.5px] leading-relaxed text-ink-soft">
-        Хожсон оролцогч төлбөрөө төлөөгүй бол лотыг дахин нээж, шинээр дуудлага явуулна.
+        Хожигч төлбөрөө төлөөгүй, эсвэл оролцогч хүрэлцээгүй (ганц буюу огт оролцоогүй) тул
+        ялагч тодроогүй тохиолдолд лотыг дахин нээж, шинээр дуудлага явуулна.
         {winnerName ? (
           <>
             {" "}

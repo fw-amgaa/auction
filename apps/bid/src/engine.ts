@@ -369,47 +369,73 @@ export async function finalize(lotId: string): Promise<FinalizeResult> {
   await redis.hset(key, "status", "ended");
   await redis.srem(LIVE_SET, lotId);
 
-  // distinct bidders (to notify losers)
+  // Distinct bidders. A valid sale needs competition: per the удирдамж
+  // (§9.1.1–9.1.2) a lot with only one participant — or none — has no winner and
+  // must be re-run by an admin. A winner is therefore declared only with ≥2
+  // distinct bidders; otherwise the sole bidder's hold is released (refunded),
+  // not consumed.
   const bidders = await db
     .selectDistinct({ userId: schema.bids.userId })
     .from(schema.bids)
     .where(eq(schema.bids.lotId, lotId));
 
+  const winner = leader && bidders.length >= 2 ? leader : null;
+
   try {
     await db.transaction(async (tx) => {
       await tx
         .update(schema.lots)
-        .set({ status: "ended", winnerUserId: leader })
+        .set({ status: "ended", winnerUserId: winner })
         .where(eq(schema.lots.id, lotId));
 
-      if (leader) {
-        const committed = Math.max(0, (await getCommitted(leader)) - price);
-        await redis.set(committedKey(leader), String(committed));
-        const [u] = await tx.select().from(schema.users).where(eq(schema.users.id, leader)).limit(1);
+      if (winner) {
+        // Consume the winner's hold — it becomes the purchase price.
+        const committed = Math.max(0, (await getCommitted(winner)) - price);
+        await redis.set(committedKey(winner), String(committed));
+        const [u] = await tx.select().from(schema.users).where(eq(schema.users.id, winner)).limit(1);
         const newLimit = Math.max(0, (u?.limit ?? price) - price);
         await tx
           .update(schema.users)
           .set({ committedCache: committed, limit: newLimit })
-          .where(eq(schema.users.id, leader));
+          .where(eq(schema.users.id, winner));
         await tx.insert(schema.limitLedger).values({
-          userId: leader,
+          userId: winner,
           type: "consume",
           delta: -price,
           balanceAfter: newLimit,
           committedAfter: committed,
           lotId,
         });
-        await tx.insert(schema.notifications).values({ userId: leader, type: "won", payload: { ...lotCtx, price } });
+        await tx.insert(schema.notifications).values({ userId: winner, type: "won", payload: { ...lotCtx, price } });
+
+        const losers = bidders.map((b) => b.userId).filter((id) => id !== winner);
+        if (losers.length > 0) {
+          await tx.insert(schema.notifications).values(
+            losers.map((userId) => ({ userId, type: "lost" as const, payload: lotCtx })),
+          );
+        }
+      } else if (leader) {
+        // Single-participant lot → no sale: release the sole bidder's hold so the
+        // money returns to their available limit. The lot will be re-run.
+        const committed = Math.max(0, (await getCommitted(leader)) - price);
+        await redis.set(committedKey(leader), String(committed));
+        await tx
+          .update(schema.users)
+          .set({ committedCache: committed })
+          .where(eq(schema.users.id, leader));
+        await tx.insert(schema.limitLedger).values({
+          userId: leader,
+          type: "release",
+          delta: price,
+          committedAfter: committed,
+          lotId,
+        });
+        await tx.insert(schema.notifications).values({ userId: leader, type: "lost", payload: lotCtx });
       }
-      const losers = bidders.map((b) => b.userId).filter((id) => id !== leader);
-      if (losers.length > 0) {
-        await tx.insert(schema.notifications).values(
-          losers.map((userId) => ({ userId, type: "lost" as const, payload: lotCtx })),
-        );
-      }
+      // No bidders at all → nothing to release or notify.
     });
   } catch (e) {
     log.error({ err: e, lotId }, "finalize persist failed");
   }
-  return { finalized: true, leaderUserId: leader, price };
+  return { finalized: true, leaderUserId: winner, price };
 }

@@ -91,11 +91,15 @@ export default async function AdminLotDetailPage({ params }: { params: Promise<{
           {ended && (
             <div
               className="rounded-xl border px-4 py-2.5 text-right"
-              style={lot.winnerName ? { background: "#FBF3DF", borderColor: "#EAD9A8" } : { background: "#F5F2EB", borderColor: "#E6E1D6" }}
+              style={lot.winnerName ? { background: "#FBF3DF", borderColor: "#EAD9A8" } : { background: "#FBF1DF", borderColor: "#EAD9A8" }}
             >
               <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">Ялагч</div>
-              <div className="text-[14px] font-bold" style={{ color: lot.winnerName ? "#A9760E" : "#8A93A3" }}>
-                {lot.winnerName ? `🏆 ${lot.winnerName}` : "Ялагчгүй"}
+              <div className="text-[14px] font-bold" style={{ color: lot.winnerName ? "#A9760E" : "#C77A0A" }}>
+                {lot.winnerName
+                  ? `🏆 ${lot.winnerName}`
+                  : lot.bidders >= 1
+                    ? "↻ Ялагчгүй · дахин зарлах"
+                    : "↻ Санал ирээгүй · дахин зарлах"}
               </div>
             </div>
           )}

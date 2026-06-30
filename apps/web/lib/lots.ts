@@ -186,7 +186,8 @@ export async function getLotDetail(id: string, viewerId?: string): Promise<LotDe
     .limit(1);
   if (!row) return null;
 
-  // All bids ascending → stable per-user participant numbers; show the last 8.
+  // All bids ascending → stable per-user participant numbers. The full history
+  // is returned (newest first); the lot page renders it in a scrollable list.
   const allBids = await db
     .select()
     .from(schema.bids)
@@ -197,8 +198,7 @@ export async function getLotDetail(id: string, viewerId?: string): Promise<LotDe
   for (const b of allBids) if (!num.has(b.userId)) num.set(b.userId, num.size + 1);
 
   const now = Date.now();
-  const history = allBids
-    .slice(-8)
+  const history = [...allBids]
     .reverse()
     .map((b) => ({
       label: viewerId && b.userId === viewerId ? "Та" : `Оролцогч #${num.get(b.userId)}`,

@@ -112,15 +112,17 @@ export function LotActionPanel(p: PanelProps) {
                 ? { background: "#FBF3DF", color: "#A9760E" }
                 : p.winnerLabel
                   ? { background: "#EEF1F5", color: "#14294A" }
-                  : { background: "#F3F0E9", color: "#5B6677" }
+                  : { background: "#FBF1DF", color: "#C77A0A" }
             }
           >
             {p.iWon ? (
               <>🏆 Та хожлоо</>
             ) : p.winnerLabel ? (
               <>🔨 {p.winnerLabel} хожлоо</>
+            ) : p.bidders >= 1 ? (
+              <>↻ Ганц оролцогчтой — дахин зарлагдана</>
             ) : (
-              <>Дуусгавар болсон</>
+              <>↻ Санал ирээгүй — дахин зарлагдана</>
             )}
           </div>
         ) : (

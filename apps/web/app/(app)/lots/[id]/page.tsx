@@ -58,7 +58,7 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
               ? { background: "linear-gradient(135deg,#FBF3DF,#FDF9EF)", borderColor: "#EAD9A8" }
               : lot.winnerLabel
                 ? { background: "#F4F6F9", borderColor: "#E2E7EE" }
-                : { background: "#F5F2EB", borderColor: "#E6E1D6" }
+                : { background: "#FBF1DF", borderColor: "#EAD9A8" }
           }
         >
           <span
@@ -66,29 +66,34 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
             style={
               lot.iWon
                 ? { background: "#F6E3AE", color: "#A9760E" }
-                : { background: "#FFFFFF", color: "#5B6677" }
+                : lot.winnerLabel
+                  ? { background: "#FFFFFF", color: "#5B6677" }
+                  : { background: "#F6E3AE", color: "#C77A0A" }
             }
           >
-            {lot.iWon ? "🏆" : lot.winnerLabel ? "🔨" : "—"}
+            {lot.iWon ? "🏆" : lot.winnerLabel ? "🔨" : "↻"}
           </span>
           <div className="min-w-0 flex-1">
             <div
               className="text-[16px] font-bold"
-              style={{ color: lot.iWon ? "#A9760E" : "#14294A" }}
+              style={{ color: lot.iWon ? "#A9760E" : lot.winnerLabel ? "#14294A" : "#C77A0A" }}
             >
               {lot.iWon
                 ? "Баяр хүргэе — та энэ лотыг хожлоо"
                 : lot.winnerLabel
                   ? `${lot.winnerLabel} энэ лотыг хожлоо`
-                  : "Энэ лот дээр санал ирээгүй — дуусгавар болсон"}
+                  : lot.bidders >= 1
+                    ? "Ганц оролцогчтой тул ялагч тодроогүй"
+                    : "Санал ирээгүй тул ялагч тодроогүй"}
             </div>
             <div className="mt-0.5 text-[13px] text-ink-soft">
-              Дуудлага худалдаа дууссан
-              {lot.winnerLabel && (
+              {lot.winnerLabel ? (
                 <>
-                  {" · "}Эцсийн үнэ{" "}
+                  Дуудлага худалдаа дууссан · Эцсийн үнэ{" "}
                   <strong className="tnum text-navy">{formatTugrug(lot.finalPrice)}</strong>
                 </>
+              ) : (
+                "Дүрмийн дагуу (дор хаяж 2 оролцогч шаардлагатай) энэ лот дахин зарлагдана."
               )}
             </div>
           </div>
@@ -146,8 +151,7 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
               {steps.map((s) => (
                 <div
                   key={s.inc}
-                  className="min-w-[120px] flex-1 rounded-[10px] border border-line p-3 text-center"
-                  style={{ background: s.inc === inc1 ? "#FBEFEE" : "#FFF" }}
+                  className="min-w-[120px] flex-1 rounded-[10px] border border-line bg-white p-3 text-center"
                 >
                   <div className="tnum text-[11px] font-semibold text-muted">+{formatTugrug(s.inc)}</div>
                   <div className="tnum mt-1 text-[13px] font-bold text-navy">{formatTugrug(s.amount)}</div>
@@ -160,30 +164,32 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
           <div className="rounded-[14px] border border-line bg-white p-[22px]">
             <div className="mb-3.5 flex items-center justify-between">
               <h2 className="text-lg font-bold text-navy">Саналын түүх</h2>
-              <span className="text-[12px] text-muted">Сүүлийн {lot.history.length} санал</span>
+              <span className="text-[12px] text-muted">Нийт {lot.history.length} санал</span>
             </div>
             {lot.history.length === 0 ? (
               <div className="text-[13px] text-muted">Одоогоор санал ирээгүй байна.</div>
             ) : (
-              lot.history.map((h, i) => (
-                <div key={i} className="flex items-center gap-3 border-b border-[#F0ECE2] py-2.5 last:border-0">
-                  <span
-                    className="grid size-[30px] place-items-center rounded-full text-[11px] font-bold"
-                    style={h.mine ? { background: "#E5F4EC", color: "#1F8A5B" } : { background: "#EEF1F5", color: "#14294A" }}
-                  >
-                    {h.mine ? "Та" : "#"}
-                  </span>
-                  <div className="flex-1">
-                    <div className="text-[13.5px] font-semibold" style={{ color: h.mine ? "#197a50" : "#14294A" }}>
-                      {h.label}
+              <div className="max-h-[440px] overflow-y-auto pr-1">
+                {lot.history.map((h, i) => (
+                  <div key={i} className="flex items-center gap-3 border-b border-[#F0ECE2] py-2.5 last:border-0">
+                    <span
+                      className="grid size-[30px] shrink-0 place-items-center rounded-full text-[11px] font-bold"
+                      style={h.mine ? { background: "#E5F4EC", color: "#1F8A5B" } : { background: "#EEF1F5", color: "#14294A" }}
+                    >
+                      {h.mine ? "Та" : "#"}
+                    </span>
+                    <div className="flex-1">
+                      <div className="text-[13.5px] font-semibold" style={{ color: h.mine ? "#197a50" : "#14294A" }}>
+                        {h.label}
+                      </div>
+                      <div className="text-[11.5px] text-muted">
+                        {h.agoSec < 60 ? `${h.agoSec} сек өмнө` : `${Math.floor(h.agoSec / 60)} мин өмнө`}
+                      </div>
                     </div>
-                    <div className="text-[11.5px] text-muted">
-                      {h.agoSec < 60 ? `${h.agoSec} сек өмнө` : `${Math.floor(h.agoSec / 60)} мин өмнө`}
-                    </div>
+                    <span className="tnum text-sm font-semibold text-navy">{formatTugrug(h.amount)}</span>
                   </div>
-                  <span className="tnum text-sm font-semibold text-navy">{formatTugrug(h.amount)}</span>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         </div>
