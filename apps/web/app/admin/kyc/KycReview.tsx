@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { approveKyc, rejectKyc } from "@/app/admin/actions";
+import { DocThumb } from "@/components/DocThumb";
 import { KycBadge } from "@/components/KycBadge";
 
 export interface Applicant {
@@ -181,15 +182,7 @@ export function KycReview({ applicants }: { applicants: Applicant[] }) {
                     onClick={() => setViewer({ id: d.id, label: d.label })}
                     className="overflow-hidden rounded-xl border border-line-cool bg-white text-left hover:border-navy"
                   >
-                    <div
-                      className="flex h-[108px] items-center justify-center text-[13px] font-bold text-ink-soft"
-                      style={{
-                        backgroundImage:
-                          "repeating-linear-gradient(135deg,#DCE3EC 0 12px,#D2DAE5 12px 24px)",
-                      }}
-                    >
-                      {d.kind}
-                    </div>
+                    <DocThumb id={d.id} kind={d.kind} label={d.label} className="h-[108px]" />
                     <div className="px-3 py-2.5 text-[12.5px] font-semibold text-navy">{d.label}</div>
                   </button>
                 ))}

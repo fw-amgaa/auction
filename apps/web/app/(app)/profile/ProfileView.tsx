@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 
 import { formatTugrug } from "@auction/shared";
 
+import { DocThumb } from "@/components/DocThumb";
 import { LocalTime } from "@/components/LocalTime";
 import { logout } from "@/lib/session-actions";
 
@@ -131,9 +132,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
             <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
               {data.docs.map((d) => (
                 <a key={d.id} href={`/api/admin/kyc-doc/${d.id}`} target="_blank" rel="noopener noreferrer" className="overflow-hidden rounded-[11px] border border-line hover:border-navy">
-                  <div className="flex h-[104px] items-center justify-center text-[12.5px] font-bold text-ink-soft" style={{ backgroundImage: "repeating-linear-gradient(135deg,#DCE3EC 0 12px,#D2DAE5 12px 24px)" }}>
-                    {d.kind}
-                  </div>
+                  <DocThumb id={d.id} kind={d.kind} label={d.label} className="h-[104px]" />
                   <div className="px-3 py-2.5 text-[12.5px] font-semibold text-navy">{d.label}</div>
                 </a>
               ))}

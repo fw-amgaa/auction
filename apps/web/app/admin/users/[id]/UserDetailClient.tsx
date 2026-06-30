@@ -12,6 +12,7 @@ import {
   updateUserCodes,
   updateUserInfo,
 } from "@/app/admin/actions";
+import { DocThumb } from "@/components/DocThumb";
 import { KycBadge } from "@/components/KycBadge";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -174,15 +175,7 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                     rel="noopener noreferrer"
                     className="overflow-hidden rounded-xl border border-line-cool hover:border-navy"
                   >
-                    <div
-                      className="flex h-[100px] items-center justify-center text-[12.5px] font-bold text-ink-soft"
-                      style={{
-                        backgroundImage:
-                          "repeating-linear-gradient(135deg,#DCE3EC 0 12px,#D2DAE5 12px 24px)",
-                      }}
-                    >
-                      {d.kind}
-                    </div>
+                    <DocThumb id={d.id} kind={d.kind} label={d.label} className="h-[100px]" />
                     <div className="px-3 py-2.5 text-xs font-semibold text-navy">{d.label}</div>
                   </a>
                 ))}
