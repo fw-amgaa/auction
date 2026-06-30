@@ -208,6 +208,14 @@ export default function LandingPage() {
               >
                 Удирдамж унших
               </Link>
+              <a
+                href="/udirdamj-2026.pdf"
+                download
+                className="inline-flex items-center gap-2 rounded-input px-5 py-3.5 text-sm font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <DownloadIcon />
+                Удирдамж татах (PDF)
+              </a>
             </div>
 
             {/* real stats from the удирдамж */}
@@ -460,6 +468,16 @@ export default function LandingPage() {
                   </Link>
                 </li>
                 <li>
+                  <a
+                    href="/udirdamj-2026.pdf"
+                    download
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-white"
+                  >
+                    Удирдамж (PDF)
+                    <DownloadIcon />
+                  </a>
+                </li>
+                <li>
                   <Link href="/catalog" className="transition-colors hover:text-white">
                     Каталог
                   </Link>
@@ -498,6 +516,26 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 3v12" />
+      <path d="m7 11 5 5 5-5" />
+      <path d="M5 21h14" />
+    </svg>
   );
 }
 
