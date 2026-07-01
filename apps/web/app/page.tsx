@@ -84,8 +84,16 @@ const SCHEDULE: SpeciesSchedule[] = [
     window: "09:00 – 10:10",
     totalLots: 11,
     batches: [
-      { label: "1-р багц", time: "09:00 – 09:20", codes: ["U1", "U2", "U3", "U4"] },
-      { label: "2-р багц", time: "09:25 – 09:45", codes: ["U5", "U6", "U7", "U8"] },
+      {
+        label: "1-р багц",
+        time: "09:00 – 09:20",
+        codes: ["U1", "U2", "U3", "U4"],
+      },
+      {
+        label: "2-р багц",
+        time: "09:25 – 09:45",
+        codes: ["U5", "U6", "U7", "U8"],
+      },
       { label: "3-р багц", time: "09:50 – 10:10", codes: ["U9", "U10", "U11"] },
     ],
   },
@@ -96,11 +104,31 @@ const SCHEDULE: SpeciesSchedule[] = [
     window: "10:20 – 12:20",
     totalLots: 24,
     batches: [
-      { label: "1-р багц", time: "10:20 – 10:40", codes: ["T101", "T102", "T103", "T104", "T105"] },
-      { label: "2-р багц", time: "10:45 – 11:05", codes: ["T106", "T107", "T108", "T109", "T110"] },
-      { label: "3-р багц", time: "11:10 – 11:30", codes: ["T111", "T112", "T113", "T114", "T115"] },
-      { label: "4-р багц", time: "11:35 – 11:55", codes: ["T116", "T117", "T118", "T119", "T120"] },
-      { label: "5-р багц", time: "12:00 – 12:20", codes: ["T121", "T122", "T123", "T124"] },
+      {
+        label: "1-р багц",
+        time: "10:20 – 10:40",
+        codes: ["T101", "T102", "T103", "T104", "T105"],
+      },
+      {
+        label: "2-р багц",
+        time: "10:45 – 11:05",
+        codes: ["T106", "T107", "T108", "T109", "T110"],
+      },
+      {
+        label: "3-р багц",
+        time: "11:10 – 11:30",
+        codes: ["T111", "T112", "T113", "T114", "T115"],
+      },
+      {
+        label: "4-р багц",
+        time: "11:35 – 11:55",
+        codes: ["T116", "T117", "T118", "T119", "T120"],
+      },
+      {
+        label: "5-р багц",
+        time: "12:00 – 12:20",
+        codes: ["T121", "T122", "T123", "T124"],
+      },
     ],
   },
 ];
@@ -366,7 +394,10 @@ export default function LandingPage() {
         </section>
 
         {/* ── auction-day schedule / timetable ───────────────────── */}
-        <section id="huvaari" className="scroll-anchor border-y border-line bg-card">
+        <section
+          id="huvaari"
+          className="scroll-anchor border-y border-line bg-card"
+        >
           <div className="mx-auto max-w-6xl px-5 py-20">
             <div className="max-w-2xl">
               <span className="text-xs font-semibold uppercase tracking-[0.14em] text-crimson">
@@ -376,9 +407,12 @@ export default function LandingPage() {
                 Аль лот хэдэн цагт дуудагдах вэ
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-                Дуудлага <span className="font-semibold text-navy">угалзаар</span> эхэлж, 10 минутын
-                завсарлагааны дараа <span className="font-semibold text-navy">тэх</span> үргэлжилнэ.
-                Лотууд багц багцаар, 20 минутын зайтай дуудагдана. Бүх цаг орон нутгийн цагаар.
+                Дуудлага{" "}
+                <span className="font-semibold text-navy">угалзаар</span> эхэлж,
+                10 минутын завсарлагааны дараа{" "}
+                <span className="font-semibold text-navy">тэх</span> үргэлжилнэ.
+                Лотууд багц багцаар, 20 минутын зайтай дуудагдана. Бүх цаг орон
+                нутгийн цагаар. (UTC +7)
               </p>
             </div>
 
@@ -386,7 +420,9 @@ export default function LandingPage() {
             <div className="mt-9 rounded-card border border-line bg-sand p-4 sm:p-5">
               <div className="mb-3 flex flex-wrap items-center gap-2 border-b border-line pb-3">
                 <CalendarIcon />
-                <span className="tnum text-[14.5px] font-bold text-navy">{AUCTION_DATE}</span>
+                <span className="tnum text-[14.5px] font-bold text-navy">
+                  {AUCTION_DATE}
+                </span>
                 <span className="ml-auto rounded-pill bg-crimson/10 px-2.5 py-1 text-[11.5px] font-semibold text-crimson">
                   09:00 цагаас
                 </span>
@@ -431,12 +467,18 @@ export default function LandingPage() {
                         style={{ background: sp.accent }}
                       />
                       <div>
-                        <h3 className="text-[19px] font-bold leading-tight text-navy">{sp.name}</h3>
-                        <div className="text-[12.5px] italic text-muted">{sp.latin}</div>
+                        <h3 className="text-[19px] font-bold leading-tight text-navy">
+                          {sp.name}
+                        </h3>
+                        <div className="text-[12.5px] italic text-muted">
+                          {sp.latin}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="tnum text-[15px] font-bold text-navy">{sp.window}</div>
+                      <div className="tnum text-[15px] font-bold text-navy">
+                        {sp.window}
+                      </div>
                       <div className="text-[12px] text-muted">
                         {sp.totalLots} лот · {sp.batches.length} багц
                       </div>
@@ -453,8 +495,12 @@ export default function LandingPage() {
                           >
                             {b.time}
                           </span>
-                          <span className="text-[13px] font-semibold text-navy">{b.label}</span>
-                          <span className="text-[12px] text-muted">· {b.codes.length} лот</span>
+                          <span className="text-[13px] font-semibold text-navy">
+                            {b.label}
+                          </span>
+                          <span className="text-[12px] text-muted">
+                            · {b.codes.length} лот
+                          </span>
                         </div>
                         <div className="mt-2.5 flex flex-wrap gap-1.5">
                           {b.codes.map((code) => (
@@ -475,7 +521,8 @@ export default function LandingPage() {
 
             <p className="mt-6 inline-flex items-center gap-1.5 text-[12.5px] text-muted">
               <span className="size-1.5 rounded-full bg-success" />
-              Багц бүрийн хооронд 5 минут, угалз ба тэхийн хооронд 10 минутын завсарлага авна.
+              Багц бүрийн хооронд 5 минут, угалз ба тэхийн хооронд 10 минутын
+              завсарлага авна.
             </p>
           </div>
         </section>
