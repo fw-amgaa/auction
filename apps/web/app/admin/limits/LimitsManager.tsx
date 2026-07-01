@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { formatTugrug } from "@auction/shared";
@@ -35,8 +37,23 @@ function avatar(t: string) {
 
 const COLS = "grid grid-cols-[1.6fr_1fr_1fr_1fr_120px] gap-3";
 
-export function LimitsManager({ users }: { users: LimitRow[] }) {
-  const [q, setQ] = useState("");
+export function LimitsManager({
+  users,
+  totals,
+  q: initialQ,
+  page,
+  hasNext,
+}: {
+  users: LimitRow[];
+  totals: { users: number; totalLimit: number; totalCommitted: number };
+  q: string;
+  page: number;
+  hasNext: boolean;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const [q, setQ] = useState(initialQ);
   const [selId, setSelId] = useState<string | null>(null);
   const [action, setAction] = useState<LimitAction>("raise");
   const [amount, setAmount] = useState("");
@@ -45,11 +62,25 @@ export function LimitsManager({ users }: { users: LimitRow[] }) {
   const [toast, setToast] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const rows = users.filter((u) => !q.trim() || u.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const rows = users;
   const sel = users.find((u) => u.id === selId) ?? null;
 
-  const totalLimit = users.reduce((a, u) => a + u.limit, 0);
-  const totalHeld = users.reduce((a, u) => a + u.committed, 0);
+  function search(value: string) {
+    setQ(value);
+    const next = new URLSearchParams(params.toString());
+    if (value.trim()) next.set("q", value.trim());
+    else next.delete("q");
+    next.delete("page");
+    startTransition(() => router.replace(`${pathname}?${next.toString()}`));
+  }
+  const pageHref = (n: number) => {
+    const next = new URLSearchParams(params.toString());
+    if (n > 1) next.set("page", String(n));
+    else next.delete("page");
+    const s = next.toString();
+    return s ? `${pathname}?${s}` : pathname;
+  };
+
   const amt = Number.parseInt(amount.replace(/\D/g, "") || "0", 10);
   const newLimit = sel ? (action === "raise" ? sel.limit + amt : Math.max(0, sel.limit - amt)) : 0;
 
@@ -81,7 +112,7 @@ export function LimitsManager({ users }: { users: LimitRow[] }) {
       <AdminTopbar title="Лимит удирдлага">
         <input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => search(e.target.value)}
           placeholder="Хэрэглэгч хайх"
           className="h-[38px] w-60 rounded-[9px] border border-line-cool bg-[#F7F8FA] px-3 text-[13px] outline-none"
         />
@@ -90,9 +121,9 @@ export function LimitsManager({ users }: { users: LimitRow[] }) {
       <div className="p-6">
         <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3.5">
           {[
-            ["Нийт хэрэглэгч", String(users.length)],
-            ["Олгосон нийт лимит", formatTugrug(totalLimit)],
-            ["Идэвхтэй барьцаа", formatTugrug(totalHeld)],
+            ["Нийт хэрэглэгч", String(totals.users)],
+            ["Олгосон нийт лимит", formatTugrug(totals.totalLimit)],
+            ["Идэвхтэй барьцаа", formatTugrug(totals.totalCommitted)],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-line-cool bg-white p-4">
               <div className="text-[11.5px] font-semibold text-muted">{label}</div>
@@ -138,6 +169,28 @@ export function LimitsManager({ users }: { users: LimitRow[] }) {
           })}
           {rows.length === 0 && <div className="px-5 py-12 text-center text-[13px] text-muted">Хэрэглэгч алга.</div>}
         </div>
+
+        {(page > 1 || hasNext) && (
+          <div className="mt-4 flex items-center justify-between text-[13px]">
+            <span className="text-muted">Хуудас {page}</span>
+            <div className="flex gap-2">
+              {page > 1 ? (
+                <Link href={pageHref(page - 1)} className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white">
+                  ← Өмнөх
+                </Link>
+              ) : (
+                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">← Өмнөх</span>
+              )}
+              {hasNext ? (
+                <Link href={pageHref(page + 1)} className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white">
+                  Дараах →
+                </Link>
+              ) : (
+                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">Дараах →</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {sel && (

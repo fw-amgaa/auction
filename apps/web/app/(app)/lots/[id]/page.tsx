@@ -96,6 +96,12 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
                 "Дүрмийн дагуу (дор хаяж 2 оролцогч шаардлагатай) энэ лот дахин зарлагдана."
               )}
             </div>
+            {lot.iWon && (
+              <div className="mt-2 text-[13px] font-semibold" style={{ color: "#A9760E" }}>
+                Та дуудлага худалдааны ялагч болсон тул төлбөрийг 24 цагийн дотор Ховд төрийн сан дахь{" "}
+                <span className="tnum">310090100160000961</span> тоот дансанд байршуулна уу.
+              </div>
+            )}
           </div>
         </div>
       )}

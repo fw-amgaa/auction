@@ -4,39 +4,53 @@ import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { KycBadge } from "@/components/KycBadge";
-import { getApplicants } from "@/lib/admin";
+import { type AccountType, type ApplicantsSort, type KycStatus, getApplicantCounts, getApplicantsPage } from "@/lib/admin";
 import { requirePageAccess } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 const COLS = "grid grid-cols-[1.7fr_1.1fr_1fr_1.1fr_120px] gap-3";
+const PAGE_SIZE = 50;
+const SORTS: ApplicantsSort[] = ["created", "limitDesc", "limitAsc"];
 
-export default async function AdminUsersPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; type?: string; kyc?: string; sort?: string }>;
-}) {
+interface SP {
+  q?: string;
+  type?: string;
+  kyc?: string;
+  sort?: string;
+  page?: string;
+}
+
+export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requirePageAccess("users.view");
   const sp = await searchParams;
-  const all = await getApplicants();
+  const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
+  const sort: ApplicantsSort = SORTS.includes(sp.sort as ApplicantsSort) ? (sp.sort as ApplicantsSort) : "created";
 
-  const q = (sp.q ?? "").trim().toLowerCase();
-  let rows = all.filter(
-    (u) =>
-      (!sp.type || sp.type === "all" || u.accountType === sp.type) &&
-      (!sp.kyc || sp.kyc === "all" || u.kyc === sp.kyc) &&
-      (!q ||
-        u.name.toLowerCase().includes(q) ||
-        u.registry.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.phone.includes(q)),
-  );
-  if (sp.sort === "limitDesc") rows = [...rows].sort((a, b) => b.limit - a.limit);
-  else if (sp.sort === "limitAsc") rows = [...rows].sort((a, b) => a.limit - b.limit);
-  // default: getApplicants already returns newest-first
+  const [{ rows, hasNext }, counts] = await Promise.all([
+    getApplicantsPage({
+      q: sp.q,
+      type: sp.type && sp.type !== "all" ? (sp.type as AccountType) : undefined,
+      kyc: sp.kyc && sp.kyc !== "all" ? (sp.kyc as KycStatus) : undefined,
+      sort,
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+    }),
+    getApplicantCounts(),
+  ]);
+  const total = counts.pending + counts.approved + counts.rejected;
 
   // toolbar is a client component imported lazily to keep server boundary clean
   const { UsersToolbar } = await import("./UsersToolbar");
+
+  const base = new URLSearchParams();
+  for (const k of ["q", "type", "kyc", "sort"] as const) if (sp[k]) base.set(k, sp[k]!);
+  const pageHref = (n: number) => {
+    const q = new URLSearchParams(base);
+    if (n > 1) q.set("page", String(n));
+    const s = q.toString();
+    return s ? `/admin/users?${s}` : "/admin/users";
+  };
 
   return (
     <div>
@@ -45,7 +59,7 @@ export default async function AdminUsersPage({
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-bold text-navy">Хэрэглэгчид</h1>
             <span className="tnum rounded-md bg-admin-bg px-2.5 py-1 text-[11.5px] font-semibold text-ink-soft">
-              {all.length} бүртгэл
+              {total} бүртгэл
             </span>
           </div>
         }
@@ -126,6 +140,38 @@ export default async function AdminUsersPage({
             </div>
           )}
         </div>
+
+        {(page > 1 || hasNext) && (
+          <div className="mt-4 flex items-center justify-between text-[13px]">
+            <span className="text-muted">Хуудас {page}</span>
+            <div className="flex gap-2">
+              {page > 1 ? (
+                <Link
+                  href={pageHref(page - 1)}
+                  className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white"
+                >
+                  ← Өмнөх
+                </Link>
+              ) : (
+                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">
+                  ← Өмнөх
+                </span>
+              )}
+              {hasNext ? (
+                <Link
+                  href={pageHref(page + 1)}
+                  className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white"
+                >
+                  Дараах →
+                </Link>
+              ) : (
+                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">
+                  Дараах →
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

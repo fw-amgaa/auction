@@ -1,6 +1,6 @@
 import "server-only";
 
-import { eq, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, ne, or } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
 
@@ -90,13 +90,85 @@ function toView(u: UserRow): AdminUserView {
   };
 }
 
-export async function getApplicants(): Promise<AdminUserView[]> {
+export type ApplicantsSort = "created" | "limitDesc" | "limitAsc";
+
+const APPLICANTS_SORTS = {
+  created: desc(schema.users.createdAt),
+  limitDesc: desc(schema.users.limit),
+  limitAsc: asc(schema.users.limit),
+} as const;
+
+export interface ApplicantsFilter {
+  kyc?: KycStatus;
+  type?: AccountType;
+  /** Matched against name, registry number, email, phone (server-side, case-insensitive). */
+  q?: string;
+  sort?: ApplicantsSort;
+}
+
+/**
+ * Page of applicants for the KYC queue / users list — both were previously backed by
+ * an unbounded `findMany()` that shipped every non-admin user (with all profile/doc/
+ * code relations) to the browser on every request. Filters/sort now run in SQL and
+ * only the requested page's full relations are ever fetched.
+ */
+export async function getApplicantsPage(
+  filter: ApplicantsFilter & { limit: number; offset: number },
+): Promise<{ rows: AdminUserView[]; hasNext: boolean }> {
+  const conds = [ne(schema.users.role, "admin")];
+  if (filter.kyc) conds.push(eq(schema.users.kyc, filter.kyc));
+  if (filter.type) conds.push(eq(schema.users.accountType, filter.type));
+  if (filter.q?.trim()) {
+    const q = `%${filter.q.trim()}%`;
+    conds.push(
+      or(
+        ilike(schema.users.email, q),
+        ilike(schema.users.phone, q),
+        ilike(schema.individualProfiles.surname, q),
+        ilike(schema.individualProfiles.givenName, q),
+        ilike(schema.individualProfiles.registryNumber, q),
+        ilike(schema.legalEntityProfiles.registeredName, q),
+        ilike(schema.legalEntityProfiles.registryNumber, q),
+      )!,
+    );
+  }
+
+  // Resolve the page of ids (with sort/filter incl. joined profile fields for `q`)
+  // first, then fetch full relations only for those ids — the relational query API
+  // can't filter/sort on joined tables directly.
+  const idRows = await db
+    .selectDistinct({ id: schema.users.id })
+    .from(schema.users)
+    .leftJoin(schema.individualProfiles, eq(schema.individualProfiles.userId, schema.users.id))
+    .leftJoin(schema.legalEntityProfiles, eq(schema.legalEntityProfiles.userId, schema.users.id))
+    .where(and(...conds))
+    .orderBy(APPLICANTS_SORTS[filter.sort ?? "created"])
+    .limit(filter.limit + 1)
+    .offset(filter.offset);
+
+  const hasNext = idRows.length > filter.limit;
+  const ids = idRows.slice(0, filter.limit).map((r) => r.id);
+  if (ids.length === 0) return { rows: [], hasNext: false };
+
   const rows = await db.query.users.findMany({
-    where: ne(schema.users.role, "admin"),
+    where: inArray(schema.users.id, ids),
     with: { individualProfile: true, legalEntityProfile: true, documents: true, codes: true },
-    orderBy: (u, { desc }) => [desc(u.createdAt)],
   });
-  return rows.map(toView);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const ordered = ids.map((id) => byId.get(id)).filter((r): r is UserRow => !!r);
+  return { rows: ordered.map(toView), hasNext };
+}
+
+/** Per-status counts for the KYC tab labels (pending/approved/rejected), independent of pagination. */
+export async function getApplicantCounts(): Promise<Record<KycStatus, number>> {
+  const rows = await db
+    .select({ kyc: schema.users.kyc, n: count() })
+    .from(schema.users)
+    .where(ne(schema.users.role, "admin"))
+    .groupBy(schema.users.kyc);
+  const out: Record<KycStatus, number> = { pending: 0, approved: 0, rejected: 0 };
+  for (const r of rows) out[r.kyc] = Number(r.n);
+  return out;
 }
 
 export async function getUserView(id: string): Promise<AdminUserView | null> {

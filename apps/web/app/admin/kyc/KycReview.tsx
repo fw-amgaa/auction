@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { approveKyc, rejectKyc } from "@/app/admin/actions";
@@ -16,6 +17,8 @@ export interface Applicant {
   docs: { id: string; label: string; kind: string }[];
 }
 
+type KycTab = "pending" | "approved" | "rejected";
+
 const TAB_LABELS: Record<string, string> = {
   pending: "Хүлээгдэж буй",
   approved: "Зөвшөөрсөн",
@@ -29,22 +32,26 @@ function typeMeta(t: Applicant["accountType"]) {
     : { label: "Иргэн", fg: "#197a50", bg: "#E5F4EC" };
 }
 
-export function KycReview({ applicants }: { applicants: Applicant[] }) {
-  const [tab, setTab] = useState<"pending" | "approved" | "rejected">("pending");
-  const [selId, setSelId] = useState<string | null>(
-    applicants.find((a) => a.kyc === "pending")?.id ?? applicants[0]?.id ?? null,
-  );
+export function KycReview({
+  applicants,
+  tab,
+  page,
+  hasNext,
+  counts,
+}: {
+  applicants: Applicant[];
+  tab: KycTab;
+  page: number;
+  hasNext: boolean;
+  counts: Record<KycTab, number>;
+}) {
+  const [selId, setSelId] = useState<string | null>(applicants[0]?.id ?? null);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const [viewer, setViewer] = useState<{ id: string; label: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const counts = {
-    pending: applicants.filter((a) => a.kyc === "pending").length,
-    approved: applicants.filter((a) => a.kyc === "approved").length,
-    rejected: applicants.filter((a) => a.kyc === "rejected").length,
-  };
-  const queue = applicants.filter((a) => a.kyc === tab);
+  const queue = applicants;
   const sel = applicants.find((a) => a.id === selId) ?? null;
 
   function doApprove(id: string) {
@@ -69,13 +76,10 @@ export function KycReview({ applicants }: { applicants: Applicant[] }) {
           {(["pending", "approved", "rejected"] as const).map((t) => {
             const on = t === tab;
             return (
-              <button
+              <Link
                 key={t}
-                onClick={() => {
-                  setTab(t);
-                  setRejecting(false);
-                }}
-                className="flex-1 rounded-lg border px-1 py-1.5 text-xs"
+                href={`/admin/kyc?tab=${t}`}
+                className="flex-1 rounded-lg border px-1 py-1.5 text-center text-xs"
                 style={{
                   background: on ? "#14294A" : "#FFF",
                   color: on ? "#FFF" : "#5B6677",
@@ -84,7 +88,7 @@ export function KycReview({ applicants }: { applicants: Applicant[] }) {
                 }}
               >
                 {TAB_LABELS[t]} ({counts[t]})
-              </button>
+              </Link>
             );
           })}
         </div>
@@ -129,6 +133,33 @@ export function KycReview({ applicants }: { applicants: Applicant[] }) {
         {queue.length === 0 && (
           <div className="px-5 py-10 text-center text-[13px] text-muted">
             Энэ ангилалд хүсэлт алга.
+          </div>
+        )}
+        {(page > 1 || hasNext) && (
+          <div className="flex items-center justify-between border-t border-[#EBEEF3] px-4 py-3 text-[12.5px]">
+            <span className="text-muted">Хуудас {page}</span>
+            <div className="flex gap-1.5">
+              {page > 1 ? (
+                <Link
+                  href={`/admin/kyc?tab=${tab}&page=${page - 1}`}
+                  className="rounded-[7px] border border-line-cool px-2.5 py-1.5 font-medium text-ink-soft hover:bg-[#F7F8FA]"
+                >
+                  ← Өмнөх
+                </Link>
+              ) : (
+                <span className="rounded-[7px] border border-line-cool px-2.5 py-1.5 font-medium text-[#C7CFD9]">← Өмнөх</span>
+              )}
+              {hasNext ? (
+                <Link
+                  href={`/admin/kyc?tab=${tab}&page=${page + 1}`}
+                  className="rounded-[7px] border border-line-cool px-2.5 py-1.5 font-medium text-ink-soft hover:bg-[#F7F8FA]"
+                >
+                  Дараах →
+                </Link>
+              ) : (
+                <span className="rounded-[7px] border border-line-cool px-2.5 py-1.5 font-medium text-[#C7CFD9]">Дараах →</span>
+              )}
+            </div>
           </div>
         )}
       </div>

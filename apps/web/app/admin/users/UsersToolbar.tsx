@@ -13,6 +13,7 @@ export function UsersToolbar() {
     const next = new URLSearchParams(params.toString());
     if (value && value !== "all") next.set(key, value);
     else next.delete(key);
+    next.delete("page"); // any filter change invalidates the current page offset
     startTransition(() => router.replace(`${pathname}?${next.toString()}`));
   }
 

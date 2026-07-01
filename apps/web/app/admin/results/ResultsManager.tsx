@@ -25,6 +25,7 @@ const TABS: [string, string][] = [
 ];
 
 const COLS = "grid grid-cols-[90px_1.3fr_1.3fr_1fr_120px_180px] gap-3";
+const PAGE_SIZE = 20;
 
 export function ResultsManager({
   rows,
@@ -34,10 +35,13 @@ export function ResultsManager({
   kpis: { ended: number; collected: number; pending: number; permitsLeft: number };
 }) {
   const [tab, setTab] = useState("all");
+  const [page, setPage] = useState(1);
   const [toast, setToast] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const { can } = usePermissions();
-  const visible = rows.filter((r) => tab === "all" || r.payment === tab);
+  const filtered = rows.filter((r) => tab === "all" || r.payment === tab);
+  const hasNext = page * PAGE_SIZE < filtered.length;
+  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function flash(m: string) {
     setToast(m);
@@ -83,7 +87,15 @@ export function ResultsManager({
               {TABS.map(([k, label]) => {
                 const on = k === tab;
                 return (
-                  <button key={k} onClick={() => setTab(k)} className="rounded-[7px] border px-3 py-1.5 text-[12px]" style={{ background: on ? "#14294A" : "#FFF", color: on ? "#FFF" : "#5B6677", borderColor: on ? "#14294A" : "#E1E5EC", fontWeight: on ? 700 : 500 }}>
+                  <button
+                    key={k}
+                    onClick={() => {
+                      setTab(k);
+                      setPage(1);
+                    }}
+                    className="rounded-[7px] border px-3 py-1.5 text-[12px]"
+                    style={{ background: on ? "#14294A" : "#FFF", color: on ? "#FFF" : "#5B6677", borderColor: on ? "#14294A" : "#E1E5EC", fontWeight: on ? 700 : 500 }}
+                  >
                     {label}
                   </button>
                 );
@@ -138,6 +150,28 @@ export function ResultsManager({
           })}
           {visible.length === 0 && <div className="px-5 py-12 text-center text-[13px] text-muted">Үр дүн алга.</div>}
         </div>
+
+        {(page > 1 || hasNext) && (
+          <div className="mt-4 flex items-center justify-between text-[13px]">
+            <span className="text-muted">Хуудас {page}</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white disabled:cursor-not-allowed disabled:text-[#C7CFD9]"
+              >
+                ← Өмнөх
+              </button>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={!hasNext}
+                className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white disabled:cursor-not-allowed disabled:text-[#C7CFD9]"
+              >
+                Дараах →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {toast && <div className="fixed right-5 top-5 z-[80] rounded-xl border border-[#C7E5D5] bg-[#E5F4EC] px-4 py-3 text-[13.5px] font-semibold text-[#197a50] shadow-lg">✅ {toast}</div>}

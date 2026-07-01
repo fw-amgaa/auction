@@ -73,6 +73,8 @@ const TABS: [string, string][] = [
 
 const COLS = "grid grid-cols-[80px_1.4fr_1fr_1.1fr_1.1fr_110px_196px] gap-3";
 
+const PAGE_SIZE = 20;
+
 const toInput = (d: string | null): string => toLocalInput(d);
 
 interface FormState {
@@ -100,6 +102,7 @@ export function LotsManager({
   codeAvailability: CodeAvailability;
 }) {
   const [tab, setTab] = useState("all");
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState<FormState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -110,7 +113,9 @@ export function LotsManager({
   const counts: Record<string, number> = { all: lots.length };
   for (const [k] of TABS)
     if (k !== "all") counts[k] = lots.filter((l) => l.phase === k).length;
-  const rows = lots.filter((l) => tab === "all" || l.phase === tab);
+  const filtered = lots.filter((l) => tab === "all" || l.phase === tab);
+  const hasNext = page * PAGE_SIZE < filtered.length;
+  const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const catById = (id: string) => categories.find((c) => c.id === id);
   const reserveDigits = (v: string) =>
@@ -291,7 +296,10 @@ export function LotsManager({
             return (
               <button
                 key={k}
-                onClick={() => setTab(k)}
+                onClick={() => {
+                  setTab(k);
+                  setPage(1);
+                }}
                 className="rounded-lg border px-3.5 py-2 text-[13px]"
                 style={{
                   background: on ? "#14294A" : "#FFF",
@@ -415,6 +423,28 @@ export function LotsManager({
             </div>
           )}
         </div>
+
+        {(page > 1 || hasNext) && (
+          <div className="mt-4 flex items-center justify-between text-[13px]">
+            <span className="text-muted">Хуудас {page}</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white disabled:cursor-not-allowed disabled:text-[#C7CFD9]"
+              >
+                ← Өмнөх
+              </button>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={!hasNext}
+                className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white disabled:cursor-not-allowed disabled:text-[#C7CFD9]"
+              >
+                Дараах →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {form && (

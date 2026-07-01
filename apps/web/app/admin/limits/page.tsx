@@ -1,13 +1,26 @@
-import { getLimitsOverview } from "@/lib/limits";
+import { getLimitsPage, getLimitsTotals } from "@/lib/limits";
 import { requirePageAccess } from "@/lib/session";
 
 import { LimitsManager, type LimitRow } from "./LimitsManager";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLimitsPage() {
+const PAGE_SIZE = 50;
+
+interface SP {
+  q?: string;
+  page?: string;
+}
+
+export default async function AdminLimitsPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requirePageAccess("limits.adjust");
-  const users = await getLimitsOverview();
+  const sp = await searchParams;
+  const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
+
+  const [{ rows: users, hasNext }, totals] = await Promise.all([
+    getLimitsPage({ q: sp.q, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
+    getLimitsTotals(),
+  ]);
   const rows: LimitRow[] = users.map((u) => ({
     id: u.id,
     accountType: u.accountType,
@@ -23,5 +36,5 @@ export default async function AdminLimitsPage() {
       date: h.createdAt.toISOString(),
     })),
   }));
-  return <LimitsManager users={rows} />;
+  return <LimitsManager users={rows} totals={totals} q={sp.q ?? ""} page={page} hasNext={hasNext} />;
 }
