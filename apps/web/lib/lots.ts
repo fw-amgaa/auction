@@ -8,6 +8,25 @@ import { CATEGORIES, type CategoryCode, CATEGORY_CODES, incrementsForCode } from
 /** Codes of the two valid categories — guards every lot/category selection. */
 const VALID_CATEGORY_CODES = new Set<string>(CATEGORY_CODES);
 
+/**
+ * Natural comparison of lot codes so a numeric suffix sorts numerically, not
+ * lexically: U1 < U2 < … < U11 and T101 < T102 < … < T124 (lexical order would
+ * wrongly place U11 before U2). Used as a stable tiebreaker in the catalog —
+ * lots created together as a batch share createdAt/startsAt/endsAt, so without
+ * it their relative order is undefined and appears "scrambled".
+ */
+function compareCode(a: string, b: string): number {
+  const ma = /^([A-Za-z]*)(\d*)$/.exec(a);
+  const mb = /^([A-Za-z]*)(\d*)$/.exec(b);
+  const prefixA = ma?.[1] ?? a;
+  const prefixB = mb?.[1] ?? b;
+  if (prefixA !== prefixB) return prefixA < prefixB ? -1 : 1;
+  const numA = ma?.[2] ? Number(ma[2]) : 0;
+  const numB = mb?.[2] ? Number(mb[2]) : 0;
+  if (numA !== numB) return numA - numB;
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 export type LotStatus = (typeof schema.lots.status.enumValues)[number];
 /** Catalog display status (the design's three-way view). */
 export type DisplayStatus = "live" | "upcoming" | "ended";
@@ -147,13 +166,27 @@ export async function getCatalogLots(
   );
 
   const rank: Record<DisplayStatus, number> = { live: 0, upcoming: 1, ended: 2 };
+  // Every branch ends in compareCode so the order is fully deterministic — a
+  // batch of lots sharing the same price/schedule still lists U1,U2,…,U11 /
+  // T101,T102,… in order rather than in arbitrary DB row order.
   if (filters.sort === "priceAsc") {
-    lots.sort((a, b) => (a.currentPrice ?? a.reserve) - (b.currentPrice ?? b.reserve));
+    lots.sort(
+      (a, b) =>
+        (a.currentPrice ?? a.reserve) - (b.currentPrice ?? b.reserve) || compareCode(a.code, b.code),
+    );
   } else if (filters.sort === "priceDesc") {
-    lots.sort((a, b) => (b.currentPrice ?? b.reserve) - (a.currentPrice ?? a.reserve));
+    lots.sort(
+      (a, b) =>
+        (b.currentPrice ?? b.reserve) - (a.currentPrice ?? a.reserve) || compareCode(a.code, b.code),
+    );
   } else {
-    // ending-soon: live first, then by end time
-    lots.sort((a, b) => rank[a.status] - rank[b.status] || (a.endsAt ?? 0) - (b.endsAt ?? 0));
+    // ending-soon: live first, then upcoming, then by end time, then by code.
+    lots.sort(
+      (a, b) =>
+        rank[a.status] - rank[b.status] ||
+        (a.endsAt ?? 0) - (b.endsAt ?? 0) ||
+        compareCode(a.code, b.code),
+    );
   }
 
   // Anonymised winner labels for ended lots (one bids query for the whole set).
@@ -250,6 +283,12 @@ export async function getAdminLots(): Promise<AdminLot[]> {
     .orderBy(desc(schema.lots.createdAt));
   return rows
     .filter(({ category }) => VALID_CATEGORY_CODES.has(category.code))
+    // Newest first, but break createdAt ties (batch-created lots) by code so the
+    // list is stable instead of arbitrary DB row order.
+    .sort(
+      (a, b) =>
+        b.lot.createdAt.getTime() - a.lot.createdAt.getTime() || compareCode(a.lot.code, b.lot.code),
+    )
     .map(({ lot, category }) => ({
     id: lot.id,
     code: lot.code,

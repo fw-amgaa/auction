@@ -86,12 +86,18 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {state.error && (
-            <div className="mt-4 flex items-center gap-2 rounded-[9px] border border-[#F2D6D4] bg-[#FBEAE9] px-3 py-2.5 text-xs text-[#A02622]">
-              <span aria-hidden>⚠</span>
-              {state.error}
-            </div>
-          )}
+          {state.error &&
+            (state.variant === "info" ? (
+              <div className="mt-4 flex items-start gap-2 rounded-[9px] border border-[#F0DFB6] bg-[#FBF4E2] px-3 py-2.5 text-xs leading-relaxed text-[#8A6D0B]">
+                <span aria-hidden>⏳</span>
+                {state.error}
+              </div>
+            ) : (
+              <div className="mt-4 flex items-start gap-2 rounded-[9px] border border-[#F2D6D4] bg-[#FBEAE9] px-3 py-2.5 text-xs leading-relaxed text-[#A02622]">
+                <span aria-hidden>⚠</span>
+                {state.error}
+              </div>
+            ))}
 
           <button
             type="submit"

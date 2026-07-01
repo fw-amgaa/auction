@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   ANTI_SNIPE_EXTENSION_SEC,
@@ -21,6 +21,9 @@ function fmt(s: number): string {
   const m = Math.floor(s / 60);
   return `${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
+
+/** Monotonic clock, immune to wall-clock changes (falls back to Date.now on SSR). */
+const perfNow = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
 /**
  * Read-only admin monitor for a single live lot. Same WebSocket wiring as the
@@ -49,13 +52,25 @@ export function AdminLotMonitor({
   const [status, setStatus] = useState<"live" | "ended">("live");
   const [extendFlash, setExtendFlash] = useState(0);
   const [priceFlash, setPriceFlash] = useState(0);
+  // Countdown anchored to estimated SERVER time (monotonic), not the local clock
+  // — see LiveRoom for the rationale. `now` is that estimate.
+  const clockRef = useRef<{ serverNow: number; perf: number }>({ serverNow: Date.now(), perf: perfNow() });
   const [now, setNow] = useState(Date.now());
   const wsRef = useRef<WebSocket | null>(null);
+  const syncClock = useCallback((serverNow: number) => {
+    // Guard against a missing/NaN serverNow so the countdown degrades to
+    // receipt-time rather than NaN (see LiveRoom).
+    clockRef.current = { serverNow: Number.isFinite(serverNow) ? serverNow : Date.now(), perf: perfNow() };
+  }, []);
+  const estimateServerNow = useCallback(
+    () => clockRef.current.serverNow + (perfNow() - clockRef.current.perf),
+    [],
+  );
 
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    const t = setInterval(() => setNow(estimateServerNow()), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [estimateServerNow]);
 
   useEffect(() => {
     let closed = false;
@@ -82,14 +97,17 @@ export function AdminLotMonitor({
         }
         switch (msg.t) {
           case "snapshot":
+            syncClock(msg.serverNow);
             setPrice(msg.price);
             setLeaderLabel(msg.leaderLabel);
             setEndsAt(msg.endsAt);
             setSpectators(msg.spectators);
             setStatus(msg.status);
+            setNow(estimateServerNow());
             setFeed(msg.feed.map((f) => ({ seq: f.seq, label: f.label, amount: f.amount, ts: f.ts })));
             break;
           case "bid":
+            syncClock(msg.serverNow);
             setPrice(msg.price);
             setLeaderLabel(msg.leaderLabel);
             setEndsAt(msg.endsAt);
@@ -124,7 +142,7 @@ export function AdminLotMonitor({
       if (pingTimer) clearInterval(pingTimer);
       wsRef.current?.close();
     };
-  }, [lotId, ticket, wsBase]);
+  }, [lotId, ticket, wsBase, syncClock, estimateServerNow]);
 
   const timeLeft = Math.max(0, Math.floor((endsAt - now) / 1000));
   const critical = status === "live" && timeLeft > 0 && timeLeft <= ANTI_SNIPE_WINDOW_SEC;

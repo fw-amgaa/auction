@@ -132,6 +132,9 @@ const IconTrophy = (p: IconProps) =>
     <path d="M10 13.5V17M14 13.5V17M8.5 20.5h7M9.5 17h5" />
   </>);
 
+/** Monotonic clock, immune to wall-clock changes (falls back to Date.now on SSR). */
+const perfNow = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
 export function LiveRoom(p: LiveRoomProps) {
   const wsRef = useRef<WebSocket | null>(null);
   const [conn, setConn] = useState<"connecting" | "live" | "reconnecting">("connecting");
@@ -143,7 +146,22 @@ export function LiveRoom(p: LiveRoomProps) {
   const [youLead, setYouLead] = useState(false);
   const [everBid, setEverBid] = useState(false);
   const [endsAt, setEndsAt] = useState(Date.now() + 60_000);
+  // The countdown is anchored to SERVER time, not the bidder's clock. Each
+  // server message carries `serverNow`; we pair it with a monotonic
+  // performance.now() reading and estimate the current server time from elapsed
+  // monotonic time. This keeps the timer correct even if the bidder's computer
+  // clock is wrong or is changed mid-session. `now` below is that estimate.
+  const clockRef = useRef<{ serverNow: number; perf: number }>({ serverNow: Date.now(), perf: perfNow() });
   const [now, setNow] = useState(Date.now());
+  const syncClock = useCallback((serverNow: number) => {
+    // Guard against a missing/NaN serverNow (e.g. an older server during a
+    // restart) so the countdown degrades to receipt-time rather than NaN.
+    clockRef.current = { serverNow: Number.isFinite(serverNow) ? serverNow : Date.now(), perf: perfNow() };
+  }, []);
+  const estimateServerNow = useCallback(
+    () => clockRef.current.serverNow + (perfNow() - clockRef.current.perf),
+    [],
+  );
   const [spectators, setSpectators] = useState(0);
   const [feed, setFeed] = useState<FeedRow[]>([]);
   const [available, setAvailable] = useState(0);
@@ -230,12 +248,14 @@ export function LiveRoom(p: LiveRoomProps) {
   function handle(msg: ServerMessage) {
     switch (msg.t) {
       case "snapshot":
+        syncClock(msg.serverNow);
         setPrice(msg.price);
         setDisplayPrice(msg.price);
         setIncrements([msg.inc1, msg.inc2]);
         setLeaderLabel(msg.leaderLabel);
         setYouLead(msg.youLead);
         setEndsAt(msg.endsAt);
+        setNow(estimateServerNow());
         setSpectators(msg.spectators);
         setFeed(msg.feed);
         setAvailable(msg.available);
@@ -244,6 +264,7 @@ export function LiveRoom(p: LiveRoomProps) {
         if (msg.status === "ended") setEnded((e) => e ?? { result: "ended", price: msg.price });
         break;
       case "bid":
+        syncClock(msg.serverNow);
         animatePrice(price, msg.price);
         setPrice(msg.price);
         setLeaderLabel(msg.leaderLabel);
@@ -277,20 +298,22 @@ export function LiveRoom(p: LiveRoomProps) {
     }
   }
 
-  // local 1s clock
+  // 1s tick — advances the ESTIMATED SERVER clock (monotonic), not Date.now(),
+  // so a wrong/altered local clock can't skew the countdown.
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    const t = setInterval(() => setNow(estimateServerNow()), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [estimateServerNow]);
 
   const placeBid = useCallback(
     (option: BidOptionId) => {
       const ws = wsRef.current;
       if (!ws || ws.readyState !== ws.OPEN || ended) return;
-      // Fast (×2) options unlock only in the final stretch. Compute from the live
-      // clock (not render state) so the guard matches the server's own check.
+      // Fast (×2) options unlock only in the final stretch. Compute from the
+      // estimated SERVER clock so the guard matches the server's own check and
+      // isn't fooled by a wrong local clock.
       if (isFastOption(option)) {
-        const secsLeft = Math.floor((endsAt - Date.now()) / 1000);
+        const secsLeft = Math.floor((endsAt - estimateServerNow()) / 1000);
         if (secsLeft > FINAL_STRETCH_SEC) {
           addToast("info", "Хурдан дүн сүүлийн 3 минутад нээгдэнэ");
           return;
@@ -308,7 +331,7 @@ export function LiveRoom(p: LiveRoomProps) {
       setEverBid(true);
       ws.send(JSON.stringify({ t: "bid", lotId: p.lotId, option } satisfies ClientMessage));
     },
-    [price, increments, available, youLead, ended, endsAt, addToast, p.lotId],
+    [price, increments, available, youLead, ended, endsAt, estimateServerNow, addToast, p.lotId],
   );
 
   // keyboard shortcuts

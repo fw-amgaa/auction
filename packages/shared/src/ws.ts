@@ -53,6 +53,9 @@ export const ServerMessage = z.discriminatedUnion("t", [
     youLead: z.boolean(),
     hasBids: z.boolean(),
     endsAt: z.number().int(),
+    /** server wall-clock (epoch ms) at send time — lets the client sync its
+     *  countdown to server time instead of the (possibly wrong) local clock. */
+    serverNow: z.number().int(),
     seq: z.number().int(),
     spectators: z.number().int(),
     status: z.enum(["live", "ended"]),
@@ -67,6 +70,8 @@ export const ServerMessage = z.discriminatedUnion("t", [
     price: z.number().int(),
     seq: z.number().int(),
     endsAt: z.number().int(),
+    /** server wall-clock (epoch ms) at send time — see snapshot.serverNow. */
+    serverNow: z.number().int(),
     extended: z.boolean(),
     leaderLabel: z.string(),
     youLead: z.boolean(),
