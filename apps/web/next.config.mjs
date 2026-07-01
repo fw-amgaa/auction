@@ -19,13 +19,25 @@ const config = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../../"),
   experimental: {
-    // Self-registration submits 3–4 KYC documents (UI allows up to 10MB each)
-    // through a Server Action. Next's default Server Action body limit is 1MB,
-    // which rejects the POST with a framework-level 500 before registerAction
-    // ever runs. Raise it to cover the advertised per-file size × max doc count.
+    // Self-registration submits up to 5 KYC documents (UI caps each at 20MB)
+    // through a Server Action. TWO separate body limits gate that POST, and
+    // BOTH must be raised or the request is rejected before registerAction runs
+    // (so its try/catch can't produce a friendly error):
+    //
+    //  1. serverActions.bodySizeLimit — the Server Action payload limit
+    //     (default 1MB).
+    //  2. proxyClientMaxBodySize — the middleware/proxy body limit. This project
+    //     has a middleware whose matcher covers /register, so every request
+    //     (incl. the Server Action POST) passes through the proxy, which caps
+    //     the body at DEFAULT 10MB. THIS is what crashed uploads near ~10MB,
+    //     regardless of bodySizeLimit.
+    //
+    // Both are set above the max the client can send (5 × 20MB = 100MB) plus
+    // multipart overhead; the client also blocks totals over 100MB.
     serverActions: {
-      bodySizeLimit: "50mb",
+      bodySizeLimit: "110mb",
     },
+    proxyClientMaxBodySize: "110mb",
   },
 };
 

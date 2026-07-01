@@ -48,6 +48,15 @@ const LEGAL_FIELDS: FieldDef[] = [
 
 const DOCS = ACCOUNT_DOCS;
 
+// Upload limits. Enforced client-side so oversize files never reach the Server
+// Action (whose framework-level body limit would otherwise 500 before our code
+// runs). next.config's bodySizeLimit is kept safely above the max total here.
+const MAX_FILE_MB = 20;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+const MAX_TOTAL_MB = 100;
+const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
+const fmtMB = (bytes: number) => `${(bytes / 1048576).toFixed(1)}MB`;
+
 const STEP_DEFS = [
   { n: 1, title: "Бүртгэлийн төрөл", hint: "Иргэн / Хуулийн этгээд" },
   { n: 2, title: "Хувийн мэдээлэл", hint: "Үндсэн талбарууд" },
@@ -75,6 +84,8 @@ export default function RegisterPage() {
   const [type, setType] = useState<AccountType | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<Record<string, File>>({});
+  const [docErrors, setDocErrors] = useState<Record<string, string>>({});
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [codes, setCodes] = useState<string[]>([]);
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
@@ -127,6 +138,17 @@ export default function RegisterPage() {
     if (step === 4 && !codesValid()) return;
     if (step === 5) {
       if (!agreed || !type || !codesValid()) return;
+      // Total-size crash net: keep the POST under the Server Action body limit
+      // (some documents are large scans). Per-file is already capped at 20MB.
+      const total = Object.values(docs).reduce((sum, f) => sum + f.size, 0);
+      if (total > MAX_TOTAL_BYTES) {
+        setUploadError(
+          `Бичиг баримтын нийт хэмжээ хэтэрсэн байна (${fmtMB(total)}). Дээд хэмжээ ${MAX_TOTAL_MB}MB. Файлуудаа багасгана уу.`,
+        );
+        setStep(3);
+        return;
+      }
+      setUploadError(null);
       const fd = new FormData();
       fd.set("accountType", type);
       fd.set("termsVersion", TERMS_VERSION);
@@ -146,9 +168,27 @@ export default function RegisterPage() {
   }
 
   function handleFile(key: string, file: File | null | undefined) {
-    if (!file) return;
-    setDocs((s) => ({ ...s, [key]: file }));
     setDragKey(null);
+    if (!file) return;
+    const okType = file.type.startsWith("image/") || file.type === "application/pdf";
+    if (!okType) {
+      setDocErrors((s) => ({ ...s, [key]: "Зөвхөн зураг (JPG, PNG) эсвэл PDF файл оруулна уу." }));
+      return;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      setDocErrors((s) => ({
+        ...s,
+        [key]: `Файл хэт том байна (${fmtMB(file.size)}). Нэг файлын дээд хэмжээ ${MAX_FILE_MB}MB.`,
+      }));
+      return;
+    }
+    setDocErrors((s) => {
+      const n = { ...s };
+      delete n[key];
+      return n;
+    });
+    setUploadError(null);
+    setDocs((s) => ({ ...s, [key]: file }));
   }
 
   const stepCounter = `Алхам ${step} / 5`;
@@ -347,7 +387,7 @@ export default function RegisterPage() {
                             Файлаа чирч оруулах эсвэл <span className="text-crimson">сонгох</span>
                           </span>
                           <span className="text-[11px] text-muted">
-                            JPG, PNG эсвэл PDF · дээд тал нь 10MB
+                            JPG, PNG эсвэл PDF · дээд тал нь {MAX_FILE_MB}MB
                           </span>
                           <input
                             type="file"
@@ -384,6 +424,12 @@ export default function RegisterPage() {
                           >
                             ✕
                           </button>
+                        </div>
+                      )}
+                      {docErrors[d.key] && (
+                        <div className="mt-2 flex items-start gap-1.5 text-[12px] text-crimson">
+                          <span aria-hidden>⚠</span>
+                          {docErrors[d.key]}
                         </div>
                       )}
                     </div>
@@ -564,9 +610,10 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {state.error && step <= 5 && (
-            <div className="mt-4 rounded-[9px] border border-[#F2D6D4] bg-[#FBEAE9] px-3 py-2.5 text-xs text-[#A02622]">
-              {state.error}
+          {(uploadError || (state.error && step <= 5)) && (
+            <div className="mt-4 flex items-start gap-1.5 rounded-[9px] border border-[#F2D6D4] bg-[#FBEAE9] px-3 py-2.5 text-xs text-[#A02622]">
+              <span aria-hidden>⚠</span>
+              {uploadError ?? state.error}
             </div>
           )}
         </div>
