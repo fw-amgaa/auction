@@ -53,7 +53,7 @@ export async function getLimitsPage(params: {
   // fields for `q`) first — the relational query API can't filter on joined
   // tables directly — then fetch full profile + ledger data for just those ids.
   const idRows = await db
-    .selectDistinct({ id: schema.users.id })
+    .selectDistinct({ id: schema.users.id, limit: schema.users.limit })
     .from(schema.users)
     .leftJoin(schema.individualProfiles, eq(schema.individualProfiles.userId, schema.users.id))
     .leftJoin(schema.legalEntityProfiles, eq(schema.legalEntityProfiles.userId, schema.users.id))

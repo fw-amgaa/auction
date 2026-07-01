@@ -98,6 +98,12 @@ const APPLICANTS_SORTS = {
   limitAsc: asc(schema.users.limit),
 } as const;
 
+const APPLICANTS_SORT_COLUMNS = {
+  created: schema.users.createdAt,
+  limitDesc: schema.users.limit,
+  limitAsc: schema.users.limit,
+} as const;
+
 export interface ApplicantsFilter {
   kyc?: KycStatus;
   type?: AccountType;
@@ -136,13 +142,14 @@ export async function getApplicantsPage(
   // Resolve the page of ids (with sort/filter incl. joined profile fields for `q`)
   // first, then fetch full relations only for those ids — the relational query API
   // can't filter/sort on joined tables directly.
+  const sort = filter.sort ?? "created";
   const idRows = await db
-    .selectDistinct({ id: schema.users.id })
+    .selectDistinct({ id: schema.users.id, sort: APPLICANTS_SORT_COLUMNS[sort] })
     .from(schema.users)
     .leftJoin(schema.individualProfiles, eq(schema.individualProfiles.userId, schema.users.id))
     .leftJoin(schema.legalEntityProfiles, eq(schema.legalEntityProfiles.userId, schema.users.id))
     .where(and(...conds))
-    .orderBy(APPLICANTS_SORTS[filter.sort ?? "created"])
+    .orderBy(APPLICANTS_SORTS[sort])
     .limit(filter.limit + 1)
     .offset(filter.offset);
 
