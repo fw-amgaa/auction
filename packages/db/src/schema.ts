@@ -230,7 +230,7 @@ export const categories = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     code: text("code").notNull(), // ugalz | tekh (see @auction/shared CATEGORIES)
-    name: text("name").notNull(), // Угалз, Тэх ...
+    name: text("name").notNull(), // Алтайн угалз, Алтайн тэх ...
     latinName: text("latin_name"), // Ovis ammon (argali)
     defaultReserve: bigint("default_reserve", { mode: "number" }),
     icon: text("icon"),

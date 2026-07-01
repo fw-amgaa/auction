@@ -6,11 +6,11 @@ import { Logo } from "@/components/Logo";
 export const metadata: Metadata = {
   title: "Ховд аймаг · 2026 ан агнуурын цахим дуудлага худалдаа",
   description:
-    "Ховд аймагт 2026 онд тусгай зориулалтаар угалз, тэх агнах зөвшөөрлийн албан ёсны, нээлттэй, ил тод цахим дуудлага худалдаа. ANAV.MN дээр бүртгүүлж оролцоно уу.",
+    "Ховд аймагт 2026 онд тусгай зориулалтаар Алтайн угалз, Алтайн тэх агнах зөвшөөрлийн албан ёсны, нээлттэй, ил тод цахим дуудлага худалдаа. ANAV.MN дээр бүртгүүлж оролцоно уу.",
   openGraph: {
     title: "Ховд аймаг · 2026 ан агнуурын цахим дуудлага худалдаа",
     description:
-      "Угалз, тэх агнах тусгай зөвшөөрлийн нээлттэй, ил тод цахим дуудлага худалдаа.",
+      "Алтайн угалз, Алтайн тэх агнах тусгай зөвшөөрлийн нээлттэй, ил тод цахим дуудлага худалдаа.",
     images: ["/wilderness.jpg"],
     type: "website",
   },
@@ -184,8 +184,8 @@ const PRINCIPLES: [string, string][] = [
 
 const TERMS: [string, string][] = [
   ["Эхлэх цаг", "Орон нутгийн 09:00 цаг"],
-  ["Угалз", "20 минут · 4 ба 3 толгойгоор багцлагдана"],
-  ["Тэх", "20 минут · 5 ба 4 толгойгоор багцлагдана"],
+  ["Алтайн угалз", "20 минут · 4 ба 3 толгойгоор багцлагдана"],
+  ["Алтайн тэх", "20 минут · 5 ба 4 толгойгоор багцлагдана"],
   ["Ялагчийн төлбөр", "Ялсан үнийг 24 цагийн дотор төлнө"],
   ["Дэнчин буцаалт", "Ялаагүй бол ажлын 14 хоногт шимтгэлгүй буцна"],
   ["Орлогын хуваарилалт", "50% нь Байгаль орчин, уур амьсгалын санд"],
@@ -265,8 +265,8 @@ export default function LandingPage() {
               className="rise mt-5 max-w-xl text-pretty text-[15px] leading-relaxed text-white/75 sm:text-base"
               style={{ animationDelay: "160ms" }}
             >
-              Дэнчин төлж бүртгүүлсэн иргэн, аж ахуйн нэгж, байгууллага угалз,
-              тэх агнуулах зөвшөөрлийн төлөө нээлттэй, ил тод өрсөлдөнө.
+              Дэнчин төлж бүртгүүлсэн иргэн, аж ахуйн нэгж, байгууллага Алтайн угалз,
+              Алтайн тэх агнуулах зөвшөөрлийн төлөө нээлттэй, ил тод өрсөлдөнө.
               Бүртгэл, үнэ хаялцах бүх үйл явц{" "}
               <span className="font-semibold text-white">ANAV.MN</span> дээр
               цахимаар явагдана.
@@ -408,9 +408,9 @@ export default function LandingPage() {
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
                 Дуудлага{" "}
-                <span className="font-semibold text-navy">угалзаар</span> эхэлж,
+                <span className="font-semibold text-navy">Алтайн угалзаар</span> эхэлж,
                 10 минутын завсарлагааны дараа{" "}
-                <span className="font-semibold text-navy">тэх</span> үргэлжилнэ.
+                <span className="font-semibold text-navy">Алтайн тэх</span> үргэлжилнэ.
                 Лотууд багц багцаар, 20 минутын зайтай дуудагдана. Бүх цаг орон
                 нутгийн цагаар. (UTC +7)
               </p>
@@ -436,7 +436,7 @@ export default function LandingPage() {
                   className="tnum flex h-10 items-center justify-center px-2 text-center text-[11.5px] font-bold text-navy"
                   style={{ flexGrow: 70, flexBasis: 0, background: "#e7b24b" }}
                 >
-                  Угалз · 09:00–10:10
+                  Алтайн угалз · 09:00–10:10
                 </div>
                 <div
                   className="flex h-10 items-center justify-center px-1 text-center text-[10.5px] font-semibold text-ink-soft"
@@ -448,7 +448,7 @@ export default function LandingPage() {
                   className="tnum flex h-10 items-center justify-center px-2 text-center text-[11.5px] font-bold text-navy"
                   style={{ flexGrow: 120, flexBasis: 0, background: "#9db4d6" }}
                 >
-                  Тэх · 10:20–12:20
+                  Алтайн тэх · 10:20–12:20
                 </div>
               </div>
             </div>
@@ -521,7 +521,7 @@ export default function LandingPage() {
 
             <p className="mt-6 inline-flex items-center gap-1.5 text-[12.5px] text-muted">
               <span className="size-1.5 rounded-full bg-success" />
-              Багц бүрийн хооронд 5 минут, угалз ба тэхийн хооронд 10 минутын
+              Багц бүрийн хооронд 5 минут, Алтайн угалз ба Алтайн тэхийн хооронд 10 минутын
               завсарлага авна.
             </p>
           </div>
@@ -667,7 +667,7 @@ export default function LandingPage() {
                 </h2>
                 <p className="mt-3 max-w-md text-[14.5px] leading-relaxed text-ink-soft">
                   ANAV.MN дээр бүртгэл үүсгэж, дэнчингээ төлж, баримт бичгээ
-                  хянуулснаар угалз, тэх агнах зөвшөөрлийн дуудлагад оролцох эрх
+                  хянуулснаар Алтайн угалз, Алтайн тэх агнах зөвшөөрлийн дуудлагад оролцох эрх
                   нээгдэнэ.
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">

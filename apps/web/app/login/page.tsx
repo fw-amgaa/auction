@@ -18,7 +18,7 @@ export default function LoginPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/argali.png"
-          alt="Ховд аймгийн уулархаг агнуурын нутаг — угалз"
+          alt="Ховд аймгийн уулархаг агнуурын нутаг — Алтайн угалз"
           className="absolute inset-0 -z-10 size-full object-cover"
         />
         <div className="login-scrim absolute inset-0 -z-10" />

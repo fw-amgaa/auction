@@ -50,6 +50,13 @@
       "when": 1782834852499,
       "tag": "0006_minor_groot",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782950400000,
+      "tag": "0007_altai_species_names",
+      "breakpoints": true
     }
   ]
 }

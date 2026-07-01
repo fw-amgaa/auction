@@ -56,7 +56,7 @@ export function CatalogFilters({
         <input
           defaultValue={params.get("q") ?? ""}
           onChange={(e) => update("q", e.target.value)}
-          placeholder="Код эсвэл нэрээр хайх (ж: U9, Угалз)"
+          placeholder="Код эсвэл нэрээр хайх (ж: U9, Алтайн угалз)"
           className="h-[42px] min-w-[180px] flex-1 rounded-[9px] border border-line bg-[#FAF8F4] px-3.5 text-[13.5px] outline-none focus:border-navy"
         />
         <select
