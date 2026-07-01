@@ -65,6 +65,48 @@ const SPECIES: Species[] = [
   },
 ];
 
+/* ── auction-day timetable (from the official багц schedule) ─────────── */
+
+type SpeciesSchedule = {
+  name: string;
+  latin: string;
+  accent: string;
+  window: string;
+  totalLots: number;
+  batches: { label: string; time: string; codes: string[] }[];
+};
+
+const SCHEDULE: SpeciesSchedule[] = [
+  {
+    name: "Алтайн угалз",
+    latin: "Ovis ammon",
+    accent: "#e7b24b",
+    window: "09:00 – 10:10",
+    totalLots: 11,
+    batches: [
+      { label: "1-р багц", time: "09:00 – 09:20", codes: ["U1", "U2", "U3", "U4"] },
+      { label: "2-р багц", time: "09:25 – 09:45", codes: ["U5", "U6", "U7", "U8"] },
+      { label: "3-р багц", time: "09:50 – 10:10", codes: ["U9", "U10", "U11"] },
+    ],
+  },
+  {
+    name: "Алтайн тэх",
+    latin: "Capra sibirica",
+    accent: "#9db4d6",
+    window: "10:20 – 12:20",
+    totalLots: 24,
+    batches: [
+      { label: "1-р багц", time: "10:20 – 10:40", codes: ["T101", "T102", "T103", "T104", "T105"] },
+      { label: "2-р багц", time: "10:45 – 11:05", codes: ["T106", "T107", "T108", "T109", "T110"] },
+      { label: "3-р багц", time: "11:10 – 11:30", codes: ["T111", "T112", "T113", "T114", "T115"] },
+      { label: "4-р багц", time: "11:35 – 11:55", codes: ["T116", "T117", "T118", "T119", "T120"] },
+      { label: "5-р багц", time: "12:00 – 12:20", codes: ["T121", "T122", "T123", "T124"] },
+    ],
+  },
+];
+
+const AUCTION_DATE = "2026 оны 07 сарын 08, Лхагва гараг";
+
 const STEPS: [string, string, string][] = [
   [
     "Бүртгүүлэх",
@@ -97,7 +139,10 @@ const DOCS: string[] = [
 ];
 
 const PRINCIPLES: [string, string][] = [
-  ["Нээлттэй, ил тод", "Дуудлага бүхэлдээ цахим хэлбэрээр, нийтэд ил тод явагдана."],
+  [
+    "Нээлттэй, ил тод",
+    "Дуудлага бүхэлдээ цахим хэлбэрээр, нийтэд ил тод явагдана.",
+  ],
   ["Тэгш, шударга", "Бүх оролцогчид адил тэгш нөхцөлд өрсөлдөнө."],
   [
     "Алхамтай өсөлт",
@@ -131,13 +176,19 @@ export default function LandingPage() {
             <a href="#amitad" className="transition-colors hover:text-white">
               Амьтад
             </a>
+            <a href="#huvaari" className="transition-colors hover:text-white">
+              Хуваарь
+            </a>
             <a href="#oroltsoh" className="transition-colors hover:text-white">
               Хэрхэн оролцох
             </a>
             <a href="#nohtsol" className="transition-colors hover:text-white">
               Нөхцөл
             </a>
-            <Link href="/guidelines" className="transition-colors hover:text-white">
+            <Link
+              href="/guidelines"
+              className="transition-colors hover:text-white"
+            >
               Удирдамж
             </Link>
           </nav>
@@ -186,9 +237,10 @@ export default function LandingPage() {
               className="rise mt-5 max-w-xl text-pretty text-[15px] leading-relaxed text-white/75 sm:text-base"
               style={{ animationDelay: "160ms" }}
             >
-              Дэнчин төлж бүртгүүлсэн иргэн, аж ахуйн нэгж, байгууллага угалз, тэх
-              агнуулах зөвшөөрлийн төлөө нээлттэй, ил тод өрсөлдөнө. Бүртгэл, үнэ хаялцах
-              бүх үйл явц <span className="font-semibold text-white">ANAV.MN</span> дээр
+              Дэнчин төлж бүртгүүлсэн иргэн, аж ахуйн нэгж, байгууллага угалз,
+              тэх агнуулах зөвшөөрлийн төлөө нээлттэй, ил тод өрсөлдөнө.
+              Бүртгэл, үнэ хаялцах бүх үйл явц{" "}
+              <span className="font-semibold text-white">ANAV.MN</span> дээр
               цахимаар явагдана.
             </p>
 
@@ -226,8 +278,12 @@ export default function LandingPage() {
               {HERO_STATS.map(([n, label]) => (
                 <div key={label}>
                   <dt className="sr-only">{label}</dt>
-                  <dd className="tnum text-3xl font-bold text-white sm:text-[34px]">{n}</dd>
-                  <div className="mt-1 text-[12.5px] leading-snug text-white/60">{label}</div>
+                  <dd className="tnum text-3xl font-bold text-white sm:text-[34px]">
+                    {n}
+                  </dd>
+                  <div className="mt-1 text-[12.5px] leading-snug text-white/60">
+                    {label}
+                  </div>
                 </div>
               ))}
             </dl>
@@ -235,7 +291,10 @@ export default function LandingPage() {
         </section>
 
         {/* ── species / lots ─────────────────────────────────────── */}
-        <section id="amitad" className="scroll-anchor mx-auto max-w-6xl px-5 py-20">
+        <section
+          id="amitad"
+          className="scroll-anchor mx-auto max-w-6xl px-5 py-20"
+        >
           <div className="max-w-2xl">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-crimson">
               Дуудлагад орох амьтад
@@ -244,9 +303,9 @@ export default function LandingPage() {
               Хоёр төрлийн агнуурын амьтан
             </h2>
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-              Засгийн газрын 2026 оны 222 дугаар тогтоолд заасны дагуу амьтан тус бүрийн
-              экологи-эдийн засгийн үнэлгээний 100 хувийг дуудлага худалдааны анхны үнийн
-              санал болгон тооцно.
+              Засгийн газрын 2026 оны 222 дугаар тогтоолд заасны дагуу амьтан
+              тус бүрийн экологи-эдийн засгийн үнэлгээний 100 хувийг дуудлага
+              худалдааны анхны үнийн санал болгон тооцно.
             </p>
           </div>
 
@@ -266,7 +325,9 @@ export default function LandingPage() {
                       <h3 className="mt-1 text-[26px] font-bold leading-tight text-white">
                         {s.name}
                       </h3>
-                      <div className="mt-0.5 text-[13px] italic text-gold">{s.latin}</div>
+                      <div className="mt-0.5 text-[13px] italic text-gold">
+                        {s.latin}
+                      </div>
                     </div>
                     <span
                       className="tnum mt-1 shrink-0 rounded-pill px-3 py-1 text-xs font-semibold"
@@ -279,9 +340,19 @@ export default function LandingPage() {
 
                 {/* data grid */}
                 <dl className="grid grid-cols-2 gap-px bg-line">
-                  <Field label="Экологи-эдийн засгийн үнэлгээ" value={s.valuation} />
-                  <Field label="Дуудлагын босго үнэ" value={s.threshold} accent />
-                  <Field label="Үнэ хаялцах саналууд" value={s.bids.join("  /  ")} />
+                  <Field
+                    label="Экологи-эдийн засгийн үнэлгээ"
+                    value={s.valuation}
+                  />
+                  <Field
+                    label="Дуудлагын босго үнэ"
+                    value={s.threshold}
+                    accent
+                  />
+                  <Field
+                    label="Үнэ хаялцах саналууд"
+                    value={s.bids.join("  /  ")}
+                  />
                   <Field label="Багцлалт" value={s.batch} />
                 </dl>
 
@@ -294,8 +365,126 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── auction-day schedule / timetable ───────────────────── */}
+        <section id="huvaari" className="scroll-anchor border-y border-line bg-card">
+          <div className="mx-auto max-w-6xl px-5 py-20">
+            <div className="max-w-2xl">
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-crimson">
+                Дуудлагын хуваарь
+              </span>
+              <h2 className="mt-2 text-[32px] font-bold leading-tight tracking-tight text-navy">
+                Аль лот хэдэн цагт дуудагдах вэ
+              </h2>
+              <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+                Дуудлага <span className="font-semibold text-navy">угалзаар</span> эхэлж, 10 минутын
+                завсарлагааны дараа <span className="font-semibold text-navy">тэх</span> үргэлжилнэ.
+                Лотууд багц багцаар, 20 минутын зайтай дуудагдана. Бүх цаг орон нутгийн цагаар.
+              </p>
+            </div>
+
+            {/* day at a glance — the whole auction morning in one bar */}
+            <div className="mt-9 rounded-card border border-line bg-sand p-4 sm:p-5">
+              <div className="mb-3 flex flex-wrap items-center gap-2 border-b border-line pb-3">
+                <CalendarIcon />
+                <span className="tnum text-[14.5px] font-bold text-navy">{AUCTION_DATE}</span>
+                <span className="ml-auto rounded-pill bg-crimson/10 px-2.5 py-1 text-[11.5px] font-semibold text-crimson">
+                  09:00 цагаас
+                </span>
+              </div>
+              <div className="tnum flex items-center justify-between text-[12px] font-semibold text-muted">
+                <span>09:00 · эхэлнэ</span>
+                <span>12:20 · дуусна</span>
+              </div>
+              <div className="mt-2.5 flex items-stretch gap-1 overflow-hidden rounded-pill">
+                <div
+                  className="tnum flex h-10 items-center justify-center px-2 text-center text-[11.5px] font-bold text-navy"
+                  style={{ flexGrow: 70, flexBasis: 0, background: "#e7b24b" }}
+                >
+                  Угалз · 09:00–10:10
+                </div>
+                <div
+                  className="flex h-10 items-center justify-center px-1 text-center text-[10.5px] font-semibold text-ink-soft"
+                  style={{ flexGrow: 10, flexBasis: 0, background: "#e6e1d6" }}
+                >
+                  10м
+                </div>
+                <div
+                  className="tnum flex h-10 items-center justify-center px-2 text-center text-[11.5px] font-bold text-navy"
+                  style={{ flexGrow: 120, flexBasis: 0, background: "#9db4d6" }}
+                >
+                  Тэх · 10:20–12:20
+                </div>
+              </div>
+            </div>
+
+            {/* per-species timelines */}
+            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+              {SCHEDULE.map((sp) => (
+                <article
+                  key={sp.name}
+                  className="overflow-hidden rounded-card border border-line bg-card"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-5">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="h-9 w-1.5 shrink-0 rounded-full"
+                        style={{ background: sp.accent }}
+                      />
+                      <div>
+                        <h3 className="text-[19px] font-bold leading-tight text-navy">{sp.name}</h3>
+                        <div className="text-[12.5px] italic text-muted">{sp.latin}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="tnum text-[15px] font-bold text-navy">{sp.window}</div>
+                      <div className="text-[12px] text-muted">
+                        {sp.totalLots} лот · {sp.batches.length} багц
+                      </div>
+                    </div>
+                  </div>
+
+                  <ol className="divide-y divide-line">
+                    {sp.batches.map((b) => (
+                      <li key={b.label} className="px-6 py-4">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span
+                            className="tnum rounded-md px-2.5 py-1 text-[13px] font-bold text-navy"
+                            style={{ background: `${sp.accent}26` }}
+                          >
+                            {b.time}
+                          </span>
+                          <span className="text-[13px] font-semibold text-navy">{b.label}</span>
+                          <span className="text-[12px] text-muted">· {b.codes.length} лот</span>
+                        </div>
+                        <div className="mt-2.5 flex flex-wrap gap-1.5">
+                          {b.codes.map((code) => (
+                            <span
+                              key={code}
+                              className="tnum rounded-md border border-line bg-sand px-2 py-1 text-[12px] font-semibold text-navy"
+                            >
+                              {code}
+                            </span>
+                          ))}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </article>
+              ))}
+            </div>
+
+            <p className="mt-6 inline-flex items-center gap-1.5 text-[12.5px] text-muted">
+              <span className="size-1.5 rounded-full bg-success" />
+              Багц бүрийн хооронд 5 минут, угалз ба тэхийн хооронд 10 минутын завсарлага авна.
+            </p>
+          </div>
+        </section>
+
         {/* ── how to participate ─────────────────────────────────── */}
-        <section id="oroltsoh" className="scroll-anchor border-y border-line bg-card">
+        <section
+          id="oroltsoh"
+          className="scroll-anchor border-y border-line bg-card"
+        >
           <div className="mx-auto max-w-6xl px-5 py-20">
             <div className="max-w-2xl">
               <span className="text-xs font-semibold uppercase tracking-[0.14em] text-crimson">
@@ -317,9 +506,15 @@ export default function LandingPage() {
                   <div className="tnum relative z-10 grid size-10 place-items-center rounded-full bg-navy text-sm font-bold text-white ring-4 ring-card">
                     {i + 1}
                   </div>
-                  <h3 className="mt-4 text-[17px] font-bold text-navy">{title}</h3>
-                  <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-soft">{body}</p>
-                  <p className="mt-2 text-[12.5px] leading-relaxed text-muted">{note}</p>
+                  <h3 className="mt-4 text-[17px] font-bold text-navy">
+                    {title}
+                  </h3>
+                  <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-soft">
+                    {body}
+                  </p>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-muted">
+                    {note}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -327,7 +522,10 @@ export default function LandingPage() {
         </section>
 
         {/* ── required docs + key terms ──────────────────────────── */}
-        <section id="nohtsol" className="scroll-anchor mx-auto max-w-6xl px-5 py-20">
+        <section
+          id="nohtsol"
+          className="scroll-anchor mx-auto max-w-6xl px-5 py-20"
+        >
           <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
             {/* required documents */}
             <div className="rounded-card border border-line bg-card p-7">
@@ -343,7 +541,9 @@ export default function LandingPage() {
                     <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-success/12 text-[11px] font-bold text-success">
                       ✓
                     </span>
-                    <span className="text-[13.5px] leading-relaxed text-ink-strong">{d}</span>
+                    <span className="text-[13.5px] leading-relaxed text-ink-strong">
+                      {d}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -359,9 +559,16 @@ export default function LandingPage() {
               </p>
               <dl className="mt-5 divide-y divide-line">
                 {TERMS.map(([k, v]) => (
-                  <div key={k} className="flex items-baseline justify-between gap-6 py-3">
-                    <dt className="text-[13px] font-medium text-ink-soft">{k}</dt>
-                    <dd className="text-right text-[13.5px] font-semibold text-navy">{v}</dd>
+                  <div
+                    key={k}
+                    className="flex items-baseline justify-between gap-6 py-3"
+                  >
+                    <dt className="text-[13px] font-medium text-ink-soft">
+                      {k}
+                    </dt>
+                    <dd className="text-right text-[13.5px] font-semibold text-navy">
+                      {v}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -389,8 +596,12 @@ export default function LandingPage() {
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <div>
-                      <h3 className="text-[16px] font-bold text-white">{title}</h3>
-                      <p className="mt-1 text-[13.5px] leading-relaxed text-white/65">{body}</p>
+                      <h3 className="text-[16px] font-bold text-white">
+                        {title}
+                      </h3>
+                      <p className="mt-1 text-[13.5px] leading-relaxed text-white/65">
+                        {body}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -408,8 +619,9 @@ export default function LandingPage() {
                   Дуудлага худалдаанд оролцоход бэлэн үү?
                 </h2>
                 <p className="mt-3 max-w-md text-[14.5px] leading-relaxed text-ink-soft">
-                  ANAV.MN дээр бүртгэл үүсгэж, дэнчингээ төлж, баримт бичгээ хянуулснаар
-                  угалз, тэх агнах зөвшөөрлийн дуудлагад оролцох эрх нээгдэнэ.
+                  ANAV.MN дээр бүртгэл үүсгэж, дэнчингээ төлж, баримт бичгээ
+                  хянуулснаар угалз, тэх агнах зөвшөөрлийн дуудлагад оролцох эрх
+                  нээгдэнэ.
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">
                   <Link
@@ -437,8 +649,8 @@ export default function LandingPage() {
                   hovdduudlagahudaldaa@gmail.com
                 </a>
                 <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">
-                  Зохион байгуулагч: Ховд аймгийн Засаг даргын Тамгын газар, Байгаль орчны
-                  газар.
+                  Зохион байгуулагч: Ховд аймгийн Засаг даргын Тамгын газар,
+                  Байгаль орчны газар.
                 </p>
               </div>
             </div>
@@ -453,8 +665,8 @@ export default function LandingPage() {
             <div>
               <Logo height={30} chip />
               <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-white/55">
-                Тусгай зориулалтаар ан амьтан агнах зөвшөөрлийн албан ёсны цахим дуудлага
-                худалдааны систем.
+                Тусгай зориулалтаар ан амьтан агнах зөвшөөрлийн албан ёсны цахим
+                дуудлага худалдааны систем.
               </p>
             </div>
             <div>
@@ -463,7 +675,10 @@ export default function LandingPage() {
               </div>
               <ul className="mt-3 space-y-2 text-[13.5px] text-white/70">
                 <li>
-                  <Link href="/guidelines" className="transition-colors hover:text-white">
+                  <Link
+                    href="/guidelines"
+                    className="transition-colors hover:text-white"
+                  >
                     Удирдамж
                   </Link>
                 </li>
@@ -478,17 +693,26 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <Link href="/catalog" className="transition-colors hover:text-white">
+                  <Link
+                    href="/catalog"
+                    className="transition-colors hover:text-white"
+                  >
                     Каталог
                   </Link>
                 </li>
                 <li>
-                  <Link href="/register" className="transition-colors hover:text-white">
+                  <Link
+                    href="/register"
+                    className="transition-colors hover:text-white"
+                  >
                     Бүртгүүлэх
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="transition-colors hover:text-white">
+                  <Link
+                    href="/terms"
+                    className="transition-colors hover:text-white"
+                  >
                     Үйлчилгээний нөхцөл
                   </Link>
                 </li>
@@ -535,6 +759,26 @@ function DownloadIcon() {
       <path d="M12 3v12" />
       <path d="m7 11 5 5 5-5" />
       <path d="M5 21h14" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="text-crimson"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
     </svg>
   );
 }

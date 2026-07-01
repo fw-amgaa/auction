@@ -15,13 +15,19 @@ export interface DocDef {
 /** Required for every applicant, regardless of account type. */
 export const COMMON_DOCS: DocDef[] = [
   { key: "applicationForm", label: "Оролцох хүсэлтийн маягт" },
-  { key: "participationRequest", label: "Оролцох хүсэлт (ААНБ албан бичиг / иргэн өргөдөл)" },
+  {
+    key: "participationRequest",
+    label: "Оролцох хүсэлт (ААНБ албан бичиг / иргэн өргөдөл)",
+  },
   { key: "depositReceipt", label: "Дэнчин төлсөн баримтын хуулбар" },
 ];
 
 /** Full, ordered doc list per account type. */
 export const ACCOUNT_DOCS: Record<AccountType, DocDef[]> = {
-  individual: [...COMMON_DOCS, { key: "idCopy", label: "Иргэний үнэмлэхийн хуулбар" }],
+  individual: [
+    ...COMMON_DOCS,
+    { key: "idCopy", label: "Иргэний үнэмлэхийн хуулбар" },
+  ],
   legal_entity: [
     ...COMMON_DOCS,
     { key: "stateCertCopy", label: "Улсын бүртгэлийн гэрчилгээний хуулбар" },
