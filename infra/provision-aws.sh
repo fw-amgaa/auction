@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Provision the production AWS infrastructure for the auction:
-#   - IAM role/instance-profile (read Secrets Manager + S3 + SES)
+#   - IAM role/instance-profile (read Secrets Manager + S3)
 #   - Security groups (app: 80/443 public, 22 from your IP; db: 5432 from app)
 #   - RDS PostgreSQL (Multi-AZ, encrypted, 7-day PITR)  <-- money data
 #   - EC2 (Graviton t4g, Amazon Linux 2023 arm64) + Elastic IP
@@ -52,8 +52,7 @@ if ! aws iam get-role --role-name $ROLE >/dev/null 2>&1; then
   aws iam put-role-policy --role-name $ROLE --policy-name auction-access --policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[
     {\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:GetSecretValue\"],\"Resource\":\"arn:aws:secretsmanager:$REGION:$ACCT:secret:$SECRET_NAME-*\"},
     {\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:PutObject\"],\"Resource\":\"arn:aws:s3:::$BUCKET/*\"},
-    {\"Effect\":\"Allow\",\"Action\":[\"s3:ListBucket\"],\"Resource\":\"arn:aws:s3:::$BUCKET\"},
-    {\"Effect\":\"Allow\",\"Action\":[\"ses:SendEmail\",\"ses:SendRawEmail\"],\"Resource\":\"*\"}]}"
+    {\"Effect\":\"Allow\",\"Action\":[\"s3:ListBucket\"],\"Resource\":\"arn:aws:s3:::$BUCKET\"}]}"
   aws iam create-instance-profile --instance-profile-name $ROLE >/dev/null
   aws iam add-role-to-instance-profile --instance-profile-name $ROLE --role-name $ROLE
   sleep 10  # let the instance profile propagate

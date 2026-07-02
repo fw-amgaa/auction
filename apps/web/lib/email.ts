@@ -1,13 +1,13 @@
 import "server-only";
 
 /**
- * Outbound email. Sends through AWS SES when SES_FROM_EMAIL is configured;
- * otherwise (and on any SES failure) it falls back to logging the message —
- * including any action link — to the server console so flows are testable
- * locally without a provider.
+ * Outbound email. Sends through Resend (https://resend.com) when
+ * RESEND_API_KEY and EMAIL_FROM are configured; otherwise (and on any send
+ * failure) it falls back to logging the message — including any action link —
+ * to the server console so flows are testable locally without a provider.
  *
- * Note: SES in "sandbox" mode only delivers to verified addresses. If real
- * mail isn't arriving, check the SES console (sandbox / verified sender).
+ * Note: the EMAIL_FROM domain must be verified in the Resend dashboard
+ * (DNS records for anav.mn), or the API rejects the send.
  */
 export interface Mail {
   to: string;
@@ -16,8 +16,8 @@ export interface Mail {
   text: string;
 }
 
-const FROM = process.env.SES_FROM_EMAIL ?? "";
-const REGION = process.env.SES_REGION ?? process.env.AWS_REGION ?? process.env.S3_REGION;
+const API_KEY = process.env.RESEND_API_KEY ?? "";
+const FROM = process.env.EMAIL_FROM ?? "";
 
 /** Absolute base URL for links in emails. */
 export function appUrl(): string {
@@ -25,32 +25,32 @@ export function appUrl(): string {
 }
 
 export async function sendEmail(mail: Mail): Promise<void> {
-  if (FROM) {
+  if (API_KEY && FROM) {
     try {
-      const { SESv2Client, SendEmailCommand } = await import("@aws-sdk/client-sesv2");
-      const client = new SESv2Client(REGION ? { region: REGION } : {});
-      await client.send(
-        new SendEmailCommand({
-          FromEmailAddress: FROM,
-          Destination: { ToAddresses: [mail.to] },
-          Content: {
-            Simple: {
-              Subject: { Data: mail.subject, Charset: "UTF-8" },
-              Body: {
-                Html: { Data: mail.html, Charset: "UTF-8" },
-                Text: { Data: mail.text, Charset: "UTF-8" },
-              },
-            },
-          },
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: FROM,
+          to: [mail.to],
+          subject: mail.subject,
+          html: mail.html,
+          text: mail.text,
         }),
-      );
+      });
+      if (!res.ok) {
+        throw new Error(`Resend API ${res.status}: ${await res.text()}`);
+      }
       return;
     } catch (err) {
-      // Loud, structured log so a prod misconfig (unverified sender, wrong
-      // region, sandbox) is diagnosable from the container logs rather than
-      // silently swallowed. FROM/region are config, not secrets.
+      // Loud, structured log so a prod misconfig (unverified domain, bad key)
+      // is diagnosable from the container logs rather than silently swallowed.
+      // FROM is config, not a secret.
       console.error(
-        `[email] SES send FAILED — to=${mail.to} from=${FROM} region=${REGION ?? "(default)"} subject="${mail.subject}":`,
+        `[email] Resend send FAILED — to=${mail.to} from=${FROM} subject="${mail.subject}":`,
         err,
       );
     }
@@ -58,6 +58,6 @@ export async function sendEmail(mail: Mail): Promise<void> {
 
   // Dev fallback: surface the message (and its link) in the server logs.
   console.log(
-    `\n📧 [email:dev] no SES delivery — message follows\n   to:      ${mail.to}\n   subject: ${mail.subject}\n   ----\n${mail.text}\n   ----\n`,
+    `\n📧 [email:dev] no email delivery configured — message follows\n   to:      ${mail.to}\n   subject: ${mail.subject}\n   ----\n${mail.text}\n   ----\n`,
   );
 }
