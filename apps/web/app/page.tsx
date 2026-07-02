@@ -755,14 +755,6 @@ export default function LandingPage() {
                     Бүртгүүлэх
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    href="/terms"
-                    className="transition-colors hover:text-white"
-                  >
-                    Үйлчилгээний нөхцөл
-                  </Link>
-                </li>
               </ul>
             </div>
             <div>

@@ -97,9 +97,9 @@ export default function HelpPage() {
           <div className="mb-2 text-[13px] text-ink-soft">☎ 1800-1234 (ажлын өдөр 9:00–18:00)</div>
           <div className="text-[13px] text-ink-soft">✉ tuslamj@agnuur.gov.mn</div>
         </div>
-        <Link href="/terms" className="flex items-center justify-between gap-3.5 rounded-[14px] border border-line bg-white p-5 hover:border-[#CDD4DE]">
+        <Link href="/guidelines" className="flex items-center justify-between gap-3.5 rounded-[14px] border border-line bg-white p-5 hover:border-[#CDD4DE]">
           <div>
-            <h3 className="text-[15px] font-bold text-navy">Үйлчилгээний нөхцөл</h3>
+            <h3 className="text-[15px] font-bold text-navy">Дуудлага худалдааны удирдамж</h3>
             <div className="mt-0.5 text-[12.5px] text-muted">Дуудлага худалдааны дүрэм журам</div>
           </div>
           <span className="text-[#C7CFD9]">›</span>

@@ -20,8 +20,10 @@ interface FieldDef {
   type?: "text" | "password" | "email";
 }
 
-const TERMS_VERSION = "v2.3";
-const TERMS_LABEL = "v2.3 · 2026-01";
+// There is no separate terms-of-service document — the consent doc is the
+// official auction udirdamj (guidelines), served as a PDF from /public.
+const TERMS_VERSION = "udirdamj-2026";
+const UDIRDAMJ_PDF = "/udirdamj-2026.pdf";
 
 const INDIVIDUAL_FIELDS: FieldDef[] = [
   { key: "surname", label: "Овог", ph: "Овог" },
@@ -91,7 +93,6 @@ export default function RegisterPage() {
   const [agreed, setAgreed] = useState(false);
   const [touched, setTouched] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const [terms, setTerms] = useState<{ version: string; body: string } | null>(null);
   const [showToast, setShowToast] = useState(false);
 
   // when the server confirms creation, jump to the success step + flash a toast
@@ -103,16 +104,6 @@ export default function RegisterPage() {
       return () => clearTimeout(t);
     }
   }, [state.ok]);
-
-  function openTerms() {
-    setShowTerms(true);
-    if (!terms) {
-      fetch("/api/terms")
-        .then((r) => r.json())
-        .then((t) => setTerms({ version: t.version, body: t.body }))
-        .catch(() => setTerms({ version: TERMS_VERSION, body: "Үйлчилгээний нөхцөл ачаалахад алдаа гарлаа." }));
-    }
-  }
 
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: v }));
   const toggleCode = (code: string) =>
@@ -551,13 +542,13 @@ export default function RegisterPage() {
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
-                      openTerms();
+                      setShowTerms(true);
                     }}
                     className="font-semibold text-crimson underline-offset-2 hover:underline"
                   >
-                    Үйлчилгээний нөхцөл ({TERMS_LABEL})
-                  </button>{" "}
-                  болон дуудлага худалдааны журамтай танилцаж, хүлээн зөвшөөрч байна.
+                    дуудлага худалдааны удирдамж
+                  </button>
+                  тай танилцаж, хүлээн зөвшөөрч байна.
                 </span>
               </label>
             </div>
@@ -645,7 +636,7 @@ export default function RegisterPage() {
         </div>
       )}
 
-      {/* Terms & Conditions dialog */}
+      {/* Udirdamj (auction guidelines) dialog — the consent document */}
       {showTerms && (
         <div
           onClick={() => setShowTerms(false)}
@@ -653,14 +644,12 @@ export default function RegisterPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex max-h-[88vh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+            className="flex h-[88vh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
           >
             <div className="flex items-start justify-between border-b border-line px-6 py-4">
               <div>
-                <h3 className="text-lg font-bold text-navy">Үйлчилгээний нөхцөл</h3>
-                <div className="mt-0.5 text-[12px] text-muted">
-                  Хувилбар {terms?.version ?? TERMS_VERSION}
-                </div>
+                <h3 className="text-lg font-bold text-navy">Дуудлага худалдааны удирдамж</h3>
+                <div className="mt-0.5 text-[12px] text-muted">Ховд аймаг · 2026</div>
               </div>
               <button
                 type="button"
@@ -671,33 +660,58 @@ export default function RegisterPage() {
                 ✕
               </button>
             </div>
-            <div className="overflow-y-auto px-6 py-5">
-              {terms ? (
-                <article className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink-strong">
-                  {terms.body}
-                </article>
-              ) : (
-                <div className="py-8 text-center text-[13.5px] text-muted">Ачаалж байна…</div>
-              )}
-            </div>
-            <div className="flex justify-end gap-2.5 border-t border-line px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setShowTerms(false)}
-                className="rounded-[10px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-sm font-semibold text-ink-soft"
+            <object data={UDIRDAMJ_PDF} type="application/pdf" className="min-h-0 w-full flex-1">
+              {/* mobile browsers mostly can't inline PDFs — offer links instead */}
+              <div className="px-6 py-10 text-center text-[13.5px] leading-relaxed text-ink-soft">
+                Таны төхөөрөмж PDF шууд харуулах боломжгүй байна.{" "}
+                <a
+                  href={UDIRDAMJ_PDF}
+                  target="_blank"
+                  rel="noopener"
+                  className="font-semibold text-crimson underline-offset-2 hover:underline"
+                >
+                  PDF нээх
+                </a>{" "}
+                эсвэл{" "}
+                <a
+                  href="/guidelines"
+                  target="_blank"
+                  rel="noopener"
+                  className="font-semibold text-crimson underline-offset-2 hover:underline"
+                >
+                  веб хувилбарыг
+                </a>{" "}
+                үзнэ үү.
+              </div>
+            </object>
+            <div className="flex items-center justify-between gap-2.5 border-t border-line px-6 py-4">
+              <a
+                href="/guidelines"
+                target="_blank"
+                rel="noopener"
+                className="text-sm font-semibold text-crimson underline-offset-2 hover:underline"
               >
-                Хаах
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAgreed(true);
-                  setShowTerms(false);
-                }}
-                className="rounded-[10px] bg-crimson px-5 py-2.5 text-sm font-bold text-white hover:bg-crimson-hover"
-              >
-                Зөвшөөрч байна
-              </button>
+                Веб хувилбар ↗
+              </a>
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowTerms(false)}
+                  className="rounded-[10px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-sm font-semibold text-ink-soft"
+                >
+                  Хаах
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAgreed(true);
+                    setShowTerms(false);
+                  }}
+                  className="rounded-[10px] bg-crimson px-5 py-2.5 text-sm font-bold text-white hover:bg-crimson-hover"
+                >
+                  Зөвшөөрч байна
+                </button>
+              </div>
             </div>
           </div>
         </div>
