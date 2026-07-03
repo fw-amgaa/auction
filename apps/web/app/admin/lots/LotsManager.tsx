@@ -15,6 +15,8 @@ import {
   createLot,
   createLotsBulk,
   deleteLot,
+  type LotDeleteImpact,
+  lotDeleteImpact,
   type LotInput,
   updateLot,
 } from "./actions";
@@ -107,6 +109,8 @@ export function LotsManager({
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [del, setDel] = useState<{ lot: ManagedLot; impact: LotDeleteImpact } | null>(null);
+  const [delError, setDelError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const { can } = usePermissions();
 
@@ -243,15 +247,29 @@ export function LotsManager({
     });
   }
 
+  /** Fetch what the delete would truncate, then open the warning dialog. */
   function remove(l: ManagedLot) {
-    if (
-      !confirm(
-        `${l.species}:${l.code} лотыг бүрмөсөн устгах уу? Энэ үйлдлийг буцаах боломжгүй.`,
-      )
-    )
-      return;
+    setDelError(null);
     startTransition(async () => {
-      await deleteLot(l.id);
+      const res = await lotDeleteImpact(l.id);
+      if ("error" in res) {
+        setToast(null);
+        alert(res.error);
+        return;
+      }
+      setDel({ lot: l, impact: res });
+    });
+  }
+
+  function confirmRemove() {
+    if (!del) return;
+    startTransition(async () => {
+      const res = await deleteLot(del.lot.id);
+      if (res.error) {
+        setDelError(res.error);
+        return;
+      }
+      setDel(null);
       flash("Лот устгагдлаа");
     });
   }
@@ -695,6 +713,91 @@ export function LotsManager({
                     : form.id
                       ? "Хадгалах"
                       : "Үүсгэх"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {del && (
+        <div
+          onClick={() => setDel(null)}
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-navy-deep/80 p-6"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[460px] rounded-2xl bg-white"
+          >
+            <div className="flex items-center justify-between border-b border-[#EBEEF3] px-[22px] py-[18px]">
+              <span className="text-[17px] font-bold text-navy">
+                Лот устгах
+              </span>
+              <button
+                onClick={() => setDel(null)}
+                className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3.5 p-[22px] text-[13.5px] text-ink-soft">
+              <p>
+                <strong className="text-navy">
+                  {del.lot.species}:{del.lot.code}
+                </strong>{" "}
+                лотыг бүрмөсөн устгах гэж байна.
+              </p>
+              {(del.impact.bids > 0 ||
+                del.impact.ledger > 0 ||
+                del.impact.notifications > 0 ||
+                del.impact.logs > 0 ||
+                del.impact.winnerName) && (
+                <div className="rounded-[10px] border border-[#E0908C] bg-[#FBEAE9] p-3.5">
+                  <div className="text-[12.5px] font-bold text-crimson">
+                    ⚠ Дараах холбогдох өгөгдөл хамт устана:
+                  </div>
+                  <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-[12.5px] text-[#8A2F2B]">
+                    {del.impact.winnerName && (
+                      <li>
+                        Ялагч: <strong>{del.impact.winnerName}</strong> —
+                        ялалтын бүртгэл арилна
+                      </li>
+                    )}
+                    {del.impact.bids > 0 && <li>Санал: {del.impact.bids}</li>}
+                    {del.impact.ledger > 0 && (
+                      <li>Лимитийн гүйлгээний түүх: {del.impact.ledger}</li>
+                    )}
+                    {del.impact.notifications > 0 && (
+                      <li>Мэдэгдэл: {del.impact.notifications}</li>
+                    )}
+                    {del.impact.logs > 0 && (
+                      <li>Аудит лог: {del.impact.logs}</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+              <p className="text-[12.5px]">
+                Зөвхөн хэн, хэзээ, аль лотыг устгасан тухай нэг аудит бичлэг
+                үлдэнэ. Энэ үйлдлийг буцаах боломжгүй.
+              </p>
+              {delError && (
+                <p className="text-[12.5px] font-semibold text-crimson">
+                  {delError}
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2.5 px-[22px] pb-5">
+              <button
+                onClick={() => setDel(null)}
+                className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft"
+              >
+                Болих
+              </button>
+              <button
+                onClick={confirmRemove}
+                disabled={pending}
+                className="rounded-[9px] bg-crimson px-5 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover disabled:opacity-60"
+              >
+                {pending ? "Устгаж байна…" : "Бүрмөсөн устгах"}
               </button>
             </div>
           </div>

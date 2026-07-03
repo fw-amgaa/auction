@@ -1,6 +1,6 @@
 import "server-only";
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -43,6 +43,17 @@ export async function getObject(key: string): Promise<Buffer> {
     return Buffer.from(bytes);
   }
   return readFile(path.join(UPLOAD_DIR, key));
+}
+
+export async function deleteObject(key: string): Promise<void> {
+  const bucket = process.env.S3_BUCKET;
+  if (bucket) {
+    const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+    const client = await s3();
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    return;
+  }
+  await rm(path.join(UPLOAD_DIR, key), { force: true });
 }
 
 export function contentTypeFor(fileName: string): string {

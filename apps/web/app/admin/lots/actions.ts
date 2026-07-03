@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db, schema } from "@auction/db";
@@ -9,6 +9,7 @@ import { categoryForCode, CATEGORIES, type CategoryCode } from "@auction/shared"
 import { writeAudit } from "@/lib/audit";
 import { lotPhase } from "@/lib/lots";
 import { requirePermission } from "@/lib/session";
+import { deleteObject } from "@/lib/storage";
 
 export interface LotInput {
   categoryId: string;
@@ -45,6 +46,27 @@ function parseDate(v: string | null): Date | null {
   if (!v) return null;
   const d = new Date(v);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Display name — legal entities by registered name, individuals by full name, else email. */
+async function userLabel(userId: string): Promise<string | null> {
+  const [u] = await db
+    .select({
+      email: schema.users.email,
+      accountType: schema.users.accountType,
+      surname: schema.individualProfiles.surname,
+      givenName: schema.individualProfiles.givenName,
+      registeredName: schema.legalEntityProfiles.registeredName,
+    })
+    .from(schema.users)
+    .leftJoin(schema.individualProfiles, eq(schema.individualProfiles.userId, schema.users.id))
+    .leftJoin(schema.legalEntityProfiles, eq(schema.legalEntityProfiles.userId, schema.users.id))
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+  if (!u) return null;
+  return u.accountType === "legal_entity"
+    ? u.registeredName || u.email
+    : [u.surname, u.givenName].filter(Boolean).join(" ") || u.email;
 }
 
 /** A lot's code must belong to the chosen category (constants.ts). */
@@ -235,28 +257,7 @@ export async function rerunLot(id: string, input: RerunInput): Promise<LotAction
 
   // Snapshot the finished round for the audit trail before we clear it.
   const prevBids = await db.$count(schema.bids, eq(schema.bids.lotId, id));
-  let prevWinnerName: string | null = null;
-  if (lot.winnerUserId) {
-    const [w] = await db
-      .select({
-        email: schema.users.email,
-        accountType: schema.users.accountType,
-        surname: schema.individualProfiles.surname,
-        givenName: schema.individualProfiles.givenName,
-        registeredName: schema.legalEntityProfiles.registeredName,
-      })
-      .from(schema.users)
-      .leftJoin(schema.individualProfiles, eq(schema.individualProfiles.userId, schema.users.id))
-      .leftJoin(schema.legalEntityProfiles, eq(schema.legalEntityProfiles.userId, schema.users.id))
-      .where(eq(schema.users.id, lot.winnerUserId))
-      .limit(1);
-    if (w) {
-      prevWinnerName =
-        w.accountType === "legal_entity"
-          ? w.registeredName || w.email
-          : [w.surname, w.givenName].filter(Boolean).join(" ") || w.email;
-    }
-  }
+  const prevWinnerName = lot.winnerUserId ? await userLabel(lot.winnerUserId) : null;
 
   await db.transaction(async (tx) => {
     // Keep the previous round's bids as history, but strip every "winning"
@@ -304,13 +305,134 @@ export async function rerunLot(id: string, input: RerunInput): Promise<LotAction
   return {};
 }
 
-/** Permanently delete a lot (and its bids, via cascade). */
+/** Ledger rows tied to a lot directly or through one of its bids. */
+function lotLedgerFilter(lotId: string) {
+  const lotBids = db.select({ id: schema.bids.id }).from(schema.bids).where(eq(schema.bids.lotId, lotId));
+  return or(eq(schema.limitLedger.lotId, lotId), inArray(schema.limitLedger.bidId, lotBids))!;
+}
+
+export interface LotDeleteImpact {
+  code: string;
+  bids: number;
+  ledger: number;
+  notifications: number;
+  logs: number;
+  winnerName: string | null;
+}
+
+/** What deleting this lot would truncate — shown to the admin before confirming. */
+export async function lotDeleteImpact(id: string): Promise<LotDeleteImpact | { error: string }> {
+  await requirePermission("lots.delete");
+  const [lot] = await db.select().from(schema.lots).where(eq(schema.lots.id, id)).limit(1);
+  if (!lot) return { error: "Лот олдсонгүй." };
+  if (lotPhase(lot.status, lot.startsAt, lot.endsAt) === "live") {
+    return { error: "Шууд явагдаж буй лотыг устгахын өмнө эхлээд цуцлана уу." };
+  }
+  const [bids, ledger, notifications, logs] = await Promise.all([
+    db.$count(schema.bids, eq(schema.bids.lotId, id)),
+    db.$count(schema.limitLedger, lotLedgerFilter(id)),
+    db.$count(schema.notifications, sql`${schema.notifications.payload}->>'lotId' = ${id}`),
+    db.$count(schema.auditLog, and(eq(schema.auditLog.targetType, "lot"), eq(schema.auditLog.targetId, id))),
+  ]);
+  return {
+    code: lot.code,
+    bids,
+    ledger,
+    notifications,
+    logs,
+    winnerName: lot.winnerUserId ? await userLabel(lot.winnerUserId) : null,
+  };
+}
+
+/**
+ * Permanently delete a lot and everything hanging off it: bids, limit-ledger
+ * history, lot notifications and the lot's own audit entries (none of these
+ * cascade — a bare lot delete hits the ledger FKs and fails). The one trace
+ * left behind is a fresh `lot.delete` audit entry recording who deleted what,
+ * when, and how much was truncated.
+ */
 export async function deleteLot(id: string): Promise<LotActionState> {
   const admin = await requirePermission("lots.delete");
-  const [lot] = await db.select({ code: schema.lots.code }).from(schema.lots).where(eq(schema.lots.id, id)).limit(1);
-  await db.delete(schema.lots).where(eq(schema.lots.id, id));
-  await writeAudit({ actorId: admin.id, action: "lot.delete", targetType: "lot", targetId: id, meta: { code: lot?.code } });
+  const [lot] = await db.select().from(schema.lots).where(eq(schema.lots.id, id)).limit(1);
+  if (!lot) return { error: "Лот олдсонгүй." };
+  if (lotPhase(lot.status, lot.startsAt, lot.endsAt) === "live") {
+    return { error: "Шууд явагдаж буй лотыг устгахын өмнө эхлээд цуцлана уу." };
+  }
+
+  // snapshot for the surviving audit entry
+  const [bids, ledger, notifications, logs] = await Promise.all([
+    db.$count(schema.bids, eq(schema.bids.lotId, id)),
+    db.$count(schema.limitLedger, lotLedgerFilter(id)),
+    db.$count(schema.notifications, sql`${schema.notifications.payload}->>'lotId' = ${id}`),
+    db.$count(schema.auditLog, and(eq(schema.auditLog.targetType, "lot"), eq(schema.auditLog.targetId, id))),
+  ]);
+  const winnerName = lot.winnerUserId ? await userLabel(lot.winnerUserId) : null;
+
+  await db.transaction(async (tx) => {
+    const bidders = await tx
+      .selectDistinct({ userId: schema.bids.userId })
+      .from(schema.bids)
+      .where(eq(schema.bids.lotId, id));
+
+    // FK order: ledger rows reference both the lot and its bids without cascade.
+    await tx.delete(schema.limitLedger).where(lotLedgerFilter(id));
+    await tx.delete(schema.bids).where(eq(schema.bids.lotId, id));
+    await tx.delete(schema.notifications).where(sql`${schema.notifications.payload}->>'lotId' = ${id}`);
+    await tx
+      .delete(schema.auditLog)
+      .where(and(eq(schema.auditLog.targetType, "lot"), eq(schema.auditLog.targetId, id)));
+    await tx.delete(schema.lots).where(eq(schema.lots.id, id));
+
+    // Rebuild each bidder's committed cache from the holds that still exist
+    // elsewhere (mirrors ensureUserCommitted in apps/bid), so a deleted hold
+    // can't keep money locked in the UI.
+    for (const { userId } of bidders) {
+      const held = await tx
+        .select({ amount: schema.bids.amount })
+        .from(schema.bids)
+        .innerJoin(schema.lots, eq(schema.bids.lotId, schema.lots.id))
+        .where(
+          and(
+            eq(schema.bids.userId, userId),
+            eq(schema.bids.status, "winning"),
+            eq(schema.lots.status, "live"),
+          ),
+        );
+      await tx
+        .update(schema.users)
+        .set({ committedCache: held.reduce((a, b) => a + b.amount, 0) })
+        .where(eq(schema.users.id, userId));
+    }
+  });
+
+  // Images: best-effort removal of files no remaining lot references (bulk
+  // create shares one upload across sibling lots). Never blocks the delete.
+  if (lot.images.length > 0) {
+    try {
+      const rest = await db.select({ images: schema.lots.images }).from(schema.lots);
+      const referenced = new Set(rest.flatMap((r) => r.images));
+      await Promise.all(lot.images.filter((k) => !referenced.has(k)).map((k) => deleteObject(k)));
+    } catch {
+      // storage cleanup failure is not a delete failure
+    }
+  }
+
+  await writeAudit({
+    actorId: admin.id,
+    action: "lot.delete",
+    targetType: "lot",
+    targetId: id,
+    meta: {
+      code: lot.code,
+      status: lot.status,
+      winnerUserId: lot.winnerUserId,
+      winnerName,
+      finalPrice: lot.currentPrice,
+      truncated: { bids, ledger, notifications, logs },
+    },
+  });
   revalidatePath("/admin/lots");
+  revalidatePath("/admin/results");
   revalidatePath("/catalog");
   return {};
 }
