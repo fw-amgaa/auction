@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { formatTugrug } from "@auction/shared";
 
+import { AdminButton } from "@/components/admin/Button";
 import { usePermissions } from "@/components/admin/Permissions";
 import { localInputToIso, toLocalInput } from "@/lib/datetime";
 
@@ -88,12 +89,9 @@ export function RerunPanel({
 
       {!open ? (
         !done && (
-          <button
-            onClick={() => setOpen(true)}
-            className="mt-3 rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover"
-          >
+          <AdminButton variant="primary" onClick={() => setOpen(true)} className="mt-3">
             ↻ Дахин ажиллуулах
-          </button>
+          </AdminButton>
         )
       ) : (
         <div className="mt-3.5 space-y-3">
@@ -125,22 +123,25 @@ export function RerunPanel({
           {error && <div className="text-[12.5px] font-semibold text-crimson">{error}</div>}
 
           <div className="flex gap-2.5">
-            <button
+            <AdminButton
+              variant="ghost"
               onClick={() => {
                 setOpen(false);
                 setError(null);
               }}
-              className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft"
+              disabled={pending}
             >
               Болих
-            </button>
-            <button
+            </AdminButton>
+            <AdminButton
+              variant="primary"
               onClick={submit}
-              disabled={pending || !startsAt || !endsAt}
-              className="rounded-[9px] bg-crimson px-5 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover disabled:opacity-60"
+              disabled={!startsAt || !endsAt}
+              loading={pending}
+              className="px-5"
             >
-              {pending ? "Товлож байна…" : "↻ Дахин нээх"}
-            </button>
+              ↻ Дахин нээх
+            </AdminButton>
           </div>
         </div>
       )}

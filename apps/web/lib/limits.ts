@@ -66,22 +66,22 @@ export async function getLimitsPage(params: {
   const ids = idRows.slice(0, params.limit).map((r) => r.id);
   if (ids.length === 0) return { rows: [], hasNext: false };
 
-  const rows = await db.query.users.findMany({
-    where: inArray(schema.users.id, ids),
-    with: { individualProfile: true, legalEntityProfile: true },
-  });
+  const [rows, ledger] = await Promise.all([
+    db.query.users.findMany({
+      where: inArray(schema.users.id, ids),
+      with: { individualProfile: true, legalEntityProfile: true },
+    }),
+    db
+      .select()
+      .from(schema.limitLedger)
+      .where(and(inArray(schema.limitLedger.userId, ids), inArray(schema.limitLedger.type, ADMIN_TYPES)))
+      .orderBy(desc(schema.limitLedger.createdAt)),
+  ]);
   const byId = new Map(rows.map((r) => [r.id, r]));
   const ordered = ids.map((id) => byId.get(id)).filter((u): u is (typeof rows)[number] => !!u);
 
-  const ledger = await db
-    .select()
-    .from(schema.limitLedger)
-    .where(inArray(schema.limitLedger.userId, ids))
-    .orderBy(desc(schema.limitLedger.createdAt));
-
   const byUser = new Map<string, LedgerEntry[]>();
   for (const l of ledger) {
-    if (!ADMIN_TYPES.includes(l.type)) continue;
     const list = byUser.get(l.userId) ?? [];
     if (list.length < 6) list.push({ id: l.id, type: l.type, delta: l.delta, note: l.note, createdAt: l.createdAt });
     byUser.set(l.userId, list);

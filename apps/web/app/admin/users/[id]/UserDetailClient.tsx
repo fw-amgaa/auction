@@ -15,6 +15,7 @@ import {
 import { DocThumb } from "@/components/DocThumb";
 import { KycBadge } from "@/components/KycBadge";
 import { LocalTime } from "@/components/LocalTime";
+import { AdminButton } from "@/components/admin/Button";
 import { usePermissions } from "@/components/admin/Permissions";
 
 export interface DetailUser {
@@ -41,7 +42,17 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
   const [toast, setToast] = useState<{ msg: string; bad?: boolean } | null>(null);
   const [editingCodes, setEditingCodes] = useState(false);
   const [codeDraft, setCodeDraft] = useState<string[]>(user.codes);
+  // which action button is running, so only it shows a spinner
+  const [busy, setBusy] = useState<"info" | "codes" | "kyc" | "reset" | "suspend" | null>(null);
   const [pending, startTransition] = useTransition();
+
+  function runBusy(key: NonNullable<typeof busy>, fn: () => Promise<void>) {
+    setBusy(key);
+    startTransition(async () => {
+      await fn();
+      setBusy(null);
+    });
+  }
   const { can } = usePermissions();
 
   const toggleCode = (code: string) =>
@@ -111,7 +122,7 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                       if (editing) setDraft(Object.fromEntries(user.editFields.map((f) => [f.key, f.value])));
                       setEditing((v) => !v);
                     }}
-                    className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold"
+                    className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors"
                     style={{
                       color: editing ? "#C8312C" : "#14294A",
                       background: editing ? "#FBEFEE" : "#F3F5F8",
@@ -140,9 +151,10 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
               </div>
               {editing && (
                 <div className="mt-4 flex gap-2.5">
-                  <button
+                  <AdminButton
+                    variant="success"
                     onClick={() =>
-                      startTransition(async () => {
+                      runBusy("info", async () => {
                         const res = await updateUserInfo(user.id, user.accountType, draft);
                         if (!res.ok) {
                           flash(res.error ?? "Хадгалахад алдаа гарлаа", true);
@@ -152,17 +164,15 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                         flash("Мэдээлэл хадгалагдлаа");
                       })
                     }
+                    loading={busy === "info"}
                     disabled={pending}
-                    className="rounded-[9px] bg-success px-5 py-2.5 text-[13.5px] font-bold text-white"
+                    className="px-5"
                   >
                     Хадгалах
-                  </button>
-                  <button
-                    onClick={() => setEditing(false)}
-                    className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft"
-                  >
+                  </AdminButton>
+                  <AdminButton variant="ghost" onClick={() => setEditing(false)} disabled={pending}>
                     Болих
-                  </button>
+                  </AdminButton>
                 </div>
               )}
             </div>
@@ -200,7 +210,7 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                       if (editingCodes) setCodeDraft(user.codes);
                       setEditingCodes((v) => !v);
                     }}
-                    className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold"
+                    className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition-colors"
                     style={{
                       color: editingCodes ? "#C8312C" : "#14294A",
                       background: editingCodes ? "#FBEFEE" : "#F3F5F8",
@@ -244,9 +254,10 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                     ))}
                   </div>
                   <div className="mt-4 flex gap-2.5">
-                    <button
+                    <AdminButton
+                      variant="success"
                       onClick={() =>
-                        startTransition(async () => {
+                        runBusy("codes", async () => {
                           const res = await updateUserCodes(user.id, codeDraft);
                           if (!res.ok) {
                             flash(res.error ?? "Хадгалахад алдаа гарлаа", true);
@@ -256,20 +267,22 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                           flash("Шифр шинэчлэгдлээ");
                         })
                       }
+                      loading={busy === "codes"}
                       disabled={pending}
-                      className="rounded-[9px] bg-success px-5 py-2.5 text-[13.5px] font-bold text-white"
+                      className="px-5"
                     >
                       Хадгалах
-                    </button>
-                    <button
+                    </AdminButton>
+                    <AdminButton
+                      variant="ghost"
                       onClick={() => {
                         setCodeDraft(user.codes);
                         setEditingCodes(false);
                       }}
-                      className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft"
+                      disabled={pending}
                     >
                       Болих
-                    </button>
+                    </AdminButton>
                   </div>
                 </>
               ) : user.codes.length === 0 ? (
@@ -326,7 +339,7 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
               {can("limits.adjust") && (
                 <Link
                   href="/admin/limits"
-                  className="mt-3.5 block rounded-[9px] border border-white/15 bg-white/[0.08] py-2.5 text-center text-[13px] font-semibold text-white"
+                  className="mt-3.5 block rounded-[9px] border border-white/15 bg-white/[0.08] py-2.5 text-center text-[13px] font-semibold text-white transition-colors hover:bg-white/[0.16]"
                 >
                   Лимит тохируулах
                 </Link>
@@ -338,36 +351,42 @@ export function UserDetailClient({ user }: { user: DetailUser }) {
                 <div className="mb-3 text-[12.5px] font-bold text-navy">Үйлдэл</div>
                 <div className="flex flex-col gap-2">
                   {user.kyc === "pending" && can("kyc.review") && (
-                    <button
-                      onClick={() => startTransition(async () => { await approveKyc(user.id); flash("KYC баталгаажлаа"); })}
+                    <AdminButton
+                      variant="success-outline"
+                      onClick={() => runBusy("kyc", async () => { await approveKyc(user.id); flash("KYC баталгаажлаа"); })}
+                      loading={busy === "kyc"}
                       disabled={pending}
-                      className="rounded-[9px] border border-[#C7E5D5] bg-[#E5F4EC] px-3 py-2.5 text-left text-[13px] font-semibold text-[#197a50]"
+                      className="justify-start bg-[#E5F4EC] px-3 text-left text-[13px] text-[#197a50]"
                     >
                       ✓ KYC баталгаажуулах
-                    </button>
+                    </AdminButton>
                   )}
                   {can("users.reset_credentials") && (
-                    <button
-                      onClick={() => startTransition(async () => { await resetCredentials(user.id); flash("Нууц үг сэргээх холбоос илгээгдлээ"); })}
+                    <AdminButton
+                      variant="secondary"
+                      onClick={() => runBusy("reset", async () => { await resetCredentials(user.id); flash("Нууц үг сэргээх холбоос илгээгдлээ"); })}
+                      loading={busy === "reset"}
                       disabled={pending}
-                      className="rounded-[9px] border border-line-cool bg-white px-3 py-2.5 text-left text-[13px] font-semibold text-navy"
+                      className="justify-start px-3 text-left text-[13px]"
                     >
                       ⟲ Нууц үг сэргээх холбоос илгээх
-                    </button>
+                    </AdminButton>
                   )}
                   {can("users.suspend") && (
-                    <button
+                    <AdminButton
+                      variant="danger"
                       onClick={() =>
-                        startTransition(async () => {
+                        runBusy("suspend", async () => {
                           await setUserDisabled(user.id, !user.disabled);
                           flash(user.disabled ? "Бүртгэл сэргээгдлээ" : "Бүртгэл түр хаагдлаа");
                         })
                       }
+                      loading={busy === "suspend"}
                       disabled={pending}
-                      className="rounded-[9px] border border-[#E0908C] bg-white px-3 py-2.5 text-left text-[13px] font-semibold text-crimson"
+                      className="justify-start px-3 text-left text-[13px]"
                     >
                       {user.disabled ? "↺ Бүртгэл сэргээх" : "⊘ Бүртгэл түр хаах"}
-                    </button>
+                    </AdminButton>
                   )}
                 </div>
               </div>

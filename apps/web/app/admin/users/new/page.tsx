@@ -7,6 +7,7 @@ import { useActionState, useEffect, useState } from "react";
 import { CATEGORIES, CATEGORY_CODES, formatTugrug } from "@auction/shared";
 
 import { CurrencyInput } from "@/components/CurrencyInput";
+import { AdminButton, AdminLinkButton } from "@/components/admin/Button";
 import { ACCOUNT_DOCS } from "@/lib/docs";
 
 import { createUserAction, type CreateUserState } from "./actions";
@@ -239,7 +240,7 @@ export default function CreateUserPage() {
                               return n;
                             })
                           }
-                          className="grid size-8 place-items-center rounded-lg border border-line text-muted"
+                          className="grid size-8 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-[#F7F8FA]"
                         >
                           ✕
                         </button>
@@ -392,21 +393,21 @@ export default function CreateUserPage() {
           <div className="flex flex-wrap items-center justify-between gap-3.5 px-0.5 pb-3">
             <span className="text-xs text-muted">ⓘ Үйлдэл аудит логд бүртгэгдэнэ.</span>
             <div className="flex gap-3">
-              <Link
+              <AdminLinkButton
                 href="/admin/users"
-                className="rounded-[10px] border border-[#CDD4DE] bg-white px-5 py-3 text-sm font-semibold text-ink-soft"
+                variant="ghost"
+                className="rounded-[10px] px-5 py-3 text-sm"
               >
                 Цуцлах
-              </Link>
-              <button
-                type="button"
+              </AdminLinkButton>
+              <AdminButton
+                variant="primary"
                 onClick={submit}
-                disabled={pending || state.ok}
-                className="rounded-[10px] px-6 py-3 text-sm font-bold text-white"
-                style={{ background: pending || state.ok ? "#A9756F" : "#C8312C" }}
+                loading={pending || state.ok}
+                className="rounded-[10px] px-6 py-3 text-sm"
               >
-                {pending || state.ok ? "Үүсгэж байна…" : "Үүсгэх"}
-              </button>
+                Үүсгэх
+              </AdminButton>
             </div>
           </div>
         </div>

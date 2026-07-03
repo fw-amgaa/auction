@@ -7,7 +7,7 @@ import { type Applicant, KycReview } from "./KycReview";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 const TABS: KycStatus[] = ["pending", "approved", "rejected"];
 
 interface SP {

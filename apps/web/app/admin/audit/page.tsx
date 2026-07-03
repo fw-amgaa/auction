@@ -1,10 +1,9 @@
-import Link from "next/link";
-
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
+import { Pagination } from "@/components/admin/Pagination";
 import { requirePageAccess } from "@/lib/session";
 
 import { AuditTable, type AuditEntry } from "./AuditTable";
@@ -12,7 +11,7 @@ import { AuditToolbar } from "./AuditToolbar";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 /**
  * actorId/targetId are matched against uuid columns; a non-UUID value (a tampered
@@ -53,23 +52,36 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
   }
   const where = conds.length ? and(...conds) : undefined;
 
-  // Fetch one extra row to detect whether a next page exists.
-  const rows = await db
-    .select({
-      id: schema.auditLog.id,
-      action: schema.auditLog.action,
-      targetType: schema.auditLog.targetType,
-      targetId: schema.auditLog.targetId,
-      meta: schema.auditLog.meta,
-      createdAt: schema.auditLog.createdAt,
-      actorEmail: schema.users.email,
-    })
-    .from(schema.auditLog)
-    .leftJoin(schema.users, eq(schema.auditLog.actorId, schema.users.id))
-    .where(where)
-    .orderBy(desc(schema.auditLog.createdAt))
-    .limit(PAGE_SIZE + 1)
-    .offset((page - 1) * PAGE_SIZE);
+  // Fetch one extra row to detect whether a next page exists. The filter
+  // dropdown queries are independent of the page — run all three in parallel.
+  const [rows, actors, actionRows] = await Promise.all([
+    db
+      .select({
+        id: schema.auditLog.id,
+        action: schema.auditLog.action,
+        targetType: schema.auditLog.targetType,
+        targetId: schema.auditLog.targetId,
+        meta: schema.auditLog.meta,
+        createdAt: schema.auditLog.createdAt,
+        actorEmail: schema.users.email,
+      })
+      .from(schema.auditLog)
+      .leftJoin(schema.users, eq(schema.auditLog.actorId, schema.users.id))
+      .where(where)
+      .orderBy(desc(schema.auditLog.createdAt))
+      .limit(PAGE_SIZE + 1)
+      .offset((page - 1) * PAGE_SIZE),
+    db
+      .selectDistinct({ id: schema.users.id, email: schema.users.email })
+      .from(schema.auditLog)
+      .innerJoin(schema.users, eq(schema.auditLog.actorId, schema.users.id))
+      .orderBy(schema.users.email),
+    db
+      .selectDistinct({ action: schema.auditLog.action })
+      .from(schema.auditLog)
+      .orderBy(schema.auditLog.action),
+  ]);
+  const actions = actionRows.map((a) => a.action);
 
   const hasNext = rows.length > PAGE_SIZE;
   const pageRows = rows.slice(0, PAGE_SIZE);
@@ -81,21 +93,23 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
     [...new Set(pageRows.filter((r) => r.targetType === type && r.targetId).map((r) => r.targetId!))].filter(isUuid);
   const userIds = targetIds("user");
   const lotIds = targetIds("lot");
+  const [labelUsers, labelLots] = await Promise.all([
+    userIds.length
+      ? db
+          .select({ id: schema.users.id, email: schema.users.email, name: schema.users.name })
+          .from(schema.users)
+          .where(inArray(schema.users.id, userIds))
+      : [],
+    lotIds.length
+      ? db
+          .select({ id: schema.lots.id, code: schema.lots.code, title: schema.lots.title })
+          .from(schema.lots)
+          .where(inArray(schema.lots.id, lotIds))
+      : [],
+  ]);
   const labelMap = new Map<string, string>();
-  if (userIds.length) {
-    const us = await db
-      .select({ id: schema.users.id, email: schema.users.email, name: schema.users.name })
-      .from(schema.users)
-      .where(inArray(schema.users.id, userIds));
-    for (const u of us) labelMap.set(`user:${u.id}`, u.name ? `${u.name} · ${u.email}` : u.email);
-  }
-  if (lotIds.length) {
-    const ls = await db
-      .select({ id: schema.lots.id, code: schema.lots.code, title: schema.lots.title })
-      .from(schema.lots)
-      .where(inArray(schema.lots.id, lotIds));
-    for (const l of ls) labelMap.set(`lot:${l.id}`, `${l.code} — ${l.title}`);
-  }
+  for (const u of labelUsers) labelMap.set(`user:${u.id}`, u.name ? `${u.name} · ${u.email}` : u.email);
+  for (const l of labelLots) labelMap.set(`lot:${l.id}`, `${l.code} — ${l.title}`);
 
   const entries: AuditEntry[] = pageRows.map((r) => ({
     id: r.id,
@@ -108,18 +122,6 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
       r.targetType && r.targetId ? (labelMap.get(`${r.targetType}:${r.targetId}`) ?? null) : null,
     meta: (r.meta ?? {}) as Record<string, unknown>,
   }));
-
-  // ── filter dropdown data ───────────────────────────────────────────────────
-  const actors = await db
-    .selectDistinct({ id: schema.users.id, email: schema.users.email })
-    .from(schema.auditLog)
-    .innerJoin(schema.users, eq(schema.auditLog.actorId, schema.users.id))
-    .orderBy(schema.users.email);
-  const actionRows = await db
-    .selectDistinct({ action: schema.auditLog.action })
-    .from(schema.auditLog)
-    .orderBy(schema.auditLog.action);
-  const actions = actionRows.map((a) => a.action);
 
   // ── pagination links (preserve active filters) ─────────────────────────────
   const base = new URLSearchParams();
@@ -141,37 +143,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
 
         <AuditTable rows={entries} />
 
-        {(page > 1 || hasNext) && (
-          <div className="mt-4 flex items-center justify-between text-[13px]">
-            <span className="text-muted">Хуудас {page}</span>
-            <div className="flex gap-2">
-              {page > 1 ? (
-                <Link
-                  href={pageHref(page - 1)}
-                  className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white"
-                >
-                  ← Өмнөх
-                </Link>
-              ) : (
-                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">
-                  ← Өмнөх
-                </span>
-              )}
-              {hasNext ? (
-                <Link
-                  href={pageHref(page + 1)}
-                  className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white"
-                >
-                  Дараах →
-                </Link>
-              ) : (
-                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">
-                  Дараах →
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+        <Pagination page={page} hasNext={hasNext} hrefFor={pageHref} />
       </div>
     </div>
   );

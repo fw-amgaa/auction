@@ -6,6 +6,8 @@ import { useState, useTransition } from "react";
 import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
+import { AdminButton } from "@/components/admin/Button";
+import { Pagination } from "@/components/admin/Pagination";
 import { usePermissions } from "@/components/admin/Permissions";
 
 import { defaultWinner, generatePermit, markPaid } from "./actions";
@@ -37,6 +39,7 @@ export function ResultsManager({
   const [tab, setTab] = useState("all");
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const { can } = usePermissions();
   const filtered = rows.filter((r) => tab === "all" || r.payment === tab);
@@ -47,11 +50,15 @@ export function ResultsManager({
     setToast(m);
     setTimeout(() => setToast(null), 3000);
   }
-  const run = (fn: () => Promise<void>, msg: string) =>
+  // `key` identifies the clicked button (`${lotId}:${action}`) so only it spins.
+  const run = (key: string, fn: () => Promise<void>, msg: string) => {
+    setBusy(key);
     startTransition(async () => {
       await fn();
+      setBusy(null);
       flash(msg);
     });
+  };
 
   const KPIS = [
     { label: "Дууссан лот", value: String(kpis.ended), color: "#14294A" },
@@ -64,7 +71,10 @@ export function ResultsManager({
     <div>
       <AdminTopbar title="Үр дүн ба экспорт">
         {can("results.export") && (
-          <a href="/api/admin/results/export" className="rounded-[9px] border border-[#CDD4DE] bg-white px-3.5 py-2 text-[13px] font-semibold text-navy hover:border-navy">
+          <a
+            href="/api/admin/results/export"
+            className="rounded-[9px] border border-line-cool bg-white px-3.5 py-2 text-[13px] font-semibold text-navy transition-colors hover:bg-[#F3F5F8]"
+          >
             ⤓ CSV татах
           </a>
         )}
@@ -131,18 +141,42 @@ export function ResultsManager({
                   {r.winnerUserId && r.payment === "pending" && (
                     <>
                       {can("results.mark_paid") && (
-                        <button onClick={() => run(() => markPaid(r.lotId), "Төлбөр бүртгэгдлээ")} disabled={pending} className="rounded-[7px] bg-success px-2.5 py-1.5 text-[12px] font-semibold text-white">Төлсөн</button>
+                        <AdminButton
+                          variant="success"
+                          size="sm"
+                          onClick={() => run(`${r.lotId}:paid`, () => markPaid(r.lotId), "Төлбөр бүртгэгдлээ")}
+                          loading={busy === `${r.lotId}:paid`}
+                          disabled={pending}
+                        >
+                          Төлсөн
+                        </AdminButton>
                       )}
                       {can("results.default") && (
-                        <button onClick={() => { if (confirm("Хожигчийг төлбөргүй гэж дефолт болгож, дараагийн оролцогчид санал болгох уу?")) run(() => defaultWinner(r.lotId), "Дараагийн оролцогчид шилжүүлэв"); }} disabled={pending} className="rounded-[7px] border border-[#E0908C] bg-white px-2.5 py-1.5 text-[12px] font-semibold text-crimson">Дефолт</button>
+                        <AdminButton
+                          variant="danger"
+                          size="sm"
+                          onClick={() => { if (confirm("Хожигчийг төлбөргүй гэж дефолт болгож, дараагийн оролцогчид санал болгох уу?")) run(`${r.lotId}:default`, () => defaultWinner(r.lotId), "Дараагийн оролцогчид шилжүүлэв"); }}
+                          loading={busy === `${r.lotId}:default`}
+                          disabled={pending}
+                        >
+                          Дефолт
+                        </AdminButton>
                       )}
                     </>
                   )}
                   {r.payment === "paid" && !r.permitIssued && can("results.permit") && (
-                    <button onClick={() => run(() => generatePermit(r.lotId), "Агнуурын эрх олгогдлоо")} disabled={pending} className="rounded-[7px] bg-success px-2.5 py-1.5 text-[12px] font-semibold text-white">📜 Эрх үүсгэх</button>
+                    <AdminButton
+                      variant="success"
+                      size="sm"
+                      onClick={() => run(`${r.lotId}:permit`, () => generatePermit(r.lotId), "Агнуурын эрх олгогдлоо")}
+                      loading={busy === `${r.lotId}:permit`}
+                      disabled={pending}
+                    >
+                      📜 Эрх үүсгэх
+                    </AdminButton>
                   )}
                   {r.permitIssued && (
-                    <Link href={`/permits/${r.lotId}`} target="_blank" className="rounded-[7px] border border-[#C7E5D5] bg-[#E5F4EC] px-2.5 py-1.5 text-[12px] font-semibold text-[#197a50]">✓ Эрх харах</Link>
+                    <Link href={`/permits/${r.lotId}`} target="_blank" className="rounded-[7px] border border-[#C7E5D5] bg-[#E5F4EC] px-2.5 py-1.5 text-[12px] font-semibold text-[#197a50] transition-colors hover:bg-[#D8EFE3]">✓ Эрх харах</Link>
                   )}
                 </span>
               </div>
@@ -151,27 +185,7 @@ export function ResultsManager({
           {visible.length === 0 && <div className="px-5 py-12 text-center text-[13px] text-muted">Үр дүн алга.</div>}
         </div>
 
-        {(page > 1 || hasNext) && (
-          <div className="mt-4 flex items-center justify-between text-[13px]">
-            <span className="text-muted">Хуудас {page}</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white disabled:cursor-not-allowed disabled:text-[#C7CFD9]"
-              >
-                ← Өмнөх
-              </button>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={!hasNext}
-                className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white disabled:cursor-not-allowed disabled:text-[#C7CFD9]"
-              >
-                Дараах →
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination page={page} hasNext={hasNext} onPage={setPage} />
       </div>
 
       {toast && <div className="fixed right-5 top-5 z-[80] rounded-xl border border-[#C7E5D5] bg-[#E5F4EC] px-4 py-3 text-[13.5px] font-semibold text-[#197a50] shadow-lg">✅ {toast}</div>}

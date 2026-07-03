@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -9,6 +8,8 @@ import { formatTugrug } from "@auction/shared";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { LocalTime } from "@/components/LocalTime";
+import { AdminButton } from "@/components/admin/Button";
+import { Pagination } from "@/components/admin/Pagination";
 import { fmtSigned, LEDGER_META, type LedgerType } from "@/lib/ledger-meta";
 
 import { adjustLimit, type LimitAction } from "./actions";
@@ -157,12 +158,9 @@ export function LimitsManager({
                 <span className="tnum text-right text-[13px] text-[#C77A0A]">{formatTugrug(u.committed)}</span>
                 <span className="tnum text-right text-[13px] text-[#1F8A5B]">{formatTugrug(u.available)}</span>
                 <span className="flex justify-end">
-                  <button
-                    onClick={() => open(u)}
-                    className="rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy"
-                  >
+                  <AdminButton variant="subtle" size="sm" onClick={() => open(u)}>
                     Удирдах
-                  </button>
+                  </AdminButton>
                 </span>
               </div>
             );
@@ -170,27 +168,7 @@ export function LimitsManager({
           {rows.length === 0 && <div className="px-5 py-12 text-center text-[13px] text-muted">Хэрэглэгч алга.</div>}
         </div>
 
-        {(page > 1 || hasNext) && (
-          <div className="mt-4 flex items-center justify-between text-[13px]">
-            <span className="text-muted">Хуудас {page}</span>
-            <div className="flex gap-2">
-              {page > 1 ? (
-                <Link href={pageHref(page - 1)} className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white">
-                  ← Өмнөх
-                </Link>
-              ) : (
-                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">← Өмнөх</span>
-              )}
-              {hasNext ? (
-                <Link href={pageHref(page + 1)} className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white">
-                  Дараах →
-                </Link>
-              ) : (
-                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">Дараах →</span>
-              )}
-            </div>
-          </div>
-        )}
+        <Pagination page={page} hasNext={hasNext} hrefFor={pageHref} />
       </div>
 
       {sel && (
@@ -206,7 +184,7 @@ export function LimitsManager({
                   <div className="text-[12px] text-muted">{avatar(sel.accountType).label}</div>
                 </div>
               </div>
-              <button onClick={() => setSelId(null)} className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft">✕</button>
+              <button onClick={() => setSelId(null)} className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft transition-colors hover:bg-[#F7F8FA]">✕</button>
             </div>
 
             <div className="p-[22px]">
@@ -228,7 +206,7 @@ export function LimitsManager({
                     <button
                       key={k}
                       onClick={() => setAction(k)}
-                      className="flex-1 rounded-md py-2 text-[13px]"
+                      className="flex-1 rounded-md py-2 text-[13px] transition-colors"
                       style={{ background: on ? "#FFF" : "transparent", color: on ? "#14294A" : "#5B6677", fontWeight: on ? 700 : 500 }}
                     >
                       {label}
@@ -262,14 +240,15 @@ export function LimitsManager({
 
               {error && <div className="mb-3 text-[12.5px] font-semibold text-crimson">{error}</div>}
 
-              <button
+              <AdminButton
+                variant="success"
                 onClick={apply}
-                disabled={amt <= 0 || pending}
-                className="w-full rounded-[10px] py-3 text-sm font-bold text-white"
-                style={{ background: amt > 0 ? "#1F8A5B" : "#A9CDB8" }}
+                disabled={amt <= 0}
+                loading={pending}
+                className="w-full rounded-[10px] py-3 text-sm"
               >
-                {pending ? "Хадгалж байна…" : action === "refund" ? "Буцаалт бүртгэх" : action === "lower" ? "Лимит бууруулах" : "Лимит нэмэх"}
-              </button>
+                {action === "refund" ? "Буцаалт бүртгэх" : action === "lower" ? "Лимит бууруулах" : "Лимит нэмэх"}
+              </AdminButton>
 
               {sel.history.length > 0 && (
                 <div className="mt-5">

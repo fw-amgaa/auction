@@ -6,6 +6,7 @@ import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { LocalTime } from "@/components/LocalTime";
+import { AdminLinkButton } from "@/components/admin/Button";
 import { requirePageAccess } from "@/lib/session";
 import { mintTicket, wsUrl } from "@/lib/ws-ticket";
 
@@ -63,9 +64,9 @@ export default async function AdminHome() {
   return (
     <div>
       <AdminTopbar title="Шууд хяналт">
-        <Link href="/admin/lots" className="rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover">
+        <AdminLinkButton href="/admin/lots" variant="primary">
           + Шинэ лот
-        </Link>
+        </AdminLinkButton>
       </AdminTopbar>
 
       <div className="p-6">

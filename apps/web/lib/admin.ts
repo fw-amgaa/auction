@@ -119,7 +119,12 @@ export interface ApplicantsFilter {
  * only the requested page's full relations are ever fetched.
  */
 export async function getApplicantsPage(
-  filter: ApplicantsFilter & { limit: number; offset: number },
+  filter: ApplicantsFilter & {
+    limit: number;
+    offset: number;
+    /** Skip the documents/codes relations (2 extra queries) for list views that don't render them. */
+    withDocs?: boolean;
+  },
 ): Promise<{ rows: AdminUserView[]; hasNext: boolean }> {
   const conds = [ne(schema.users.role, "admin")];
   if (filter.kyc) conds.push(eq(schema.users.kyc, filter.kyc));
@@ -157,10 +162,18 @@ export async function getApplicantsPage(
   const ids = idRows.slice(0, filter.limit).map((r) => r.id);
   if (ids.length === 0) return { rows: [], hasNext: false };
 
-  const rows = await db.query.users.findMany({
-    where: inArray(schema.users.id, ids),
-    with: { individualProfile: true, legalEntityProfile: true, documents: true, codes: true },
-  });
+  const rows: UserRow[] =
+    filter.withDocs === false
+      ? (
+          await db.query.users.findMany({
+            where: inArray(schema.users.id, ids),
+            with: { individualProfile: true, legalEntityProfile: true },
+          })
+        ).map((u) => ({ ...u, documents: [], codes: [] }))
+      : await db.query.users.findMany({
+          where: inArray(schema.users.id, ids),
+          with: { individualProfile: true, legalEntityProfile: true, documents: true, codes: true },
+        });
   const byId = new Map(rows.map((r) => [r.id, r]));
   const ordered = ids.map((id) => byId.get(id)).filter((r): r is UserRow => !!r);
   return { rows: ordered.map(toView), hasNext };

@@ -5,6 +5,8 @@ import { useState, useTransition } from "react";
 
 import { PERMISSION_GROUPS } from "@auction/shared";
 
+import { AdminButton } from "@/components/admin/Button";
+
 import {
   type AdminActionState,
   createDashboardUser,
@@ -41,15 +43,16 @@ export function AdminsManager({
           Дашбоард хэрэглэгчид зөвхөн өөрт олгогдсон эрхийн дагуу цэс, товч, үйлдлийг харна. Шинэ
           хэрэглэгчид нууц үг тохируулах холбоос и-мэйлээр илгээгдэнэ.
         </p>
-        <button
+        <AdminButton
+          variant="primary"
           onClick={() => {
             setEditing(null);
             setCreating(true);
           }}
-          className="shrink-0 rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white transition-colors hover:bg-crimson-hover"
+          className="shrink-0"
         >
           + Дашбоард хэрэглэгч
-        </button>
+        </AdminButton>
       </div>
 
       {creating && <CreateForm onClose={() => setCreating(false)} />}
@@ -83,15 +86,16 @@ export function AdminsManager({
               {u.permissions.length === ALL_COUNT ? "Бүх эрх" : `${u.permissions.length} эрх`}
             </span>
             <div className="flex justify-end">
-              <button
+              <AdminButton
+                variant="subtle"
+                size="sm"
                 onClick={() => {
                   setCreating(false);
                   setEditing(u);
                 }}
-                className="rounded-[8px] border border-line-cool px-3 py-1.5 text-[12.5px] font-medium text-navy transition-colors hover:bg-[#F7F8FA]"
               >
                 Засах
-              </button>
+              </AdminButton>
             </div>
           </div>
         ))}
@@ -218,7 +222,7 @@ function CreateForm({ onClose }: { onClose: () => void }) {
     <div className="rounded-2xl border border-line-cool bg-white p-5">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-[15px] font-bold text-navy">Шинэ дашбоард хэрэглэгч</h2>
-        <button onClick={onClose} className="text-[13px] text-muted hover:text-navy">
+        <button onClick={onClose} className="text-[13px] text-muted transition-colors hover:text-navy">
           Болих
         </button>
       </div>
@@ -247,13 +251,9 @@ function CreateForm({ onClose }: { onClose: () => void }) {
       {msg?.error && <p className="mt-3 text-[13px] text-crimson">{msg.error}</p>}
 
       <div className="mt-4 flex justify-end gap-2">
-        <button
-          onClick={submit}
-          disabled={pending}
-          className="rounded-[9px] bg-crimson px-5 py-2.5 text-[13.5px] font-bold text-white transition-colors hover:bg-crimson-hover disabled:opacity-60"
-        >
-          {pending ? "Үүсгэж байна…" : "Үүсгэх ба урих"}
-        </button>
+        <AdminButton variant="primary" onClick={submit} loading={pending} className="px-5">
+          Үүсгэх ба урих
+        </AdminButton>
       </div>
     </div>
   );
@@ -274,11 +274,15 @@ function EditDrawer({
   const [pending, start] = useTransition();
   const [perms, setPerms] = useState<Set<string>>(new Set(user.permissions));
   const [msg, setMsg] = useState<AdminActionState | null>(null);
+  // which of the drawer's buttons is running, so only it shows a spinner
+  const [busy, setBusy] = useState<"save" | "invite" | "toggle" | null>(null);
 
-  function run(fn: () => Promise<AdminActionState>, close = false) {
+  function run(key: "save" | "invite" | "toggle", fn: () => Promise<AdminActionState>, close = false) {
     setMsg(null);
+    setBusy(key);
     start(async () => {
       const res = await fn();
+      setBusy(null);
       setMsg(res);
       if (res.ok) {
         router.refresh();
@@ -294,7 +298,7 @@ function EditDrawer({
           <h2 className="text-[15px] font-bold text-navy">{user.name}</h2>
           <div className="text-[12px] text-muted">{user.email}</div>
         </div>
-        <button onClick={onClose} className="text-[13px] text-muted hover:text-navy">
+        <button onClick={onClose} className="text-[13px] text-muted transition-colors hover:text-navy">
           Хаах
         </button>
       </div>
@@ -304,36 +308,37 @@ function EditDrawer({
       {msg?.error && <p className="mt-3 text-[13px] text-crimson">{msg.error}</p>}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => run(() => updateAdminPermissions(user.id, [...perms]))}
+        <AdminButton
+          variant="primary"
+          onClick={() => run("save", () => updateAdminPermissions(user.id, [...perms]))}
+          loading={busy === "save"}
           disabled={pending}
-          className="rounded-[9px] bg-crimson px-5 py-2.5 text-[13.5px] font-bold text-white transition-colors hover:bg-crimson-hover disabled:opacity-60"
+          className="px-5"
         >
-          {pending ? "Хадгалж байна…" : "Эрх хадгалах"}
-        </button>
+          Эрх хадгалах
+        </AdminButton>
 
         {user.awaitingSetup && !user.disabled && (
-          <button
-            onClick={() => run(() => resendAdminInvite(user.id))}
+          <AdminButton
+            variant="secondary"
+            onClick={() => run("invite", () => resendAdminInvite(user.id))}
+            loading={busy === "invite"}
             disabled={pending}
-            className="rounded-[9px] border border-line-cool px-4 py-2.5 text-[13px] font-medium text-navy transition-colors hover:bg-[#F7F8FA] disabled:opacity-60"
           >
             Урилга дахин илгээх
-          </button>
+          </AdminButton>
         )}
 
         {!isSelf && (
-          <button
-            onClick={() => run(() => setAdminDisabled(user.id, !user.disabled), true)}
+          <AdminButton
+            variant={user.disabled ? "success-outline" : "danger"}
+            onClick={() => run("toggle", () => setAdminDisabled(user.id, !user.disabled), true)}
+            loading={busy === "toggle"}
             disabled={pending}
-            className={`ml-auto rounded-[9px] border px-4 py-2.5 text-[13px] font-medium transition-colors disabled:opacity-60 ${
-              user.disabled
-                ? "border-[#1F8A5B]/40 text-[#1F8A5B] hover:bg-[#E5F4EC]"
-                : "border-crimson/40 text-crimson hover:bg-[#FBEAE9]"
-            }`}
+            className="ml-auto"
           >
             {user.disabled ? "Идэвхжүүлэх" : "Идэвхгүй болгох"}
-          </button>
+          </AdminButton>
         )}
       </div>
     </div>

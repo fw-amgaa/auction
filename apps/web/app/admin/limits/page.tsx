@@ -5,7 +5,7 @@ import { LimitsManager, type LimitRow } from "./LimitsManager";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 interface SP {
   q?: string;

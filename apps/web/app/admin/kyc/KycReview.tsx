@@ -6,6 +6,8 @@ import { useState, useTransition } from "react";
 import { approveKyc, rejectKyc } from "@/app/admin/actions";
 import { DocThumb } from "@/components/DocThumb";
 import { KycBadge } from "@/components/KycBadge";
+import { AdminButton } from "@/components/admin/Button";
+import { Pagination } from "@/components/admin/Pagination";
 
 export interface Applicant {
   id: string;
@@ -135,33 +137,7 @@ export function KycReview({
             Энэ ангилалд хүсэлт алга.
           </div>
         )}
-        {(page > 1 || hasNext) && (
-          <div className="flex items-center justify-between border-t border-[#EBEEF3] px-4 py-3 text-[12.5px]">
-            <span className="text-muted">Хуудас {page}</span>
-            <div className="flex gap-1.5">
-              {page > 1 ? (
-                <Link
-                  href={`/admin/kyc?tab=${tab}&page=${page - 1}`}
-                  className="rounded-[7px] border border-line-cool px-2.5 py-1.5 font-medium text-ink-soft hover:bg-[#F7F8FA]"
-                >
-                  ← Өмнөх
-                </Link>
-              ) : (
-                <span className="rounded-[7px] border border-line-cool px-2.5 py-1.5 font-medium text-[#C7CFD9]">← Өмнөх</span>
-              )}
-              {hasNext ? (
-                <Link
-                  href={`/admin/kyc?tab=${tab}&page=${page + 1}`}
-                  className="rounded-[7px] border border-line-cool px-2.5 py-1.5 font-medium text-ink-soft hover:bg-[#F7F8FA]"
-                >
-                  Дараах →
-                </Link>
-              ) : (
-                <span className="rounded-[7px] border border-line-cool px-2.5 py-1.5 font-medium text-[#C7CFD9]">Дараах →</span>
-              )}
-            </div>
-          </div>
-        )}
+        <Pagination compact page={page} hasNext={hasNext} hrefFor={(n) => `/admin/kyc?tab=${tab}&page=${n}`} />
       </div>
 
       {/* detail */}
@@ -234,19 +210,22 @@ export function KycReview({
                       авч санал өгөх боломжтой болно.
                     </p>
                     <div className="flex gap-2.5">
-                      <button
+                      <AdminButton
+                        variant="success"
                         onClick={() => doApprove(sel.id)}
-                        disabled={pending}
-                        className="rounded-[9px] bg-success px-5 py-3 text-sm font-bold text-white"
+                        loading={pending}
+                        className="px-5 py-3 text-sm"
                       >
                         ✓ Зөвшөөрөх
-                      </button>
-                      <button
+                      </AdminButton>
+                      <AdminButton
+                        variant="danger"
                         onClick={() => setRejecting(true)}
-                        className="rounded-[9px] border border-[#E0908C] bg-white px-5 py-3 text-sm font-bold text-crimson"
+                        disabled={pending}
+                        className="px-5 py-3 text-sm font-bold"
                       >
                         ✕ Татгалзах
-                      </button>
+                      </AdminButton>
                     </div>
                   </div>
                 ) : (
@@ -265,30 +244,32 @@ export function KycReview({
                         <button
                           key={c}
                           onClick={() => setReason(c)}
-                          className="rounded-pill border border-line-cool bg-[#F3F5F8] px-3 py-1.5 text-xs text-ink-soft"
+                          className="rounded-pill border border-line-cool bg-[#F3F5F8] px-3 py-1.5 text-xs text-ink-soft transition-colors hover:bg-[#E9EDF2]"
                         >
                           {c}
                         </button>
                       ))}
                     </div>
                     <div className="mt-4 flex gap-2.5">
-                      <button
+                      <AdminButton
+                        variant="primary"
                         onClick={() => doReject(sel.id)}
-                        disabled={!reason.trim() || pending}
-                        className="rounded-[9px] px-5 py-2.5 text-[13.5px] font-bold text-white"
-                        style={{ background: reason.trim() ? "#C8312C" : "#E0A9A6" }}
+                        disabled={!reason.trim()}
+                        loading={pending}
+                        className="px-5"
                       >
                         Татгалзахыг баталгаажуулах
-                      </button>
-                      <button
+                      </AdminButton>
+                      <AdminButton
+                        variant="ghost"
                         onClick={() => {
                           setRejecting(false);
                           setReason("");
                         }}
-                        className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft"
+                        disabled={pending}
                       >
                         Болих
-                      </button>
+                      </AdminButton>
                     </div>
                   </div>
                 )}
@@ -312,7 +293,7 @@ export function KycReview({
               <span className="text-sm font-bold text-navy">{viewer.label}</span>
               <button
                 onClick={() => setViewer(null)}
-                className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft"
+                className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft transition-colors hover:bg-[#F7F8FA]"
               >
                 ✕
               </button>

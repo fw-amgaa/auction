@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { CATEGORIES, type CategoryCode, formatTugrug } from "@auction/shared";
@@ -8,6 +7,8 @@ import { CATEGORIES, type CategoryCode, formatTugrug } from "@auction/shared";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { LocalTime } from "@/components/LocalTime";
+import { AdminButton, AdminLinkButton } from "@/components/admin/Button";
+import { Pagination } from "@/components/admin/Pagination";
 import { usePermissions } from "@/components/admin/Permissions";
 import { localInputToIso, toLocalInput } from "@/lib/datetime";
 
@@ -111,6 +112,7 @@ export function LotsManager({
   const [uploading, setUploading] = useState(false);
   const [del, setDel] = useState<{ lot: ManagedLot; impact: LotDeleteImpact } | null>(null);
   const [delError, setDelError] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const { can } = usePermissions();
 
@@ -250,8 +252,10 @@ export function LotsManager({
   /** Fetch what the delete would truncate, then open the warning dialog. */
   function remove(l: ManagedLot) {
     setDelError(null);
+    setRemovingId(l.id);
     startTransition(async () => {
       const res = await lotDeleteImpact(l.id);
+      setRemovingId(null);
       if ("error" in res) {
         setToast(null);
         alert(res.error);
@@ -291,18 +295,12 @@ export function LotsManager({
       <AdminTopbar title="Лот удирдлага">
         {can("lots.create") && (
           <>
-            <button
-              onClick={openBulk}
-              className="rounded-[9px] border border-line-cool bg-white px-4 py-2.5 text-[13.5px] font-bold text-navy hover:bg-[#F3F5F8]"
-            >
+            <AdminButton variant="secondary" onClick={openBulk} className="font-bold">
               Бөөнөөр үүсгэх
-            </button>
-            <button
-              onClick={openCreate}
-              className="rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover"
-            >
+            </AdminButton>
+            <AdminButton variant="primary" onClick={openCreate}>
               + Шинэ лот
-            </button>
+            </AdminButton>
           </>
         )}
       </AdminTopbar>
@@ -402,34 +400,42 @@ export function LotsManager({
                   </span>
                 </span>
                 <span className="flex items-center justify-end gap-1.5">
-                  <Link
+                  <AdminLinkButton
                     href={`/admin/lots/${l.id}`}
-                    className="shrink-0 whitespace-nowrap rounded-[7px] border border-line-cool bg-white px-2.5 py-1.5 text-[12px] font-semibold text-crimson hover:bg-[#FBEAE9]"
+                    variant="danger"
+                    size="sm"
+                    className="shrink-0 whitespace-nowrap"
                     style={
-                      l.phase === "live"
-                        ? { borderColor: "#E0908C" }
+                      l.phase !== "live"
+                        ? { borderColor: "#E1E5EC" }
                         : undefined
                     }
                   >
                     {l.phase === "live" ? "Хянах" : "Дэлгэрэнгүй"}
-                  </Link>
+                  </AdminLinkButton>
                   {can("lots.edit") && (
-                    <button
+                    <AdminButton
+                      variant="subtle"
+                      size="sm"
                       onClick={() => openEdit(l)}
-                      className="shrink-0 whitespace-nowrap rounded-[7px] border border-line-cool bg-[#F3F5F8] px-2.5 py-1.5 text-[12px] font-semibold text-navy hover:bg-[#E9EDF2]"
+                      className="shrink-0 whitespace-nowrap"
                     >
                       Засах
-                    </button>
+                    </AdminButton>
                   )}
                   {can("lots.delete") && (
-                    <button
+                    <AdminButton
+                      variant="danger"
+                      size="sm"
                       onClick={() => remove(l)}
+                      loading={removingId === l.id}
+                      disabled={pending}
                       title="Устгах"
                       aria-label="Лот устгах"
-                      className="grid size-[30px] shrink-0 place-items-center rounded-[7px] border border-[#E0908C] bg-white text-[12px] leading-none text-crimson hover:bg-[#FBEAE9]"
+                      className="size-[30px] shrink-0 px-0 py-0 leading-none"
                     >
-                      🗑
-                    </button>
+                      {removingId === l.id ? null : "🗑"}
+                    </AdminButton>
                   )}
                 </span>
               </div>
@@ -442,27 +448,7 @@ export function LotsManager({
           )}
         </div>
 
-        {(page > 1 || hasNext) && (
-          <div className="mt-4 flex items-center justify-between text-[13px]">
-            <span className="text-muted">Хуудас {page}</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white disabled:cursor-not-allowed disabled:text-[#C7CFD9]"
-              >
-                ← Өмнөх
-              </button>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={!hasNext}
-                className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white disabled:cursor-not-allowed disabled:text-[#C7CFD9]"
-              >
-                Дараах →
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination page={page} hasNext={hasNext} onPage={setPage} />
       </div>
 
       {form && (
@@ -484,7 +470,7 @@ export function LotsManager({
               </span>
               <button
                 onClick={() => setForm(null)}
-                className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft"
+                className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft transition-colors hover:bg-[#F7F8FA]"
               >
                 ✕
               </button>
@@ -693,27 +679,22 @@ export function LotsManager({
               )}
             </div>
             <div className="flex justify-end gap-2.5 px-[22px] pb-5">
-              <button
-                onClick={() => setForm(null)}
-                className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft"
-              >
+              <AdminButton variant="ghost" onClick={() => setForm(null)} disabled={pending}>
                 Болих
-              </button>
-              <button
+              </AdminButton>
+              <AdminButton
+                variant="success"
                 onClick={save}
-                disabled={
-                  pending || (form.bulk ? form.codes.length === 0 : !form.code)
-                }
-                className="rounded-[9px] bg-success px-5 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-60"
+                disabled={form.bulk ? form.codes.length === 0 : !form.code}
+                loading={pending}
+                className="px-5"
               >
-                {pending
-                  ? "Хадгалж байна…"
-                  : form.bulk
-                    ? `${form.codes.length || ""} лот үүсгэх`
-                    : form.id
-                      ? "Хадгалах"
-                      : "Үүсгэх"}
-              </button>
+                {form.bulk
+                  ? `${form.codes.length || ""} лот үүсгэх`
+                  : form.id
+                    ? "Хадгалах"
+                    : "Үүсгэх"}
+              </AdminButton>
             </div>
           </div>
         </div>
@@ -734,7 +715,7 @@ export function LotsManager({
               </span>
               <button
                 onClick={() => setDel(null)}
-                className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft"
+                className="grid size-8 place-items-center rounded-lg border border-line-cool text-ink-soft transition-colors hover:bg-[#F7F8FA]"
               >
                 ✕
               </button>
@@ -786,19 +767,12 @@ export function LotsManager({
               )}
             </div>
             <div className="flex justify-end gap-2.5 px-[22px] pb-5">
-              <button
-                onClick={() => setDel(null)}
-                className="rounded-[9px] border border-[#CDD4DE] bg-white px-4 py-2.5 text-[13.5px] font-semibold text-ink-soft"
-              >
+              <AdminButton variant="ghost" onClick={() => setDel(null)} disabled={pending}>
                 Болих
-              </button>
-              <button
-                onClick={confirmRemove}
-                disabled={pending}
-                className="rounded-[9px] bg-crimson px-5 py-2.5 text-[13.5px] font-bold text-white hover:bg-crimson-hover disabled:opacity-60"
-              >
-                {pending ? "Устгаж байна…" : "Бүрмөсөн устгах"}
-              </button>
+              </AdminButton>
+              <AdminButton variant="primary" onClick={confirmRemove} loading={pending} className="px-5">
+                Бүрмөсөн устгах
+              </AdminButton>
             </div>
           </div>
         </div>

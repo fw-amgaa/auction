@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 
+import { AdminButton } from "@/components/admin/Button";
 import { actionLabel } from "@/lib/audit-actions";
 
 export interface AuditToolbarProps {
@@ -84,12 +85,13 @@ export function AuditToolbar({ actors, actions }: AuditToolbarProps) {
       </label>
 
       {hasFilters && (
-        <button
+        <AdminButton
+          variant="ghost"
           onClick={() => startTransition(() => router.replace(pathname))}
-          className="ml-auto h-10 rounded-[9px] border border-line-cool px-3 text-[13px] font-medium text-ink-soft transition-colors hover:bg-[#F7F8FA]"
+          className="ml-auto h-10 border-line-cool px-3 text-[13px] font-medium"
         >
           Шүүлтүүр цэвэрлэх
-        </button>
+        </AdminButton>
       )}
     </div>
   );

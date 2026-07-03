@@ -4,13 +4,15 @@ import { formatTugrug } from "@auction/shared";
 
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { KycBadge } from "@/components/KycBadge";
+import { AdminLinkButton } from "@/components/admin/Button";
+import { Pagination } from "@/components/admin/Pagination";
 import { type AccountType, type ApplicantsSort, type KycStatus, getApplicantCounts, getApplicantsPage } from "@/lib/admin";
 import { requirePageAccess } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 const COLS = "grid grid-cols-[1.7fr_1.1fr_1fr_1.1fr_120px] gap-3";
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 const SORTS: ApplicantsSort[] = ["created", "limitDesc", "limitAsc"];
 
 interface SP {
@@ -35,6 +37,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
       sort,
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
+      withDocs: false, // list view never renders documents/codes
     }),
     getApplicantCounts(),
   ]);
@@ -64,12 +67,9 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
           </div>
         }
       >
-        <Link
-          href="/admin/users/new"
-          className="rounded-[9px] bg-crimson px-4 py-2.5 text-[13.5px] font-bold text-white transition-colors hover:bg-crimson-hover"
-        >
+        <AdminLinkButton href="/admin/users/new" variant="primary">
           + Хэрэглэгч үүсгэх
-        </Link>
+        </AdminLinkButton>
       </AdminTopbar>
 
       <div className="p-6">
@@ -141,37 +141,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
           )}
         </div>
 
-        {(page > 1 || hasNext) && (
-          <div className="mt-4 flex items-center justify-between text-[13px]">
-            <span className="text-muted">Хуудас {page}</span>
-            <div className="flex gap-2">
-              {page > 1 ? (
-                <Link
-                  href={pageHref(page - 1)}
-                  className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white"
-                >
-                  ← Өмнөх
-                </Link>
-              ) : (
-                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">
-                  ← Өмнөх
-                </span>
-              )}
-              {hasNext ? (
-                <Link
-                  href={pageHref(page + 1)}
-                  className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-ink-soft transition-colors hover:bg-white"
-                >
-                  Дараах →
-                </Link>
-              ) : (
-                <span className="rounded-[9px] border border-line-cool px-3.5 py-2 font-medium text-[#C7CFD9]">
-                  Дараах →
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+        <Pagination page={page} hasNext={hasNext} hrefFor={pageHref} />
       </div>
     </div>
   );
