@@ -29,6 +29,10 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: false, // preserve the "register → then log in" flow
+    // Sign-up happens ONLY through registerAction (documents + KYC + the admin
+    // registration switch); the public /api/auth/sign-up/email endpoint would
+    // bypass all of that, so it stays off.
+    disableSignUp: true,
     password: {
       hash: hashPassword, // (password) => Promise<hash>
       verify: ({ password, hash }) => verifyPassword(hash, password),

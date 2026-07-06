@@ -207,7 +207,7 @@ export interface LotDetail extends CatalogLot {
   bidders: number;
   /** currentPrice when there are bids, otherwise the reserve (the resolved price). */
   finalPrice: number;
-  history: { label: string; amount: number; agoSec: number; mine: boolean }[];
+  history: { label: string; amount: number; ts: number; mine: boolean }[];
 }
 
 export async function getLotDetail(id: string, viewerId?: string): Promise<LotDetail | null> {
@@ -230,13 +230,12 @@ export async function getLotDetail(id: string, viewerId?: string): Promise<LotDe
   const num = new Map<string, number>();
   for (const b of allBids) if (!num.has(b.userId)) num.set(b.userId, num.size + 1);
 
-  const now = Date.now();
   const history = [...allBids]
     .reverse()
     .map((b) => ({
       label: viewerId && b.userId === viewerId ? "Та" : `Оролцогч #${num.get(b.userId)}`,
       amount: b.amount,
-      agoSec: Math.max(0, Math.floor((now - b.createdAt.getTime()) / 1000)),
+      ts: b.createdAt.getTime(),
       mine: !!viewerId && b.userId === viewerId,
     }));
 
@@ -321,7 +320,7 @@ export interface AdminBidRow {
   seq: number;
   name: string;
   amount: number;
-  agoSec: number;
+  ts: number;
 }
 
 export interface AdminLotDetail {
@@ -381,12 +380,11 @@ export async function getAdminLotDetail(id: string): Promise<AdminLotDetail | nu
     : [];
   const nameById = new Map(users.map((u) => [u.id, realBidderName(u)]));
 
-  const now = Date.now();
   const history: AdminBidRow[] = bids.map((b) => ({
     seq: b.seq,
     name: nameById.get(b.userId) ?? "—",
     amount: b.amount,
-    agoSec: Math.max(0, Math.floor((now - b.createdAt.getTime()) / 1000)),
+    ts: b.createdAt.getTime(),
   }));
 
   const [inc1, inc2] = incrementsForCode(lot.code);

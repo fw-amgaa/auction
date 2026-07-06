@@ -367,6 +367,19 @@ export const auditLog = pgTable(
   (t) => [index("audit_log_actor_idx").on(t.actorId, t.createdAt)],
 );
 
+/* ------------------------------ app settings ------------------------------ */
+
+/**
+ * Tiny key-value store for operator-controlled switches (e.g. whether public
+ * registration is open). Values are jsonb so a key can hold a boolean, string
+ * or small object without schema churn.
+ */
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").$type<unknown>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /* ------------------------------ terms / T&C ------------------------------- */
 
 export const termsVersions = pgTable("terms_versions", {

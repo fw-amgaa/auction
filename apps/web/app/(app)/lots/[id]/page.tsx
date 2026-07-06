@@ -188,8 +188,8 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
                       <div className="text-[13.5px] font-semibold" style={{ color: h.mine ? "#197a50" : "#14294A" }}>
                         {h.label}
                       </div>
-                      <div className="text-[11.5px] text-muted">
-                        {h.agoSec < 60 ? `${h.agoSec} сек өмнө` : `${Math.floor(h.agoSec / 60)} мин өмнө`}
+                      <div className="tnum text-[11.5px] text-muted">
+                        <LocalTime value={h.ts} mode="precise" />
                       </div>
                     </div>
                     <span className="tnum text-sm font-semibold text-navy">{formatTugrug(h.amount)}</span>

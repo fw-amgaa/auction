@@ -10,6 +10,8 @@ import {
   type ServerMessage,
 } from "@auction/shared";
 
+import { formatLocal, relTime } from "@/lib/datetime";
+
 interface FeedRow {
   seq: number;
   label: string;
@@ -223,8 +225,16 @@ export function AdminLotMonitor({
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#EEF1F5] text-[10px] font-bold text-navy">
                 #{f.seq}
               </span>
-              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-navy">{f.label}</span>
-              <span className="tnum text-[13px] font-semibold text-navy">{formatTugrug(f.amount)}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-[13px] font-semibold text-navy">{f.label}</span>
+                  <span className="tnum shrink-0 text-[13px] font-semibold text-navy">{formatTugrug(f.amount)}</span>
+                </div>
+                <div className="mt-0.5 flex items-baseline justify-between gap-3 text-[11px] text-muted">
+                  <span className="tnum truncate">{formatLocal(f.ts, "precise")}</span>
+                  <span className="shrink-0">{relTime(f.ts, now)}</span>
+                </div>
+              </div>
             </div>
           ))}
           {feed.length === 0 && (

@@ -8,14 +8,17 @@ import { AdminTopbar } from "@/components/AdminTopbar";
 import { LocalTime } from "@/components/LocalTime";
 import { AdminLinkButton } from "@/components/admin/Button";
 import { requirePageAccess } from "@/lib/session";
+import { isRegistrationOpen } from "@/lib/settings";
 import { mintTicket, wsUrl } from "@/lib/ws-ticket";
 
 import { AdminLiveBoard, type LiveBoardLot } from "./AdminLiveBoard";
+import { RegistrationSwitch } from "./RegistrationSwitch";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminHome() {
-  const { user: admin } = await requirePageAccess("live.view");
+  const { user: admin, permissions } = await requirePageAccess("live.view");
+  const registrationOpen = await isRegistrationOpen();
   const [[liveN], [schedN], [pendingN], [usersN], [limitSum], liveLots, soonLots, recentAudit] =
     await Promise.all([
       db.select({ n: count() }).from(schema.lots).where(eq(schema.lots.status, "live")),
@@ -70,7 +73,9 @@ export default async function AdminHome() {
       </AdminTopbar>
 
       <div className="p-6">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4">
+        <RegistrationSwitch open={registrationOpen} canToggle={permissions.includes("users.create")} />
+
+        <div className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4">
           {kpis.map((k) => (
             <Link key={k.label} href={k.href} className="rounded-2xl border border-line-cool bg-white p-5 transition-shadow hover:shadow-sm">
               <div className="truncate text-[11.5px] font-semibold text-muted">{k.label}</div>

@@ -57,6 +57,13 @@
       "when": 1782950400000,
       "tag": "0007_altai_species_names",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783332744982,
+      "tag": "0008_superb_venus",
+      "breakpoints": true
     }
   ]
 }

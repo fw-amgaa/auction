@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Logo } from "@/components/Logo";
+import { RegisterLink } from "@/components/RegisterLink";
+import { isRegistrationOpen } from "@/lib/settings";
 
 export const metadata: Metadata = {
   title: "Ховд аймаг · 2026 ан агнуурын цахим дуудлага худалдаа",
@@ -191,7 +193,11 @@ const TERMS: [string, string][] = [
   ["Орлогын хуваарилалт", "50% нь Байгаль орчин, уур амьсгалын санд"],
 ];
 
-export default function LandingPage() {
+// Rendered per request: the register CTAs reflect the admin registration switch.
+export const dynamic = "force-dynamic";
+
+export default async function LandingPage() {
+  const registrationOpen = await isRegistrationOpen();
   return (
     <div className="min-h-dvh bg-sand">
       {/* ── header ───────────────────────────────────────────────── */}
@@ -227,12 +233,12 @@ export default function LandingPage() {
             >
               Нэвтрэх
             </Link>
-            <Link
-              href="/register"
+            <RegisterLink
+              open={registrationOpen}
               className="rounded-input bg-crimson px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-crimson-hover active:translate-y-px"
             >
               Бүртгүүлэх
-            </Link>
+            </RegisterLink>
           </div>
         </div>
       </header>
@@ -276,12 +282,12 @@ export default function LandingPage() {
               className="rise mt-8 flex flex-wrap gap-3"
               style={{ animationDelay: "240ms" }}
             >
-              <Link
-                href="/register"
+              <RegisterLink
+                open={registrationOpen}
                 className="rounded-input bg-crimson px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-crimson/25 transition-colors hover:bg-crimson-hover active:translate-y-px"
               >
                 Бүртгүүлж оролцох
-              </Link>
+              </RegisterLink>
               <Link
                 href="/guidelines"
                 className="rounded-input border border-white/30 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/15"
@@ -671,12 +677,12 @@ export default function LandingPage() {
                   нээгдэнэ.
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">
-                  <Link
-                    href="/register"
+                  <RegisterLink
+                    open={registrationOpen}
                     className="rounded-input bg-crimson px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-crimson-hover active:translate-y-px"
                   >
                     Бүртгүүлэх
-                  </Link>
+                  </RegisterLink>
                   <Link
                     href="/guidelines"
                     className="rounded-input border border-line px-6 py-3.5 text-sm font-semibold text-navy transition-colors hover:border-ink-soft"
@@ -748,12 +754,9 @@ export default function LandingPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="/register"
-                    className="transition-colors hover:text-white"
-                  >
+                  <RegisterLink open={registrationOpen} className="transition-colors hover:text-white">
                     Бүртгүүлэх
-                  </Link>
+                  </RegisterLink>
                 </li>
               </ul>
             </div>

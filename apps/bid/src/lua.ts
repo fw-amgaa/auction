@@ -22,7 +22,12 @@
  * Anti-snipe + final-stretch windows come from @auction/shared (single source of
  * truth) and are interpolated into the script body below as millisecond literals.
  */
-import { ANTI_SNIPE_EXTENSION_SEC, ANTI_SNIPE_WINDOW_SEC, FINAL_STRETCH_SEC } from "@auction/shared";
+import {
+  ANTI_SNIPE_EXTENSION_SEC,
+  ANTI_SNIPE_MAX_EXTENSION_SEC,
+  ANTI_SNIPE_WINDOW_SEC,
+  FINAL_STRETCH_SEC,
+} from "@auction/shared";
 
 export const BID_LUA = `
 local lotKey = KEYS[1]
@@ -31,7 +36,7 @@ local option = tonumber(ARGV[2])
 local now = tonumber(ARGV[3])
 local limit = tonumber(ARGV[4])
 
-local h = redis.call('HMGET', lotKey, 'price','leader','inc1','inc2','endsAt','status')
+local h = redis.call('HMGET', lotKey, 'price','leader','inc1','inc2','endsAt','status','maxEndsAt')
 if not h[1] then return {0,'closed'} end
 local price = tonumber(h[1])
 local leader = h[2]
@@ -39,6 +44,10 @@ local inc1 = tonumber(h[3])
 local inc2 = tonumber(h[4])
 local endsAt = tonumber(h[5])
 local status = h[6]
+-- hard ceiling on anti-snipe extensions (scheduled end + max extension).
+-- Lots cached before this field existed get the cap lazily off their current end.
+local maxEndsAt = tonumber(h[7])
+if not maxEndsAt then maxEndsAt = endsAt + ${ANTI_SNIPE_MAX_EXTENSION_SEC * 1000} end
 
 if status ~= 'live' then return {0,'closed'} end
 if now > endsAt then return {0,'closed'} end
@@ -77,9 +86,12 @@ redis.call('SET', ucKey, uc + amount)
 local seq = redis.call('HINCRBY', lotKey, 'seq', 1)
 local extended = 0
 if (endsAt - now) <= ${ANTI_SNIPE_WINDOW_SEC * 1000} then
-  endsAt = endsAt + ${ANTI_SNIPE_EXTENSION_SEC * 1000}
-  extended = 1
+  local target = math.min(endsAt + ${ANTI_SNIPE_EXTENSION_SEC * 1000}, maxEndsAt)
+  if target > endsAt then
+    endsAt = target
+    extended = 1
+  end
 end
-redis.call('HSET', lotKey, 'price', amount, 'leader', userId, 'hasBids', '1', 'endsAt', endsAt)
+redis.call('HSET', lotKey, 'price', amount, 'leader', userId, 'hasBids', '1', 'endsAt', endsAt, 'maxEndsAt', maxEndsAt)
 return {1, amount, seq, endsAt, extended, releasedUser, releasedAmount}
 `;

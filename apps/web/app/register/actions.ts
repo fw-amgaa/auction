@@ -9,6 +9,7 @@ import { registerSchema } from "@auction/shared";
 
 import { docKeysFor } from "@/lib/docs";
 import { hashPassword } from "@/lib/password";
+import { isRegistrationOpen } from "@/lib/settings";
 import { putObject } from "@/lib/storage";
 
 export interface RegisterState {
@@ -21,6 +22,12 @@ export async function registerAction(
   _prev: RegisterState,
   formData: FormData,
 ): Promise<RegisterState> {
+  // Server backstop for the admin registration switch — the /register page
+  // already redirects when closed, but a stale open tab could still submit.
+  if (!(await isRegistrationOpen())) {
+    return { error: "Бүртгэл түр хаагдсан байна. Та дараа дахин оролдоно уу." };
+  }
+
   const accountType = String(formData.get("accountType") ?? "");
   const raw = Object.fromEntries(
     [

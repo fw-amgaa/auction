@@ -149,8 +149,8 @@ export default async function AdminLotDetailPage({ params }: { params: Promise<{
                   </span>
                   <div className="min-w-0">
                     <div className="truncate text-[13px] font-semibold text-navy">{b.name}</div>
-                    <div className="text-[11px] text-muted">
-                      {b.agoSec < 60 ? `${b.agoSec} сек өмнө` : `${Math.floor(b.agoSec / 60)} мин өмнө`}
+                    <div className="tnum text-[11px] text-muted">
+                      <LocalTime value={b.ts} mode="precise" />
                     </div>
                   </div>
                   <span className="tnum text-[13px] font-semibold text-navy">{formatTugrug(b.amount)}</span>

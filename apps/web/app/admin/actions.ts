@@ -12,6 +12,24 @@ import { appUrl, sendEmail } from "@/lib/email";
 import { resetEmail } from "@/lib/email-templates";
 import { notify } from "@/lib/notify";
 import { requirePermission } from "@/lib/session";
+import { setRegistrationOpen } from "@/lib/settings";
+
+/** Open/close public bidder registration (the dashboard switch). */
+export async function setRegistrationOpenAction(open: boolean) {
+  const admin = await requirePermission("users.create");
+  await setRegistrationOpen(open);
+  await writeAudit({
+    actorId: admin.id,
+    action: open ? "settings.registration_open" : "settings.registration_close",
+    targetType: "setting",
+    targetId: "registration_open",
+  });
+  revalidatePath("/admin");
+  revalidatePath("/login");
+  revalidatePath("/register");
+  revalidatePath("/");
+  revalidatePath("/guidelines");
+}
 
 export async function approveKyc(userId: string) {
   const admin = await requirePermission("kyc.review");

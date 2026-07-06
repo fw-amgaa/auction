@@ -17,6 +17,7 @@ import {
 } from "@auction/shared";
 
 import { Confetti } from "@/components/Confetti";
+import { formatLocal, relTime } from "@/lib/datetime";
 
 export interface LiveRoomProps {
   lotId: string;
@@ -803,10 +804,15 @@ export function LiveRoom(p: LiveRoomProps) {
                     {f.mine ? "Т" : "#"}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-semibold" style={{ color: f.mine ? A.successSoft : A.fg }}>{f.label}</div>
-                    <div className="text-[11px]" style={{ color: A.faint }}>{relTime(f.ts, now)}</div>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div className="truncate text-[13px] font-semibold" style={{ color: f.mine ? A.successSoft : A.fg }}>{f.label}</div>
+                      <div className="tnum shrink-0 text-[14px] font-semibold" style={{ color: f.mine ? A.successSoft : A.fg }}>{formatTugrug(f.amount)}</div>
+                    </div>
+                    <div className="mt-1 flex items-baseline justify-between gap-3 text-[11px]" style={{ color: A.faint }}>
+                      <span className="tnum truncate">{formatLocal(f.ts, "precise")}</span>
+                      <span className="shrink-0">{relTime(f.ts, now)}</span>
+                    </div>
                   </div>
-                  <div className="tnum text-[14px] font-semibold" style={{ color: f.mine ? A.successSoft : A.fg }}>{formatTugrug(f.amount)}</div>
                 </div>
               ))}
               {feed.length === 0 && (
@@ -908,11 +914,4 @@ export function LiveRoom(p: LiveRoomProps) {
       )}
     </div>
   );
-}
-
-function relTime(ts: number, now: number): string {
-  const d = Math.max(0, Math.round((now - ts) / 1000));
-  if (d < 2) return "дөнгөж сая";
-  if (d < 60) return `${d} сек өмнө`;
-  return `${Math.floor(d / 60)} мин өмнө`;
 }

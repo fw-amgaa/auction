@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
-import { type FeedItem, incrementsForCode } from "@auction/shared";
+import { ANTI_SNIPE_MAX_EXTENSION_SEC, type FeedItem, incrementsForCode } from "@auction/shared";
 
 import { BID_LUA } from "./lua";
 import { log } from "./logger";
@@ -116,6 +116,8 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
     reserve: String(lot.reserve),
     startsAt: String(startsAt),
     endsAt: String(endsAt),
+    // anti-snipe ceiling: the auction may never run past this instant
+    maxEndsAt: String(endsAt + ANTI_SNIPE_MAX_EXTENSION_SEC * 1000),
     status,
     hasBids,
     seq: String(top?.seq ?? 0),
