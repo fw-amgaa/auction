@@ -79,7 +79,7 @@ async function main() {
 
   const latencies: number[] = [];
   const rejects: Record<string, number> = {};
-  let connected = 0, connErr = 0, sent = 0, accepted = 0, extensions = 0, maxPrice = 0;
+  let connected = 0, connErr = 0, sent = 0, accepted = 0, maxPrice = 0;
   let stopping = false;
 
   const clients = ids.map((uid) => {
@@ -102,12 +102,11 @@ async function main() {
       ws.send(JSON.stringify({ t: "subscribe", lotId: lot.id }));
     });
     ws.on("message", (raw) => {
-      let m: { t: string; youLead?: boolean; price?: number; extended?: boolean; reason?: string };
+      let m: { t: string; youLead?: boolean; price?: number; reason?: string };
       try { m = JSON.parse(raw.toString()); } catch { return; }
       if (m.t === "snapshot") { if (!m.youLead) setTimeout(bid, Math.random() * (THINK_MAX - THINK_MIN) + THINK_MIN); }
       else if (m.t === "bid") {
         if (typeof m.price === "number") maxPrice = Math.max(maxPrice, m.price);
-        if (m.extended) extensions++;
         leading = !!m.youLead;
         if (m.youLead) { accepted++; resolve(); }
         else { resolve(); setTimeout(bid, Math.random() * (THINK_MAX - THINK_MIN) + THINK_MIN); }
@@ -146,7 +145,6 @@ async function main() {
   console.log(`bids accepted:   ${accepted}  (${(accepted / wallSec).toFixed(0)}/s)`);
   console.log(`rejects:         ${rejTotal}  ${JSON.stringify(rejects)}`);
   console.log(`bid latency ms:  p50=${pct(latencies, 50).toFixed(1)} p95=${pct(latencies, 95).toFixed(1)} p99=${pct(latencies, 99).toFixed(1)} max=${(latencies.at(-1) ?? 0).toFixed(1)}`);
-  console.log(`anti-snipe ext:  ${extensions}`);
   console.log("── correctness (durable DB) ──");
   console.log(`winning rows:    ${winning}  (must be exactly 1)`);
   console.log(`bids persisted:  ${totalBids}   final price (db max): ${Number(dbMax).toLocaleString()}`);

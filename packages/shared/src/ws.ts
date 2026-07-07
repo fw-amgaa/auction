@@ -72,7 +72,6 @@ export const ServerMessage = z.discriminatedUnion("t", [
     endsAt: z.number().int(),
     /** server wall-clock (epoch ms) at send time — see snapshot.serverNow. */
     serverNow: z.number().int(),
-    extended: z.boolean(),
     leaderLabel: z.string(),
     youLead: z.boolean(),
     feedItem: FeedItem,

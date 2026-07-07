@@ -3,8 +3,8 @@
 ## Overview
 An official Mongolian government **real-time auction platform** for wildlife-hunting permits.
 Citizens (Иргэн) and legal entities (Хуулийн этгээд) register, pass KYC, receive a bidding
-limit, and bid on permits (argali/Угалз, ibex/Тэх, wolf/Чоно, fish/Загас, etc.) in live,
-anti-snipe-protected auctions. Admins manage KYC, limits, lots, and watch a live monitor.
+limit, and bid on permits (argali/Угалз, ibex/Тэх, wolf/Чоно, fish/Загас, etc.) in live
+auctions. Admins manage KYC, limits, lots, and watch a live monitor.
 
 **Primary language: Mongolian (Cyrillic).** All UI strings are Mongolian; English here is for
 the developer only.
@@ -62,7 +62,7 @@ inline; the exact values are listed under Design Tokens.
 - **Live Bidding Room.dc.html** ⭐ — The centerpiece. **Dark arena** (`#070B14`). In priority
   order: (1) status banner — Winning green "Та тэргүүлж байна" / Outbid red "Таны саналыг
   давсан!" with shake + sound; (2) current-high hero with animated count-up + anonymized leader
-  (#7); (3) countdown MM:SS green→amber→red with **anti-snipe** "+30 сек" flash + timer pop;
+  (#7); (3) countdown MM:SS green→amber→red — the end time is fixed;
   (4) quick-bid +1…+5 buttons showing resulting price, disabled when unaffordable/while leading,
   with key hints; single tap bids w/ 5s undo toast; (5) always-visible available balance;
   (6) live bid feed ticker (slide-in, your bids highlighted); (7) connection status
@@ -107,7 +107,7 @@ inline; the exact values are listed under Design Tokens.
 ## Interactions & Behavior
 - **Live bidding** (`Live Bidding Room.dc.html`): step = 10% of reserve; bid = current + N×step;
   affordability gated by `creditLimit − hold`; placing a bid holds the amount, being outbid
-  releases it. **Anti-snipe:** a bid in the final ≤15s adds 30s and flashes "+30 сек".
+  releases it. The end time is fixed — a late bid never extends the clock.
   Count-up animation ~460ms ease-out; reduced-motion respected. Rivals bid on a 4–10s random
   timer (weighted so the user can still win). Single tap bids; 5s undo toast (or `Esc`).
   Connection blips to "reconnecting" every ~34s and pauses controls for ~2.6s.

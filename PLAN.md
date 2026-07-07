@@ -86,10 +86,10 @@ On acceptance:
 
 - B becomes the new high bid; the bidder becomes leader.
 - The bidder's hold increases to B; the **displaced previous leader's hold is released immediately**.
-- **Anti-snipe:** if a bid lands in the final N seconds, the lot's end time auto-extends by N seconds (configurable). Prevents last-millisecond sniping.
+- **Fixed end time:** the lot closes exactly at the admin-scheduled end time — a late bid never moves the clock.
 - New state is broadcast live to all watchers (see §6).
 
-Features: live bid feed, full bid history per lot, "you've been outbid," countdown timer with extension display.
+Features: live bid feed, full bid history per lot, "you've been outbid," countdown timer.
 
 ### 4.5 Balance = bidding limit with holds
 
@@ -111,7 +111,7 @@ In-app **Notifications tab** that narrates the full lifecycle, plus optional ema
 
 - Bid placed (held ₮X) · Outbid (₮X returned) · Won (₮X kept) · Lost.
 - Limit issued / increased by admin.
-- Auction starting soon · ending soon · **extended (anti-snipe)**.
+- Auction starting soon · ending soon.
 - KYC approved / rejected · document needs fixing.
 - (Mongolian-language copy.)
 
@@ -171,7 +171,7 @@ client ──bid──▶ WS bid service
                                 committed[user]+=Δ, committed[oldLeader]-=hold
                       → reject: reason
                  3. persist accepted bid + ledger entries to Postgres
-                 4. Redis PUBLISH new-high (+ anti-snipe extend)
+                 4. Redis PUBLISH new-high
                        ▼
         WS service ─▶ push new high + history to all watchers
                    ─▶ enqueue notifications (outbid, etc.)
@@ -211,7 +211,7 @@ _(Holds/committed are derived from current winning bids; mirrored in Redis live,
 2. **Accounts & KYC** — registration (both types), document upload, T&C, admin approval queue.
 3. **Catalog & admin lot management** — categories, lot CRUD, scheduling, images.
 4. **Limit/balance system** — admin issue/raise, ledger, user balance view.
-5. **Bidding engine** — Redis arbitration + Node WS service + live UI, increment band, holds, anti-snipe. _Core milestone._
+5. **Bidding engine** — Redis arbitration + Node WS service + live UI, increment band, holds. _Core milestone._
 6. **Notifications tab** — event feed + (email/SMS later).
 7. **Post-auction** — winner determination, results, exports, permit generation.
 8. **Hardening & load test** — security pass, 1000-concurrent simulation, deploy to EC2, off-season stop/start runbook.

@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
-import { ANTI_SNIPE_MAX_EXTENSION_SEC, type FeedItem, incrementsForCode } from "@auction/shared";
+import { type FeedItem, incrementsForCode } from "@auction/shared";
 
 import { BID_LUA } from "./lua";
 import { log } from "./logger";
@@ -116,8 +116,6 @@ export async function ensureLot(lotId: string): Promise<LotMeta> {
     reserve: String(lot.reserve),
     startsAt: String(startsAt),
     endsAt: String(endsAt),
-    // anti-snipe ceiling: the auction may never run past this instant
-    maxEndsAt: String(endsAt + ANTI_SNIPE_MAX_EXTENSION_SEC * 1000),
     status,
     hasBids,
     seq: String(top?.seq ?? 0),
@@ -235,7 +233,6 @@ export interface BidResult {
   amount?: number;
   seq?: number;
   endsAt?: number;
-  extended?: boolean;
   releasedUser?: string | null;
   releasedAmount?: number;
   leaderUserId?: string;
@@ -258,13 +255,12 @@ export async function placeBid(
   const amount = Number(res[1]);
   const seq = Number(res[2]);
   const endsAt = Number(res[3]);
-  const extended = Number(res[4]) === 1;
-  const releasedUser = String(res[5]) || null;
-  const releasedAmount = Number(res[6]);
+  const releasedUser = String(res[4]) || null;
+  const releasedAmount = Number(res[5]);
 
-  await persistAccept({ lotId, userId, amount, seq, endsAt, releasedUser, releasedAmount });
+  await persistAccept({ lotId, userId, amount, seq, releasedUser, releasedAmount });
 
-  return { ok: true, amount, seq, endsAt, extended, releasedUser, releasedAmount, leaderUserId: userId, ts: now };
+  return { ok: true, amount, seq, endsAt, releasedUser, releasedAmount, leaderUserId: userId, ts: now };
 }
 
 async function persistAccept(p: {
@@ -272,7 +268,6 @@ async function persistAccept(p: {
   userId: string;
   amount: number;
   seq: number;
-  endsAt: number;
   releasedUser: string | null;
   releasedAmount: number;
 }): Promise<void> {
@@ -329,7 +324,7 @@ async function persistAccept(p: {
 
       await tx
         .update(schema.lots)
-        .set({ currentPrice: p.amount, leaderUserId: p.userId, endsAt: new Date(p.endsAt) })
+        .set({ currentPrice: p.amount, leaderUserId: p.userId })
         .where(eq(schema.lots.id, p.lotId));
     });
   } catch (e) {

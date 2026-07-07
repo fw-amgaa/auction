@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
-  ANTI_SNIPE_EXTENSION_SEC,
-  ANTI_SNIPE_WINDOW_SEC,
   type BidOptionId,
   type ClientMessage,
   FINAL_STRETCH_SEC,
@@ -172,7 +170,6 @@ export function LiveRoom(p: LiveRoomProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [watching, setWatching] = useState(false);
-  const [extendFlash, setExtendFlash] = useState(0);
   const toastId = useRef(0);
   const rafRef = useRef<number | null>(null);
 
@@ -272,10 +269,6 @@ export function LiveRoom(p: LiveRoomProps) {
         setYouLead(msg.youLead);
         setEndsAt(msg.endsAt);
         setFeed((f) => [msg.feedItem, ...f].slice(0, 14));
-        if (msg.extended) {
-          setExtendFlash((n) => n + 1);
-          addToast("warn", `Хугацаа сунгагдлаа +${ANTI_SNIPE_EXTENSION_SEC} сек`);
-        }
         break;
       case "rejected":
         addToast("danger", REASON_TEXT[msg.reason] ?? "Санал амжилтгүй");
@@ -368,9 +361,8 @@ export function LiveRoom(p: LiveRoomProps) {
   const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const ss = String(timeLeft % 60).padStart(2, "0");
   const timerColor = timeLeft > 30 ? A.success : timeLeft > 10 ? A.amber : A.danger;
-  // Final-seconds tension — tied to the anti-snipe window so the drama lines up
-  // with the moment a late bid can still extend the clock.
-  const critical = !ended && conn === "live" && timeLeft > 0 && timeLeft <= ANTI_SNIPE_WINDOW_SEC;
+  // Final-seconds tension — the last 10 seconds before the hammer falls.
+  const critical = !ended && conn === "live" && timeLeft > 0 && timeLeft <= 10;
   // Final stretch — the last FINAL_STRETCH_SEC, where the ×2 "fast" options unlock.
   const finalStretch = !ended && conn === "live" && timeLeft > 0 && timeLeft <= FINAL_STRETCH_SEC;
   const timeFrac = Math.max(0, Math.min(1, timeLeft / 60));
@@ -596,26 +588,12 @@ export function LiveRoom(p: LiveRoomProps) {
                       Дуусч байна!
                     </span>
                   )}
-                  {extendFlash > 0 && !critical && (
-                    <span
-                      key={extendFlash}
-                      className="tnum rounded-full border px-2 py-0.5 text-[11px] font-bold"
-                      style={{ borderColor: "rgba(240,180,64,.4)", background: "rgba(240,180,64,.12)", color: A.amber, animation: "badgeFloat 1.8s ease forwards" }}
-                    >
-                      +{ANTI_SNIPE_EXTENSION_SEC} сек
-                    </span>
-                  )}
                 </div>
                 <div
-                  key={extendFlash}
                   className="tnum mt-2 text-[clamp(40px,7vw,58px)] font-semibold leading-none tracking-tight"
                   style={{
                     color: timerColor,
-                    animation: critical
-                      ? "heartbeat 1s ease-in-out infinite"
-                      : extendFlash
-                        ? "extendPop .6s ease"
-                        : undefined,
+                    animation: critical ? "heartbeat 1s ease-in-out infinite" : undefined,
                     textShadow: critical ? `0 0 24px ${A.danger}` : undefined,
                   }}
                 >
@@ -626,9 +604,6 @@ export function LiveRoom(p: LiveRoomProps) {
                     className="h-full rounded-full transition-[width] duration-1000 ease-linear"
                     style={{ width: `${timeFrac * 100}%`, background: timerColor, boxShadow: `0 0 10px ${timerColor}` }}
                   />
-                </div>
-                <div className="mt-2.5 text-[11px] leading-snug" style={{ color: A.faint }}>
-                  Сүүлчийн санал цаг сунгаж болзошгүй — снайп ажиллахгүй.
                 </div>
               </div>
             </div>

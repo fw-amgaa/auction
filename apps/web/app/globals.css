@@ -212,26 +212,7 @@ body {
   }
 }
 
-@keyframes badgeFloat {
-  0% {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  18% {
-    opacity: 1;
-    transform: none;
-  }
-  78% {
-    opacity: 1;
-    transform: translateY(-1px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-7px);
-  }
-}
-
-@keyframes extendPop {
+@keyframes pricePop {
   0% {
     transform: scale(1);
   }

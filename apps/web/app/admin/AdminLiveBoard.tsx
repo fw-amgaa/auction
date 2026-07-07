@@ -208,7 +208,7 @@ export function AdminLiveBoard({
             <span
               key={r.flash}
               className="tnum text-right text-[13px] font-semibold text-navy"
-              style={{ animation: r.flash ? "extendPop .5s ease" : undefined }}
+              style={{ animation: r.flash ? "pricePop .5s ease" : undefined }}
             >
               {formatTugrug(r.price)}
             </span>

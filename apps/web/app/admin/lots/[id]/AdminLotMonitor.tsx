@@ -2,13 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  ANTI_SNIPE_EXTENSION_SEC,
-  ANTI_SNIPE_WINDOW_SEC,
-  type ClientMessage,
-  formatTugrug,
-  type ServerMessage,
-} from "@auction/shared";
+import { type ClientMessage, formatTugrug, type ServerMessage } from "@auction/shared";
 
 import { formatLocal, relTime } from "@/lib/datetime";
 
@@ -52,7 +46,6 @@ export function AdminLotMonitor({
   const [spectators, setSpectators] = useState(0);
   const [feed, setFeed] = useState<FeedRow[]>([]);
   const [status, setStatus] = useState<"live" | "ended">("live");
-  const [extendFlash, setExtendFlash] = useState(0);
   const [priceFlash, setPriceFlash] = useState(0);
   // Countdown anchored to estimated SERVER time (monotonic), not the local clock
   // — see LiveRoom for the rationale. `now` is that estimate.
@@ -117,7 +110,6 @@ export function AdminLotMonitor({
             setFeed((f) =>
               [{ seq: msg.feedItem.seq, label: msg.feedItem.label, amount: msg.feedItem.amount, ts: msg.feedItem.ts }, ...f].slice(0, 30),
             );
-            if (msg.extended) setExtendFlash((n) => n + 1);
             break;
           case "spectators":
             setSpectators(msg.count);
@@ -147,7 +139,8 @@ export function AdminLotMonitor({
   }, [lotId, ticket, wsBase, syncClock, estimateServerNow]);
 
   const timeLeft = Math.max(0, Math.floor((endsAt - now) / 1000));
-  const critical = status === "live" && timeLeft > 0 && timeLeft <= ANTI_SNIPE_WINDOW_SEC;
+  // Final-seconds emphasis — the last 10 seconds before close (mirrors LiveRoom).
+  const critical = status === "live" && timeLeft > 0 && timeLeft <= 10;
   const timerColor = status === "ended" ? "#8A93A3" : timeLeft > 30 ? "#1F8A5B" : timeLeft > 10 ? "#C77A0A" : "#C8312C";
   const connColor = conn === "live" ? "#1F8A5B" : "#C77A0A";
 
@@ -171,7 +164,7 @@ export function AdminLotMonitor({
           <div
             key={priceFlash}
             className="tnum mt-1 text-[24px] font-bold text-navy"
-            style={{ animation: priceFlash ? "extendPop .5s ease" : undefined }}
+            style={{ animation: priceFlash ? "pricePop .5s ease" : undefined }}
           >
             {formatTugrug(price)}
           </div>
@@ -188,11 +181,6 @@ export function AdminLotMonitor({
                 style={{ background: "#FBEAE9", animation: "livedot 1s infinite" }}
               >
                 Дуусч байна!
-              </span>
-            )}
-            {extendFlash > 0 && !critical && (
-              <span key={extendFlash} className="tnum rounded-full bg-[#FBF1DF] px-1.5 py-0.5 text-[10px] font-bold text-[#C77A0A]">
-                +{ANTI_SNIPE_EXTENSION_SEC} сек
               </span>
             )}
           </div>

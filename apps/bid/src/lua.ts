@@ -5,7 +5,7 @@
  * KEYS[1] = lot hash key  (lot:{id})
  * ARGV    = userId, option(1|2|3|4), now(ms), limit
  * Returns reject: {0, reason}
- *         accept: {1, amount, seq, endsAt, extended(0|1), releasedUser, releasedAmount}
+ *         accept: {1, amount, seq, endsAt, releasedUser, releasedAmount}
  *
  * Bidding model: two fixed ascending increments per lot (inc1 / inc2). The two
  * MAIN options raise by those increments (1 / 2). In the FINAL STRETCH (last
@@ -19,15 +19,13 @@
  * Committed balances are stored at u:{userId}:committed (single-node Redis, so
  * the script may touch keys outside KEYS[]).
  *
- * Anti-snipe + final-stretch windows come from @auction/shared (single source of
- * truth) and are interpolated into the script body below as millisecond literals.
+ * The final-stretch window comes from @auction/shared (single source of truth)
+ * and is interpolated into the script body below as a millisecond literal.
+ *
+ * The end time is fixed: the auction runs exactly the window the admin set.
+ * A late bid never moves endsAt.
  */
-import {
-  ANTI_SNIPE_EXTENSION_SEC,
-  ANTI_SNIPE_MAX_EXTENSION_SEC,
-  ANTI_SNIPE_WINDOW_SEC,
-  FINAL_STRETCH_SEC,
-} from "@auction/shared";
+import { FINAL_STRETCH_SEC } from "@auction/shared";
 
 export const BID_LUA = `
 local lotKey = KEYS[1]
@@ -36,7 +34,7 @@ local option = tonumber(ARGV[2])
 local now = tonumber(ARGV[3])
 local limit = tonumber(ARGV[4])
 
-local h = redis.call('HMGET', lotKey, 'price','leader','inc1','inc2','endsAt','status','maxEndsAt')
+local h = redis.call('HMGET', lotKey, 'price','leader','inc1','inc2','endsAt','status')
 if not h[1] then return {0,'closed'} end
 local price = tonumber(h[1])
 local leader = h[2]
@@ -44,10 +42,6 @@ local inc1 = tonumber(h[3])
 local inc2 = tonumber(h[4])
 local endsAt = tonumber(h[5])
 local status = h[6]
--- hard ceiling on anti-snipe extensions (scheduled end + max extension).
--- Lots cached before this field existed get the cap lazily off their current end.
-local maxEndsAt = tonumber(h[7])
-if not maxEndsAt then maxEndsAt = endsAt + ${ANTI_SNIPE_MAX_EXTENSION_SEC * 1000} end
 
 if status ~= 'live' then return {0,'closed'} end
 if now > endsAt then return {0,'closed'} end
@@ -84,14 +78,6 @@ end
 
 redis.call('SET', ucKey, uc + amount)
 local seq = redis.call('HINCRBY', lotKey, 'seq', 1)
-local extended = 0
-if (endsAt - now) <= ${ANTI_SNIPE_WINDOW_SEC * 1000} then
-  local target = math.min(endsAt + ${ANTI_SNIPE_EXTENSION_SEC * 1000}, maxEndsAt)
-  if target > endsAt then
-    endsAt = target
-    extended = 1
-  end
-end
-redis.call('HSET', lotKey, 'price', amount, 'leader', userId, 'hasBids', '1', 'endsAt', endsAt, 'maxEndsAt', maxEndsAt)
-return {1, amount, seq, endsAt, extended, releasedUser, releasedAmount}
+redis.call('HSET', lotKey, 'price', amount, 'leader', userId, 'hasBids', '1')
+return {1, amount, seq, endsAt, releasedUser, releasedAmount}
 `;

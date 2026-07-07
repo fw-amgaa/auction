@@ -70,16 +70,6 @@ export function incrementsForCode(code: string): readonly [number, number] {
 /* ------------------------------- bidding ---------------------------------- */
 
 /**
- * Anti-snipe: if a bid lands within this many seconds of the end,
- * the auction is extended by ANTI_SNIPE_EXTENSION_SEC — but never past
- * ANTI_SNIPE_MAX_EXTENSION_SEC beyond the scheduled end, so a bidding war
- * can't stretch a lot forever (a 20-minute lot runs at most 23 minutes).
- */
-export const ANTI_SNIPE_WINDOW_SEC = 10;
-export const ANTI_SNIPE_EXTENSION_SEC = 10;
-export const ANTI_SNIPE_MAX_EXTENSION_SEC = 180;
-
-/**
  * Final stretch: inside this many seconds of the end, two extra "fast" bid
  * options unlock — double the category's two increments (options 3 & 4). Before
  * the window they are locked; the bid service enforces this against its own

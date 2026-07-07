@@ -55,7 +55,7 @@ Deliver a **design system first** (color tokens, type scale, spacing, icons, com
 6. **★ Live bidding room** — the centerpiece (full spec in §4).
 7. **My Bids / My Auctions** — tabs: Active (currently winning / outbid), Won, Lost, Watching. Each row shows status, my bid, current price, time.
 8. **Balance (Үлдэгдэл)** — big available/committed/limit summary; an explainer of how holds work ("bidding holds it, being outbid returns it, winning keeps it"); the **ledger** as a clean, filterable timeline (admin issued/raised, holds, releases, consumptions).
-9. **Notifications (Мэдэгдэл)** — dedicated tab + bell with unread count; chronological feed grouped by day; types: bid placed (held ₮X), **outbid (₮X returned)**, won (₮X kept), lost, limit increased, auction starting/ending soon, **auction extended (anti-snipe)**, KYC approved/rejected. Read/unread, mark-all-read, filter by type.
+9. **Notifications (Мэдэгдэл)** — dedicated tab + bell with unread count; chronological feed grouped by day; types: bid placed (held ₮X), **outbid (₮X returned)**, won (₮X kept), lost, limit increased, auction starting/ending soon, KYC approved/rejected. Read/unread, mark-all-read, filter by type.
 10. **Profile & KYC status** — view/edit profile, KYC state, uploaded documents.
 
 **Admin (separate, denser, data-grid aesthetic — still on-brand)**
@@ -78,7 +78,7 @@ Design this so a **first-time user understands everything at a glance** while bi
    - Winning → green, check icon, **"Та тэргүүлж байна"** (You're leading).
    - Outbid → red, alert icon, **"Таны саналыг давсан!"** (You've been outbid!) — momentary attention pulse + optional sound/haptic. This must hit instantly the moment someone passes you.
 2. **Current high bid — the hero.** Huge tabular number, **"Одоогийн үнэ"**. On change: smooth count-up animation + brief highlight pulse. Show the (anonymized) bidder, e.g. **"Оролцогч #7"** (pseudonymous for privacy).
-3. **Countdown timer — prominent.** Large `MM:SS`, color shifts green → amber → red as it nears zero. **Anti-snipe extension** must be visually loud: when a late bid extends the clock, flash **"Хугацаа сунгагдлаа +30 сек"** and animate the timer jumping up — so users learn it can't be sniped.
+3. **Countdown timer — prominent.** Large `MM:SS`, color shifts green → amber → red as it nears zero. The end time is fixed — the lot closes exactly on schedule.
 4. **Quick-bid controls.** The increment band as **step buttons +1 … +5** (step = 10% of reserve; +5 = the 50% max). Each button shows the **resulting price**, not just the delta (e.g. "+530,000 → ₮5,830,000"). Big tap targets; the minimum (+1) is the default/primary. Disable any step the user **can't afford** given available balance, with a tooltip why. Single tap places the bid (fast); show a brief, cancelable confirmation only if you can keep it under ~1s — prioritize speed but guard against fat-fingers (e.g. press-and-flash, or undo toast).
 5. **Available balance, always visible.** **"Боломжит үлдэгдэл: ₮X"** updating live as holds change; subtle warning as it gets tight.
 6. **Live bid feed — the "pow pow."** A vertical ticker, newest on top, each new bid **sliding in** with a highlight: bidder + amount + "just now". Caps visible history; feels like a live heartbeat of the room. Your own bids highlighted distinctly.
@@ -116,7 +116,7 @@ A polished **spotlight/coachmark walkthrough**: dims the page, highlights one el
 
 **B. Live-room tour (first time they enter a live auction) — the important one:**
 1. Your-status banner → "This tells you instantly if you're winning or outbid."
-2. Current high + timer → "The price and the clock. The clock can extend if someone bids late, so sniping won't work."
+2. Current high + timer → "The price and the clock. When the clock hits zero, the lot closes."
 3. Quick-bid step buttons → "Tap to raise. Each button shows exactly what you'll pay."
 4. Available balance → "You can't bid more than this; outbids return your held amount."
 5. Keyboard shortcuts hint → "Power users: press 1–5 or Enter to bid fast. Press ? anytime."
@@ -149,7 +149,6 @@ Offer a **risk-free practice bid** in a sandbox lot so they learn the mechanics 
 | You've been outbid! | Таны саналыг давсан! |
 | Available balance | Боломжит үлдэгдэл |
 | Notifications | Мэдэгдэл |
-| Extended +30s | Хугацаа сунгагдлаа +30 сек |
 | Watching | Ажиглаж байна |
 | N people watching | N хүн үзэж байна |
 

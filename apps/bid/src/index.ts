@@ -3,7 +3,7 @@
  *  - ticket auth on connect (HMAC from apps/web)
  *  - Redis Lua bid arbitration + Postgres persistence (engine.ts)
  *  - Redis pub/sub fan-out, tailored per connection (privacy-preserving labels)
- *  - spectator counts, rate limiting, anti-snipe, close sweep
+ *  - spectator counts, rate limiting, close sweep
  */
 import { createServer } from "node:http";
 
@@ -110,7 +110,6 @@ interface BidEvent {
   price: number;
   seq: number;
   endsAt: number;
-  extended: boolean;
   leaderUserId: string;
   releasedUser: string | null;
   releasedAmount: number;
@@ -160,7 +159,6 @@ async function handleEvent(ev: Event) {
         seq: ev.seq,
         endsAt: ev.endsAt,
         serverNow: Date.now(),
-        extended: ev.extended,
         leaderLabel: label,
         youLead: mine,
         feedItem: { seq: ev.seq, label, amount: ev.price, ts: ev.ts, mine },
@@ -317,7 +315,6 @@ async function onMessage(conn: Conn, msg: ClientMessage) {
         price: res.amount,
         seq: res.seq,
         endsAt: res.endsAt,
-        extended: res.extended,
         leaderUserId: res.leaderUserId,
         releasedUser: res.releasedUser,
         releasedAmount: res.releasedAmount,

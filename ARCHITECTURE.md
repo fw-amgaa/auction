@@ -31,7 +31,7 @@
 | ORM / DB access | **Drizzle ORM** + drizzle-kit migrations | SQL-first, lightweight, fully typed, gives us explicit transactions and `SELECT … FOR UPDATE` for ledger integrity. (Prisma was the alternative; Drizzle wins for control over a financial ledger.) |
 | Validation | **Zod** | One schema shared client ⇄ server (forms, API, WS messages). |
 | Auth | **Auth.js (NextAuth v5)**, Credentials + **database sessions** in Postgres | Revocable sessions (important for admin), role-based. Passwords hashed with **argon2id**. |
-| Background jobs | **BullMQ** (on Redis) | Reliable delayed jobs for auction start/close + notification dispatch; reschedulable on anti-snipe extension. |
+| Background jobs | **BullMQ** (on Redis) | Reliable delayed jobs for auction start/close + notification dispatch. |
 | File storage | **S3** (private bucket) + presigned uploads, CloudFront optional | KYC docs & lot images; access-controlled. |
 | Email | **AWS SES** via nodemailer | KYC results, password-setup invites, notifications. Hard dependency. |
 | SMS | **Pluggable `SmsProvider` interface** | OTP + alerts. Concrete Mongolian gateway implemented later (see §13). |
@@ -86,8 +86,7 @@ UI, button enable/disable) and in the bid service (authoritative check). Define 
   Postgres, publishes new state, dispatches notifications.
 - Subscribes to Redis pub/sub and pushes updates to its connected clients.
 - **Scheduler/worker** (BullMQ; can run in-process now, split later): auction open/close
-  transitions, anti-snipe reschedule, "starting/ending soon" + result notifications, email/SMS
-  dispatch.
+  transitions, "starting/ending soon" + result notifications, email/SMS dispatch.
 - On startup / crash recovery: **rehydrates Redis** for all live lots from Postgres (§8).
 
 ### 4.3 Shared infra
@@ -166,20 +165,20 @@ INPUT: lotId, userId, amount, nSteps, now
    - user:{userId}.committed = uc + amount                   # hold new bid
    - lot.price = amount; lot.leader = userId
    - seq = INCR lot:{id}:seq
-   - if endsAt - now <= 15: endsAt += 30; extended=true      # anti-snipe
-6. return ACCEPT{ price, leader, seq, endsAt, extended, releasedUser, releasedAmount }
+6. return ACCEPT{ price, leader, seq, endsAt, releasedUser, releasedAmount }
 ```
+The end time is fixed: the lot runs exactly the admin-scheduled window — a late bid never
+moves `endsAt`.
 Because Redis is single-threaded, all 1000 concurrent bids on the hot lot **serialize for free**
 at memory speed — no row-lock pile-up, no lost updates, no double-winner.
 
 ### 6.4 After ACCEPT (bid service, durable + fan-out)
 1. **Persist (one Postgres tx):** insert `bids` row (with `seq`); mark previous winning bid
    `superseded`; insert `limit_ledger` `hold` (new leader) + `release` (old leader); update
-   `lots.current_price/leader_user_id/ends_at`. Idempotent on `(lot_id, seq)`.
-2. **Publish** `lot:{id}` event (new price/leader/seq/endsAt/extended) → all WS instances push
+   `lots.current_price/leader_user_id`. Idempotent on `(lot_id, seq)`.
+2. **Publish** `lot:{id}` event (new price/leader/seq/endsAt) → all WS instances push
    to clients watching that lot; the displaced leader gets a personal **outbid** event.
-3. **Notifications:** enqueue outbid (₮ returned) for old leader; if extended, broadcast "+30s".
-4. **Reschedule close job** to the new `endsAt` if extended.
+3. **Notifications:** enqueue outbid (₮ returned) for old leader.
 
 ### 6.5 Rate limiting & abuse
 - Per-user token bucket in Redis (e.g. N bids/sec) checked inside the connection handler before
@@ -232,7 +231,7 @@ log. How do we guarantee they never permanently disagree?
 - **Client → server messages:** `subscribe{lotId}`, `bid{lotId, nSteps}`, `watch{lotId}`,
   `unsubscribe{lotId}`, `ping`.
 - **Server → client messages:** `state{lotId, price, leader#, endsAt, seq, spectators}`,
-  `accepted{…}`, `rejected{reason}`, `outbid{lotId, returned}`, `extended{lotId, +30}`,
+  `accepted{…}`, `rejected{reason}`, `outbid{lotId, returned}`,
   `closed{lotId, result}`, `balance{available, committed, limit}`, `pong`.
 - **Fan-out:** bid service subscribes to Redis `lot:{id}` and `user:{id}` channels; pushes to the
   right sockets. Single process today, but pub/sub means we can run N bid instances behind the LB
@@ -285,7 +284,7 @@ log. How do we guarantee they never permanently disagree?
 3. **Catalog + admin lots:** categories, lot CRUD/scheduling, catalog + lot detail (read).
 4. **Limit/balance:** admin issue/raise/lower, append-only ledger, user Balance screen.
 5. **★ Bidding engine:** Redis Lua + bid service + WS protocol + live arena UI (steps,
-   anti-snipe, holds, feed, shortcuts, tours, practice). Rehydrate + persistence + reconciliation.
+   holds, feed, shortcuts, tours, practice). Rehydrate + persistence + reconciliation.
 6. **Notifications:** in-app feed + worker dispatch (email now; SMS when provider ready).
 7. **Post-auction:** close finalization, results, exports, permit generation.
 8. **Hardening + load test + deploy:** security pass, 1000-concurrent simulation, EC2 + runbook.

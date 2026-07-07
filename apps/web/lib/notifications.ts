@@ -33,8 +33,6 @@ function render(type: NotifType, payload: Record<string, unknown>): Omit<NotifRo
       return { group: "result", icon: "🏆", iconBg: "#E5F4EC", iconFg: "#1F8A5B", title: "Баяр хүргэе! Та хожлоо", body: `${lot} — ${price}-өөр хожлоо. Барьцаа худалдан авалтад зарцуулагдлаа.` };
     case "lost":
       return { group: "result", icon: "○", iconBg: "#EEF1F5", iconFg: "#5B6677", title: "Лот дууслаа", body: `${lot} — өөр оролцогч хожлоо. Таны барьцаа бүрэн буцаагдсан.` };
-    case "extended":
-      return { group: "auction", icon: "⏱", iconBg: "#FBF1DF", iconFg: "#C77A0A", title: "Хугацаа сунгагдлаа", body: `${lot} — сүүлчийн санал ирсэн тул хугацаа сунгагдлаа.` };
     case "starting_soon":
       return { group: "auction", icon: "◷", iconBg: "#FBF1DF", iconFg: "#C77A0A", title: "Дуудлага удахгүй эхэлнэ", body: `${lot} — удахгүй шууд эхэлнэ.` };
     case "ending_soon":
