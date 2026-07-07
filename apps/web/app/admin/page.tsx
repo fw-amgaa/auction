@@ -25,7 +25,7 @@ export default async function AdminHome() {
       db.select({ n: count() }).from(schema.lots).where(eq(schema.lots.status, "scheduled")),
       db.select({ n: count() }).from(schema.users).where(eq(schema.users.kyc, "pending")),
       db.select({ n: count() }).from(schema.users).where(ne(schema.users.role, "admin")),
-      db.select({ s: sum(schema.users.limit) }).from(schema.users),
+      db.select({ s: sum(schema.users.limit) }).from(schema.users).where(ne(schema.users.role, "admin")),
       db
         .select({ lot: schema.lots, category: schema.categories })
         .from(schema.lots)
