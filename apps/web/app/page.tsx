@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 const HERO_STATS: [string, string][] = [
   ["2", "Агнуурын амьтны төрөл"],
-  ["09:00", "Эхлэх цаг · орон нутгийн"],
+  ["08:00", "Эхлэх цаг · орон нутгийн"],
   ["10%", "Босго үнийн дэнчин"],
   ["100%", "Нээлттэй, цахим процесс"],
 ];
@@ -49,8 +49,8 @@ const SPECIES: Species[] = [
     threshold: "22,200,000₮",
     deposit: "2,220,000₮",
     bids: ["3,000,000₮", "4,000,000₮"],
-    batch: "20 минутаар · 4 ба 3 толгойгоор",
-    duration: "20 минут",
+    batch: "15 минутаар · 4 ба 3 толгойгоор",
+    duration: "15 минут",
     accent: "#e7b24b",
   },
   {
@@ -61,8 +61,8 @@ const SPECIES: Species[] = [
     threshold: "5,300,000₮",
     deposit: "530,000₮",
     bids: ["600,000₮", "1,200,000₮"],
-    batch: "20 минутаар · 5 ба 4 толгойгоор",
-    duration: "20 минут",
+    batch: "15 минутаар · 5 ба 4 толгойгоор",
+    duration: "15 минут",
     accent: "#9db4d6",
   },
 ];
@@ -83,59 +83,59 @@ const SCHEDULE: SpeciesSchedule[] = [
     name: "Алтайн угалз",
     latin: "Ovis ammon",
     accent: "#e7b24b",
-    window: "09:00 – 10:10",
+    window: "08:00 – 08:55",
     totalLots: 11,
     batches: [
       {
         label: "1-р багц",
-        time: "09:00 – 09:20",
+        time: "08:00 – 08:15",
         codes: ["U1", "U2", "U3", "U4"],
       },
       {
         label: "2-р багц",
-        time: "09:25 – 09:45",
+        time: "08:20 – 08:35",
         codes: ["U5", "U6", "U7", "U8"],
       },
-      { label: "3-р багц", time: "09:50 – 10:10", codes: ["U9", "U10", "U11"] },
+      { label: "3-р багц", time: "08:40 – 08:55", codes: ["U9", "U10", "U11"] },
     ],
   },
   {
     name: "Алтайн тэх",
     latin: "Capra sibirica",
     accent: "#9db4d6",
-    window: "10:20 – 12:20",
+    window: "09:05 – 10:40",
     totalLots: 24,
     batches: [
       {
         label: "1-р багц",
-        time: "10:20 – 10:40",
+        time: "09:05 – 09:20",
         codes: ["T101", "T102", "T103", "T104", "T105"],
       },
       {
         label: "2-р багц",
-        time: "10:45 – 11:05",
+        time: "09:25 – 09:40",
         codes: ["T106", "T107", "T108", "T109", "T110"],
       },
       {
         label: "3-р багц",
-        time: "11:10 – 11:30",
+        time: "09:45 – 10:00",
         codes: ["T111", "T112", "T113", "T114", "T115"],
       },
       {
         label: "4-р багц",
-        time: "11:35 – 11:55",
+        time: "10:05 – 10:20",
         codes: ["T116", "T117", "T118", "T119", "T120"],
       },
       {
         label: "5-р багц",
-        time: "12:00 – 12:20",
+        time: "10:25 – 10:40",
         codes: ["T121", "T122", "T123", "T124"],
       },
     ],
   },
 ];
 
-const AUCTION_DATE = "2026 оны 07 сарын 08, Лхагва гараг";
+const AUCTION_DATE = "2026 оны 07 сарын 09, Пүрэв гараг";
 
 const STEPS: [string, string, string][] = [
   [
@@ -185,9 +185,9 @@ const PRINCIPLES: [string, string][] = [
 ];
 
 const TERMS: [string, string][] = [
-  ["Эхлэх цаг", "Орон нутгийн 09:00 цаг"],
-  ["Алтайн угалз", "20 минут · 4 ба 3 толгойгоор багцлагдана"],
-  ["Алтайн тэх", "20 минут · 5 ба 4 толгойгоор багцлагдана"],
+  ["Эхлэх цаг", "Орон нутгийн 08:00 цаг"],
+  ["Алтайн угалз", "15 минут · 4 ба 3 толгойгоор багцлагдана"],
+  ["Алтайн тэх", "15 минут · 5 ба 4 толгойгоор багцлагдана"],
   ["Ялагчийн төлбөр", "Ялсан үнийг 24 цагийн дотор төлнө"],
   ["Дэнчин буцаалт", "Ялаагүй бол ажлын 14 хоногт шимтгэлгүй буцна"],
   ["Орлогын хуваарилалт", "50% нь Байгаль орчин, уур амьсгалын санд"],
@@ -417,7 +417,7 @@ export default async function LandingPage() {
                 <span className="font-semibold text-navy">Алтайн угалзаар</span> эхэлж,
                 10 минутын завсарлагааны дараа{" "}
                 <span className="font-semibold text-navy">Алтайн тэх</span> үргэлжилнэ.
-                Лотууд багц багцаар, 20 минутын зайтай дуудагдана. Бүх цаг орон
+                Лотууд багц багцаар, 15 минутын зайтай дуудагдана. Бүх цаг орон
                 нутгийн цагаар. (UTC +7)
               </p>
             </div>
@@ -430,19 +430,19 @@ export default async function LandingPage() {
                   {AUCTION_DATE}
                 </span>
                 <span className="ml-auto rounded-pill bg-crimson/10 px-2.5 py-1 text-[11.5px] font-semibold text-crimson">
-                  09:00 цагаас
+                  08:00 цагаас
                 </span>
               </div>
               <div className="tnum flex items-center justify-between text-[12px] font-semibold text-muted">
-                <span>09:00 · эхэлнэ</span>
-                <span>12:20 · дуусна</span>
+                <span>08:00 · эхэлнэ</span>
+                <span>10:40 · дуусна</span>
               </div>
               <div className="mt-2.5 flex items-stretch gap-1 overflow-hidden rounded-pill">
                 <div
                   className="tnum flex h-10 items-center justify-center px-2 text-center text-[11.5px] font-bold text-navy"
-                  style={{ flexGrow: 70, flexBasis: 0, background: "#e7b24b" }}
+                  style={{ flexGrow: 55, flexBasis: 0, background: "#e7b24b" }}
                 >
-                  Алтайн угалз · 09:00–10:10
+                  Алтайн угалз · 08:00–08:55
                 </div>
                 <div
                   className="flex h-10 items-center justify-center px-1 text-center text-[10.5px] font-semibold text-ink-soft"
@@ -452,9 +452,9 @@ export default async function LandingPage() {
                 </div>
                 <div
                   className="tnum flex h-10 items-center justify-center px-2 text-center text-[11.5px] font-bold text-navy"
-                  style={{ flexGrow: 120, flexBasis: 0, background: "#9db4d6" }}
+                  style={{ flexGrow: 95, flexBasis: 0, background: "#9db4d6" }}
                 >
-                  Алтайн тэх · 10:20–12:20
+                  Алтайн тэх · 09:05–10:40
                 </div>
               </div>
             </div>

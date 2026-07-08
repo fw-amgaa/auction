@@ -2,6 +2,19 @@
 # Routes the live WebSocket path to the bid service, everything else to web.
 # DOMAIN is supplied by docker-compose.prod.yml (from the environment).
 
+{
+	servers {
+		# Bound how long a client can hold a connection open while sending
+		# its request; no server-level write timeout so the /ws* WebSocket
+		# connections stay long-lived.
+		timeouts {
+			read_header 10s
+			read_body 30s
+			idle 5m
+		}
+	}
+}
+
 {$DOMAIN} {
 	encode gzip zstd
 
@@ -12,6 +25,13 @@
 
 	# everything else -> Next.js
 	handle {
-		reverse_proxy web:3000
+		# Abort upstream requests that don't respond quickly instead of
+		# queueing them in memory (2026-07-07 flood held requests 900s+).
+		reverse_proxy web:3000 {
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+		}
 	}
 }
