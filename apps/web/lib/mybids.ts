@@ -1,6 +1,6 @@
 import "server-only";
 
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
 
@@ -27,11 +27,12 @@ export async function getMyBids(userId: string): Promise<{
   won: MyBidRow[];
   lost: MyBidRow[];
 }> {
-  // my bids → distinct lots + my highest amount per lot
+  // my bids → distinct lots + my highest amount per lot. Void bids (previous
+  // rounds of a re-run lot) don't count as the user's bids in the new round.
   const myBids = await db
     .select()
     .from(schema.bids)
-    .where(eq(schema.bids.userId, userId))
+    .where(and(eq(schema.bids.userId, userId), ne(schema.bids.status, "void")))
     .orderBy(desc(schema.bids.seq));
 
   const myMax = new Map<string, number>();

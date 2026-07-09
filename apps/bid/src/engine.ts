@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
 import { type FeedItem, incrementsForCode } from "@auction/shared";
@@ -205,12 +205,16 @@ export async function realLabel(userId: string): Promise<string> {
   return label;
 }
 
-/** Recent bid feed. When `real`, labels are true names (admin monitors only). */
+/**
+ * Recent bid feed. When `real`, labels are true names (admin monitors only).
+ * Void bids — previous rounds of a re-run lot, kept for audit — are excluded
+ * so the room only shows the current round.
+ */
 export async function recentFeed(lotId: string, viewerId: string, real = false): Promise<FeedItem[]> {
   const rows = await db
     .select()
     .from(schema.bids)
-    .where(eq(schema.bids.lotId, lotId))
+    .where(and(eq(schema.bids.lotId, lotId), ne(schema.bids.status, "void")))
     .orderBy(desc(schema.bids.seq))
     .limit(14);
   const out: FeedItem[] = [];

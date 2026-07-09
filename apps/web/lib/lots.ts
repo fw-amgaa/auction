@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 
 import { db, schema } from "@auction/db";
 import { CATEGORIES, type CategoryCode, CATEGORY_CODES, incrementsForCode } from "@auction/shared";
@@ -110,7 +110,7 @@ async function participantNumbers(lotIds: string[]): Promise<Map<string, Map<str
   const rows = await db
     .select({ lotId: schema.bids.lotId, userId: schema.bids.userId })
     .from(schema.bids)
-    .where(inArray(schema.bids.lotId, lotIds))
+    .where(and(inArray(schema.bids.lotId, lotIds), ne(schema.bids.status, "void")))
     .orderBy(asc(schema.bids.seq));
   for (const r of rows) {
     let m = out.get(r.lotId);
@@ -221,10 +221,12 @@ export async function getLotDetail(id: string, viewerId?: string): Promise<LotDe
 
   // All bids ascending → stable per-user participant numbers. The full history
   // is returned (newest first); the lot page renders it in a scrollable list.
+  // Void bids (previous rounds of a re-run lot) stay hidden from bidders —
+  // only the admin monitor shows them.
   const allBids = await db
     .select()
     .from(schema.bids)
-    .where(eq(schema.bids.lotId, id))
+    .where(and(eq(schema.bids.lotId, id), ne(schema.bids.status, "void")))
     .orderBy(asc(schema.bids.seq));
 
   const num = new Map<string, number>();
