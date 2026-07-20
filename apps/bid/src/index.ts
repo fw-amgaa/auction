@@ -86,7 +86,7 @@ async function sendSnapshot(conn: Conn, lotId: string) {
     endsAt: Number(h.endsAt),
     serverNow: Date.now(),
     seq: Number(h.seq),
-    spectators: Number((await redis.get(`lot:${lotId}:spec`)) ?? "0"),
+    spectators: await redis.hlen(`lot:${lotId}:spec`),
     status: h.status === "live" ? "live" : "ended",
     feed: await recentFeed(lotId, conn.userId, admin),
     available: conn.limit - committed,
@@ -248,9 +248,15 @@ wss.on("connection", (ws: WebSocket, ticket: NonNullable<ReturnType<typeof verif
       lotSubs.get(lotId)?.delete(ws);
       // Mirror subscribe: only bidders were counted, so only bidders decrement.
       if (conn.role !== "admin") {
-        void redis.decr(`lot:${lotId}:spec`).then(async (count) => {
-          await redis.publish(EVENTS, JSON.stringify({ type: "spectators", lotId, count: Math.max(0, count) }));
-        });
+        const key = `lot:${lotId}:spec`;
+        void (async () => {
+          const remaining = await redis.hincrby(key, conn.userId, -1);
+          if (remaining <= 0) {
+            await redis.hdel(key, conn.userId);
+            const count = await redis.hlen(key);
+            await redis.publish(EVENTS, JSON.stringify({ type: "spectators", lotId, count }));
+          }
+        })();
       }
     }
     conns.delete(ws);
@@ -270,6 +276,10 @@ async function onMessage(conn: Conn, msg: ClientMessage) {
       send(conn.ws, { t: "rejected", lotId: msg.lotId, reason: "not_eligible" });
       return;
     }
+    if (conn.lots.has(msg.lotId)) {
+      await sendSnapshot(conn, msg.lotId);
+      return;
+    }
     conn.lots.add(msg.lotId);
     let set = lotSubs.get(msg.lotId);
     if (!set) {
@@ -281,9 +291,12 @@ async function onMessage(conn: Conn, msg: ClientMessage) {
     if (conn.role === "admin") {
       await sendSnapshot(conn, msg.lotId);
     } else {
-      const count = await redis.incr(`lot:${msg.lotId}:spec`);
+      const connCount = await redis.hincrby(`lot:${msg.lotId}:spec`, conn.userId, 1);
       await sendSnapshot(conn, msg.lotId);
-      await redis.publish(EVENTS, JSON.stringify({ type: "spectators", lotId: msg.lotId, count }));
+      if (connCount === 1) {
+        const count = await redis.hlen(`lot:${msg.lotId}:spec`);
+        await redis.publish(EVENTS, JSON.stringify({ type: "spectators", lotId: msg.lotId, count }));
+      }
     }
     return;
   }
@@ -382,9 +395,19 @@ setInterval(() => {
   }
 }, 30_000);
 
+async function resetSpectators() {
+  let cursor = "0";
+  do {
+    const [next, keys] = await redis.scan(cursor, "MATCH", "lot:*:spec", "COUNT", 500);
+    cursor = next;
+    if (keys.length > 0) await redis.del(...keys);
+  } while (cursor !== "0");
+}
+
 async function start() {
   await redis.ping();
   log.info("redis connected");
+  await resetSpectators();
   httpServer.listen(PORT, () => log.info(`bid service listening on :${PORT} (ws /ws)`));
 }
 

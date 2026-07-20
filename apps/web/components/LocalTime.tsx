@@ -1,11 +1,17 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { formatLocal, type TimeMode } from "@/lib/datetime";
 
 /**
- * Renders an instant in the viewer's own timezone. Server renders it in the
- * server zone, the client re-renders in the browser zone; suppressHydrationWarning
- * absorbs that expected diff so the user always ends up seeing their local time.
+ * Renders an instant in the viewer's own timezone. The server renders it in the
+ * server zone (UTC) and suppressHydrationWarning absorbs the expected SSR/CSR
+ * diff — but suppression also means hydration KEEPS the server-rendered text in
+ * the DOM. A later re-render can't fix it either: the virtual tree already
+ * holds the client string, so React sees no change to patch. Swapping the key
+ * after mount remounts the span, forcing the browser-zone string into the DOM
+ * on hard loads (client-side navigations were always fine).
  */
 export function LocalTime({
   value,
@@ -16,9 +22,11 @@ export function LocalTime({
   mode?: TimeMode;
   className?: string;
 }) {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   if (value == null) return <span className={className}>—</span>;
   return (
-    <span className={className} suppressHydrationWarning>
+    <span key={hydrated ? "local" : "ssr"} className={className} suppressHydrationWarning>
       {formatLocal(value, mode)}
     </span>
   );
