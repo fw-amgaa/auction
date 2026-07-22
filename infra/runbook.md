@@ -28,7 +28,12 @@ SES must be out of sandbox + the sender verified for real password emails (else 
 container console — see `lib/email.ts`).
 
 ## Seasonal lifecycle
-1. **Off-season:** EC2 **STOPPED**. You pay only for the EBS volume (a few $/yr). No compute bill.
+> Step-by-step operator guide in Mongolian: **`infra/RUNBOOK-mn.md`**.
+
+1. **Off-season:** EC2 **STOPPED** — no compute bill, but you still pay for the EBS volume, the
+   Elastic IP, **and RDS**. RDS is the dominant off-season cost, so stopping only EC2 saves
+   little. For a gap longer than a week, snapshot `auction-pg` and **delete the instance**:
+   a stopped RDS instance is auto-started by AWS after 7 days. See `RUNBOOK-mn.md` §4.2/§5.
 2. **Pre-season (registration weeks):** start a small instance (e.g. `t4g.small`).
 3. **Auction day:** the morning before, **resize up** (e.g. `t4g.large`/`xlarge`) for headroom —
    EC2 bills hourly, so a big box for a day is a few dollars. Take an EBS snapshot first.

@@ -21,8 +21,8 @@ export const metadata: Metadata = {
 /* ── auction facts, drawn from the official 2026 Khovd удирдамж ───────── */
 
 const HERO_STATS: [string, string][] = [
-  ["2", "Агнуурын амьтны төрөл"],
-  ["08:00", "Эхлэх цаг · орон нутгийн"],
+  ["10", "Дуудлагад орох лот"],
+  ["09:00", "Эхлэх цаг · орон нутгийн"],
   ["10%", "Босго үнийн дэнчин"],
   ["100%", "Нээлттэй, цахим процесс"],
 ];
@@ -49,7 +49,7 @@ const SPECIES: Species[] = [
     threshold: "22,200,000₮",
     deposit: "2,220,000₮",
     bids: ["3,000,000₮", "4,000,000₮"],
-    batch: "15 минутаар · 4 ба 3 толгойгоор",
+    batch: "15 минутаар · 5 толгойгоор",
     duration: "15 минут",
     accent: "#e7b24b",
   },
@@ -61,7 +61,7 @@ const SPECIES: Species[] = [
     threshold: "5,300,000₮",
     deposit: "530,000₮",
     bids: ["600,000₮", "1,200,000₮"],
-    batch: "15 минутаар · 5 ба 4 толгойгоор",
+    batch: "15 минутаар · 5 толгойгоор",
     duration: "15 минут",
     accent: "#9db4d6",
   },
@@ -83,59 +83,33 @@ const SCHEDULE: SpeciesSchedule[] = [
     name: "Алтайн угалз",
     latin: "Ovis ammon",
     accent: "#e7b24b",
-    window: "08:00 – 08:55",
-    totalLots: 11,
+    window: "09:00 – 09:15",
+    totalLots: 5,
     batches: [
       {
         label: "1-р багц",
-        time: "08:00 – 08:15",
-        codes: ["U1", "U2", "U3", "U4"],
+        time: "09:00 – 09:15",
+        codes: ["U5", "U6", "U9", "U10", "U11"],
       },
-      {
-        label: "2-р багц",
-        time: "08:20 – 08:35",
-        codes: ["U5", "U6", "U7", "U8"],
-      },
-      { label: "3-р багц", time: "08:40 – 08:55", codes: ["U9", "U10", "U11"] },
     ],
   },
   {
     name: "Алтайн тэх",
     latin: "Capra sibirica",
     accent: "#9db4d6",
-    window: "09:05 – 10:40",
-    totalLots: 24,
+    window: "09:25 – 09:40",
+    totalLots: 5,
     batches: [
       {
         label: "1-р багц",
-        time: "09:05 – 09:20",
-        codes: ["T101", "T102", "T103", "T104", "T105"],
-      },
-      {
-        label: "2-р багц",
         time: "09:25 – 09:40",
-        codes: ["T106", "T107", "T108", "T109", "T110"],
-      },
-      {
-        label: "3-р багц",
-        time: "09:45 – 10:00",
-        codes: ["T111", "T112", "T113", "T114", "T115"],
-      },
-      {
-        label: "4-р багц",
-        time: "10:05 – 10:20",
-        codes: ["T116", "T117", "T118", "T119", "T120"],
-      },
-      {
-        label: "5-р багц",
-        time: "10:25 – 10:40",
-        codes: ["T121", "T122", "T123", "T124"],
+        codes: ["T103", "T106", "T115", "T116", "T121"],
       },
     ],
   },
 ];
 
-const AUCTION_DATE = "2026 оны 07 сарын 09, Пүрэв гараг";
+const AUCTION_DATE = "2026 оны 07 сарын 23, Пүрэв гараг";
 
 const STEPS: [string, string, string][] = [
   [
@@ -185,9 +159,9 @@ const PRINCIPLES: [string, string][] = [
 ];
 
 const TERMS: [string, string][] = [
-  ["Эхлэх цаг", "Орон нутгийн 08:00 цаг"],
-  ["Алтайн угалз", "15 минут · 4 ба 3 толгойгоор багцлагдана"],
-  ["Алтайн тэх", "15 минут · 5 ба 4 толгойгоор багцлагдана"],
+  ["Эхлэх цаг", "Орон нутгийн 09:00 цаг (UTC +7)"],
+  ["Алтайн угалз", "15 минут · 5 толгойгоор багцлагдана"],
+  ["Алтайн тэх", "15 минут · 5 толгойгоор багцлагдана"],
   ["Ялагчийн төлбөр", "Ялсан үнийг 24 цагийн дотор төлнө"],
   ["Дэнчин буцаалт", "Ялаагүй бол ажлын 14 хоногт шимтгэлгүй буцна"],
   ["Орлогын хуваарилалт", "50% нь Байгаль орчин, уур амьсгалын санд"],
@@ -413,12 +387,14 @@ export default async function LandingPage() {
                 Аль лот хэдэн цагт дуудагдах вэ
               </h2>
               <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-                Дуудлага{" "}
+                Энэ удаад{" "}
+                <span className="font-semibold text-navy">10 лот</span> дуудлагад
+                орно. Дуудлага{" "}
                 <span className="font-semibold text-navy">Алтайн угалзаар</span> эхэлж,
                 10 минутын завсарлагааны дараа{" "}
                 <span className="font-semibold text-navy">Алтайн тэх</span> үргэлжилнэ.
-                Лотууд багц багцаар, 15 минутын зайтай дуудагдана. Бүх цаг орон
-                нутгийн цагаар. (UTC +7)
+                Төрөл тус бүр нэг багцаар, 15 минутын турш дуудагдана. Бүх цаг
+                орон нутгийн цагаар. (UTC +7)
               </p>
             </div>
 
@@ -430,19 +406,19 @@ export default async function LandingPage() {
                   {AUCTION_DATE}
                 </span>
                 <span className="ml-auto rounded-pill bg-crimson/10 px-2.5 py-1 text-[11.5px] font-semibold text-crimson">
-                  08:00 цагаас
+                  09:00 цагаас
                 </span>
               </div>
               <div className="tnum flex items-center justify-between text-[12px] font-semibold text-muted">
-                <span>08:00 · эхэлнэ</span>
-                <span>10:40 · дуусна</span>
+                <span>09:00 · эхэлнэ</span>
+                <span>09:40 · дуусна</span>
               </div>
               <div className="mt-2.5 flex items-stretch gap-1 overflow-hidden rounded-pill">
                 <div
                   className="tnum flex h-10 items-center justify-center px-2 text-center text-[11.5px] font-bold text-navy"
-                  style={{ flexGrow: 55, flexBasis: 0, background: "#e7b24b" }}
+                  style={{ flexGrow: 15, flexBasis: 0, background: "#e7b24b" }}
                 >
-                  Алтайн угалз · 08:00–08:55
+                  Алтайн угалз · 09:00–09:15
                 </div>
                 <div
                   className="flex h-10 items-center justify-center px-1 text-center text-[10.5px] font-semibold text-ink-soft"
@@ -452,9 +428,9 @@ export default async function LandingPage() {
                 </div>
                 <div
                   className="tnum flex h-10 items-center justify-center px-2 text-center text-[11.5px] font-bold text-navy"
-                  style={{ flexGrow: 95, flexBasis: 0, background: "#9db4d6" }}
+                  style={{ flexGrow: 15, flexBasis: 0, background: "#9db4d6" }}
                 >
-                  Алтайн тэх · 09:05–10:40
+                  Алтайн тэх · 09:25–09:40
                 </div>
               </div>
             </div>
@@ -527,8 +503,7 @@ export default async function LandingPage() {
 
             <p className="mt-6 inline-flex items-center gap-1.5 text-[12.5px] text-muted">
               <span className="size-1.5 rounded-full bg-success" />
-              Багц бүрийн хооронд 5 минут, Алтайн угалз ба Алтайн тэхийн хооронд 10 минутын
-              завсарлага авна.
+              Алтайн угалз ба Алтайн тэхийн хооронд 10 минутын завсарлага авна.
             </p>
           </div>
         </section>
